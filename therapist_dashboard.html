@@ -1305,8 +1305,8 @@
                 const container = document.getElementById('trackingCategoriesSelection');
                 container.innerHTML = trackingCategories.map(cat => {
                     // Use the name from the backend (already translated) or translate locally
-                    const translatedName = cat.name || translateCategoryName(cat.original_name || cat.name);
-                    const translatedDesc = cat.description || translateCategoryDescription(cat.original_name || cat.name, cat.description);
+                      const translatedName = translateCategoryName(cat.original_name || cat.name);
+                    const translatedDesc = translateCategoryDescription(cat.original_name || cat.name, cat.description);
                     
                     return `
                         <label style="display: block; margin-bottom: 0.5rem;">
@@ -1371,7 +1371,9 @@
                 const percentage = (parseInt(completionRate[0]) / parseInt(completionRate[1])) * 100;
                 
                 // The tracking_categories array already contains translated names from the backend
-                const trackingDisplay = client.tracking_categories.join(', ');
+                const trackingDisplay = client.tracking_categories.map(cat => 
+                        translateCategoryName(cat)
+                            ).join(', ');
                 
                 return `
                     <tr>
