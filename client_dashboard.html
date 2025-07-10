@@ -1180,90 +1180,90 @@
 
         // Setup all categories dynamically
         function setupAllCategories() {
-            const categoriesDiv = document.getElementById('dynamicCategories');
-            
-            if (!trackingCategories || trackingCategories.length === 0) {
-                categoriesDiv.innerHTML = '<p>No tracking categories available.</p>';
-                return;
-            }
-            
-            // Create HTML for all categories
-            categoriesDiv.innerHTML = trackingCategories.map(cat => {
-                // Use the translated name that comes from the backend
-                const translatedName = translateCategoryName(cat.original_name || cat.name);
-                const translatedDesc = translateCategoryDescription(cat.original_name || cat.name, cat.description);
-                
-                // Choose emoji based on original category name
-                let emoji = '📊';
-                const originalName = cat.original_name || cat.name;
-                if (originalName.toLowerCase().includes('emotion')) emoji = '😊';
-                else if (originalName.toLowerCase().includes('medication')) emoji = '💊';
-                else if (originalName.toLowerCase().includes('activity') || originalName.toLowerCase().includes('physical')) emoji = '🏃';
-                else if (originalName.toLowerCase().includes('energy')) emoji = '⚡';
-                else if (originalName.toLowerCase().includes('social')) emoji = '👥';
-                else if (originalName.toLowerCase().includes('sleep')) emoji = '😴';
-                else if (originalName.toLowerCase().includes('anxiety')) emoji = '😰';
-                else if (originalName.toLowerCase().includes('motivation')) emoji = '🎯';
-                
-                // Get placeholder text
-                const placeholderText = i18n.t('client.notes_placeholder', { category: translatedName });
-                
-                // Special handling for medication category
-                if (originalName.toLowerCase().includes('medication')) {
-                    return `
-                        <div class="form-section" data-category-id="${cat.id}" data-category-name="${originalName}">
-                            <h3><span class="rating-emoji">${emoji}</span> <span>${translatedName}</span></h3>
-                            <p style="color: #666; font-size: 0.9rem;">${translatedDesc}</p>
-                            <div class="rating-scale">
-                                <button type="button" class="rating-button" data-category="${cat.id}" data-value="0" onclick="selectRating(this)">
-                                    <span data-i18n="checkin.med_na">N/A</span>
-                                </button>
-                                <button type="button" class="rating-button" data-category="${cat.id}" data-value="1" onclick="selectRating(this)">
-                                    <span data-i18n="checkin.med_no">No</span>
-                                </button>
-                                <button type="button" class="rating-button" data-category="${cat.id}" data-value="3" onclick="selectRating(this)">
-                                    <span data-i18n="checkin.med_partial">Partial</span>
-                                </button>
-                                <button type="button" class="rating-button" data-category="${cat.id}" data-value="5" onclick="selectRating(this)">
-                                    <span data-i18n="checkin.med_yes">Yes</span>
-                                </button>
-                            </div>
-                            <textarea class="notes-textarea" 
-                                      id="category-${cat.id}-notes" 
-                                      placeholder="${placeholderText}"></textarea>
-                        </div>
-                    `;
-                } else {
-                    // Regular 1-5 scale for other categories
-                    return `
-                        <div class="form-section" data-category-id="${cat.id}" data-category-name="${originalName}">
-                            <h3><span class="rating-emoji">${emoji}</span> <span>${translatedName}</span></h3>
-                            <p style="color: #666; font-size: 0.9rem;">${translatedDesc}</p>
-                            <div class="rating-scale">
-                                ${[1,2,3,4,5].map(val => `
-                                    <button type="button" 
-                                            class="rating-button" 
-                                            data-category="${cat.id}" 
-                                            data-value="${val}"
-                                            onclick="selectRating(this)">
-                                        <span class="rating-emoji">${getEmojiForValue(originalName, val)}</span>
-                                        <span>${val}</span>
-                                    </button>
-                                `).join('')}
-                            </div>
-                            <textarea class="notes-textarea" 
-                                      id="category-${cat.id}-notes" 
-                                      placeholder="${placeholderText}"></textarea>
-                        </div>
-                    `;
-                }
-            }).join('');
-            
-            // Re-apply translations for dynamically created content
-            if (window.i18n) {
-                i18n.translatePage();
-            }
+    const categoriesDiv = document.getElementById('dynamicCategories');
+    
+    if (!trackingCategories || trackingCategories.length === 0) {
+        categoriesDiv.innerHTML = '<p>No tracking categories available.</p>';
+        return;
+    }
+    
+    // Create HTML for all categories
+    categoriesDiv.innerHTML = trackingCategories.map(cat => {
+        // Translate both name and description on the frontend
+        const originalName = cat.original_name || cat.name;
+        const translatedName = translateCategoryName(originalName);
+        const translatedDesc = translateCategoryDescription(originalName, cat.description);
+        
+        // Choose emoji based on original category name
+        let emoji = '📊';
+        if (originalName.toLowerCase().includes('emotion')) emoji = '😊';
+        else if (originalName.toLowerCase().includes('medication')) emoji = '💊';
+        else if (originalName.toLowerCase().includes('activity') || originalName.toLowerCase().includes('physical')) emoji = '🏃';
+        else if (originalName.toLowerCase().includes('energy')) emoji = '⚡';
+        else if (originalName.toLowerCase().includes('social')) emoji = '👥';
+        else if (originalName.toLowerCase().includes('sleep')) emoji = '😴';
+        else if (originalName.toLowerCase().includes('anxiety')) emoji = '😰';
+        else if (originalName.toLowerCase().includes('motivation')) emoji = '🎯';
+        
+        // Get placeholder text
+        const placeholderText = i18n.t('client.notes_placeholder', { category: translatedName });
+        
+        // Special handling for medication category
+        if (originalName.toLowerCase().includes('medication')) {
+            return `
+                <div class="form-section" data-category-id="${cat.id}" data-category-name="${originalName}">
+                    <h3><span class="rating-emoji">${emoji}</span> <span>${translatedName}</span></h3>
+                    <p style="color: #666; font-size: 0.9rem;">${translatedDesc}</p>
+                    <div class="rating-scale">
+                        <button type="button" class="rating-button" data-category="${cat.id}" data-value="0" onclick="selectRating(this)">
+                            <span data-i18n="checkin.med_na">N/A</span>
+                        </button>
+                        <button type="button" class="rating-button" data-category="${cat.id}" data-value="1" onclick="selectRating(this)">
+                            <span data-i18n="checkin.med_no">No</span>
+                        </button>
+                        <button type="button" class="rating-button" data-category="${cat.id}" data-value="3" onclick="selectRating(this)">
+                            <span data-i18n="checkin.med_partial">Partial</span>
+                        </button>
+                        <button type="button" class="rating-button" data-category="${cat.id}" data-value="5" onclick="selectRating(this)">
+                            <span data-i18n="checkin.med_yes">Yes</span>
+                        </button>
+                    </div>
+                    <textarea class="notes-textarea" 
+                              id="category-${cat.id}-notes" 
+                              placeholder="${placeholderText}"></textarea>
+                </div>
+            `;
+        } else {
+            // Regular 1-5 scale for other categories
+            return `
+                <div class="form-section" data-category-id="${cat.id}" data-category-name="${originalName}">
+                    <h3><span class="rating-emoji">${emoji}</span> <span>${translatedName}</span></h3>
+                    <p style="color: #666; font-size: 0.9rem;">${translatedDesc}</p>
+                    <div class="rating-scale">
+                        ${[1,2,3,4,5].map(val => `
+                            <button type="button" 
+                                    class="rating-button" 
+                                    data-category="${cat.id}" 
+                                    data-value="${val}"
+                                    onclick="selectRating(this)">
+                                <span class="rating-emoji">${getEmojiForValue(originalName, val)}</span>
+                                <span>${val}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                    <textarea class="notes-textarea" 
+                              id="category-${cat.id}-notes" 
+                              placeholder="${placeholderText}"></textarea>
+                </div>
+            `;
         }
+    }).join('');
+    
+    // Re-apply translations for dynamically created content
+    if (window.i18n) {
+        i18n.translatePage();
+    }
+}
 
         // Helper function to get emoji for rating values
         function getEmojiForValue(categoryName, value) {
