@@ -1190,8 +1190,8 @@
             // Create HTML for all categories
             categoriesDiv.innerHTML = trackingCategories.map(cat => {
                 // Use the translated name that comes from the backend
-                const translatedName = cat.name; // Backend already translated it
-                const translatedDesc = cat.description || '';
+                const translatedName = translateCategoryName(cat.original_name || cat.name);
+                const translatedDesc = translateCategoryDescription(cat.original_name || cat.name, cat.description);
                 
                 // Choose emoji based on original category name
                 let emoji = '📊';
