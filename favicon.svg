@@ -1,0 +1,15 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="#4CAF50" stroke="#388E3C" stroke-width="2"/>
+  
+  <!-- Heart symbol representing care/therapy -->
+  <path d="M32 48 L18 34 C10 26 10 14 20 14 C26 14 32 20 32 20 C32 20 38 14 44 14 C54 14 54 26 46 34 L32 48 Z" 
+        fill="white" 
+        stroke="#388E3C" 
+        stroke-width="1"/>
+  
+  <!-- Small plus sign in the heart -->
+  <line x1="32" y1="26" x2="32" y2="34" stroke="#4CAF50" stroke-width="2" stroke-linecap="round"/>
+  <line x1="28" y1="30" x2="36" y2="30" stroke="#4CAF50" stroke-width="2" stroke-linecap="round"/>
+</svg>
