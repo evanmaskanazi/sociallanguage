@@ -640,84 +640,10 @@
             <div id="checkinForm" class="checkin-form">
                 <p style="color: #666; margin-bottom: 2rem;" data-i18n="client.checkin_intro">Take a moment to reflect on your day. Your responses help track your progress.</p>
 
-                <!-- Emotional State -->
-                <div class="form-section">
-                    <h3><span class="rating-emoji">😊</span> <span data-i18n="checkin.emotional">How is your emotional state?</span></h3>
-                    <div class="rating-scale">
-                        <button type="button" class="rating-button" data-category="emotional" data-value="1" onclick="selectRating(this)">
-                            <span class="rating-emoji">😢</span>
-                            <span>1</span>
-                        </button>
-                        <button type="button" class="rating-button" data-category="emotional" data-value="2" onclick="selectRating(this)">
-                            <span class="rating-emoji">😟</span>
-                            <span>2</span>
-                        </button>
-                        <button type="button" class="rating-button" data-category="emotional" data-value="3" onclick="selectRating(this)">
-                            <span class="rating-emoji">😐</span>
-                            <span>3</span>
-                        </button>
-                        <button type="button" class="rating-button" data-category="emotional" data-value="4" onclick="selectRating(this)">
-                            <span class="rating-emoji">🙂</span>
-                            <span>4</span>
-                        </button>
-                        <button type="button" class="rating-button" data-category="emotional" data-value="5" onclick="selectRating(this)">
-                            <span class="rating-emoji">😄</span>
-                            <span>5</span>
-                        </button>
-                    </div>
-                    <textarea class="notes-textarea" id="emotionalNotes" data-i18n-placeholder="client.emotional_notes_placeholder"></textarea>
+                <!-- Dynamic Categories Container -->
+                <div id="dynamicCategories">
+                    <!-- Categories will be loaded here dynamically -->
                 </div>
-
-                <!-- Medication Adherence -->
-                <div class="form-section">
-                    <h3><span class="rating-emoji">💊</span> <span data-i18n="checkin.medication">Did you take your medication as prescribed?</span></h3>
-                    <div class="rating-scale">
-                        <button type="button" class="rating-button" data-category="medication" data-value="0" onclick="selectRating(this)">
-                            <span data-i18n="checkin.med_na">N/A</span>
-                        </button>
-                        <button type="button" class="rating-button" data-category="medication" data-value="1" onclick="selectRating(this)">
-                            <span data-i18n="checkin.med_no">No</span>
-                        </button>
-                        <button type="button" class="rating-button" data-category="medication" data-value="3" onclick="selectRating(this)">
-                            <span data-i18n="checkin.med_partial">Partial</span>
-                        </button>
-                        <button type="button" class="rating-button" data-category="medication" data-value="5" onclick="selectRating(this)">
-                            <span data-i18n="checkin.med_yes">Yes</span>
-                        </button>
-                    </div>
-                    <textarea class="notes-textarea" id="medicationNotes" data-i18n-placeholder="client.medication_notes_placeholder"></textarea>
-                </div>
-
-                <!-- Physical Activity -->
-                <div class="form-section">
-                    <h3><span class="rating-emoji">🏃</span> <span data-i18n="checkin.activity">How active were you?</span></h3>
-                    <div class="rating-scale">
-                        <button type="button" class="rating-button" data-category="activity" data-value="1" onclick="selectRating(this)">
-                            <span class="rating-emoji">🛌</span>
-                            <span>1</span>
-                        </button>
-                        <button type="button" class="rating-button" data-category="activity" data-value="2" onclick="selectRating(this)">
-                            <span class="rating-emoji">🚶</span>
-                            <span>2</span>
-                        </button>
-                        <button type="button" class="rating-button" data-category="activity" data-value="3" onclick="selectRating(this)">
-                            <span class="rating-emoji">🚴</span>
-                            <span>3</span>
-                        </button>
-                        <button type="button" class="rating-button" data-category="activity" data-value="4" onclick="selectRating(this)">
-                            <span class="rating-emoji">🏃</span>
-                            <span>4</span>
-                        </button>
-                        <button type="button" class="rating-button" data-category="activity" data-value="5" onclick="selectRating(this)">
-                            <span class="rating-emoji">🏋️</span>
-                            <span>5</span>
-                        </button>
-                    </div>
-                    <textarea class="notes-textarea" id="activityNotes" data-i18n-placeholder="client.activity_notes_placeholder"></textarea>
-                </div>
-
-                <!-- Additional Tracking Categories -->
-                <div id="additionalCategories"></div>
 
                 <!-- Action Buttons -->
                 <div style="display: flex; gap: 1rem; margin-top: 2rem;">
@@ -1091,17 +1017,7 @@
             loadDashboard();
             setCurrentWeek();
             setToday();
-            
-            // Update placeholder translations
-            updatePlaceholders();
         });
-
-        // Update placeholders
-        function updatePlaceholders() {
-            document.getElementById('emotionalNotes').placeholder = i18n.t('client.emotional_notes_placeholder');
-            document.getElementById('medicationNotes').placeholder = i18n.t('client.medication_notes_placeholder');
-            document.getElementById('activityNotes').placeholder = i18n.t('client.activity_notes_placeholder');
-        }
 
         // Load dashboard data
         async function loadDashboard() {
@@ -1124,7 +1040,7 @@
                 clientData = data.client;
                 trackingCategories = data.tracking_categories;
                 weeklyGoals = data.weekly_goals;
-                console.log('Tracking categories received:', trackingCategories);
+
                 updateUI();
                 loadWeekView();
             } catch (error) {
@@ -1159,8 +1075,8 @@
             // Update overview goals list
             updateOverviewGoals();
 
-            // Setup additional tracking categories
-            setupAdditionalCategories();
+            // Setup ALL categories dynamically
+            setupAllCategories();
         }
 
         // Show tab
@@ -1183,6 +1099,100 @@
             } else if (tabName === 'goals') {
                 loadWeeklyGoals();
             }
+        }
+
+        // Setup all categories dynamically
+        function setupAllCategories() {
+            const categoriesDiv = document.getElementById('dynamicCategories');
+            
+            if (!trackingCategories || trackingCategories.length === 0) {
+                categoriesDiv.innerHTML = '<p>No tracking categories available.</p>';
+                return;
+            }
+            
+            // Create HTML for all categories
+            categoriesDiv.innerHTML = trackingCategories.map(cat => {
+                // Choose emoji based on category name
+                let emoji = '📊';
+                if (cat.name.toLowerCase().includes('emotion')) emoji = '😊';
+                else if (cat.name.toLowerCase().includes('medication')) emoji = '💊';
+                else if (cat.name.toLowerCase().includes('activity') || cat.name.toLowerCase().includes('physical')) emoji = '🏃';
+                else if (cat.name.toLowerCase().includes('energy')) emoji = '⚡';
+                else if (cat.name.toLowerCase().includes('social')) emoji = '👥';
+                else if (cat.name.toLowerCase().includes('sleep')) emoji = '😴';
+                else if (cat.name.toLowerCase().includes('anxiety')) emoji = '😰';
+                else if (cat.name.toLowerCase().includes('motivation')) emoji = '🎯';
+                
+                // Special handling for medication category
+                if (cat.name.toLowerCase().includes('medication')) {
+                    return `
+                        <div class="form-section" data-category-id="${cat.id}" data-category-name="${cat.name}">
+                            <h3><span class="rating-emoji">${emoji}</span> <span>${cat.name}</span></h3>
+                            <p style="color: #666; font-size: 0.9rem;">${cat.description || ''}</p>
+                            <div class="rating-scale">
+                                <button type="button" class="rating-button" data-category="${cat.id}" data-value="0" onclick="selectRating(this)">
+                                    <span data-i18n="checkin.med_na">N/A</span>
+                                </button>
+                                <button type="button" class="rating-button" data-category="${cat.id}" data-value="1" onclick="selectRating(this)">
+                                    <span data-i18n="checkin.med_no">No</span>
+                                </button>
+                                <button type="button" class="rating-button" data-category="${cat.id}" data-value="3" onclick="selectRating(this)">
+                                    <span data-i18n="checkin.med_partial">Partial</span>
+                                </button>
+                                <button type="button" class="rating-button" data-category="${cat.id}" data-value="5" onclick="selectRating(this)">
+                                    <span data-i18n="checkin.med_yes">Yes</span>
+                                </button>
+                            </div>
+                            <textarea class="notes-textarea" 
+                                      id="category-${cat.id}-notes" 
+                                      placeholder="Notes for ${cat.name} (optional)"></textarea>
+                        </div>
+                    `;
+                } else {
+                    // Regular 1-5 scale for other categories
+                    return `
+                        <div class="form-section" data-category-id="${cat.id}" data-category-name="${cat.name}">
+                            <h3><span class="rating-emoji">${emoji}</span> <span>${cat.name}</span></h3>
+                            <p style="color: #666; font-size: 0.9rem;">${cat.description || ''}</p>
+                            <div class="rating-scale">
+                                ${[1,2,3,4,5].map(val => `
+                                    <button type="button" 
+                                            class="rating-button" 
+                                            data-category="${cat.id}" 
+                                            data-value="${val}"
+                                            onclick="selectRating(this)">
+                                        <span class="rating-emoji">${getEmojiForValue(cat.name, val)}</span>
+                                        <span>${val}</span>
+                                    </button>
+                                `).join('')}
+                            </div>
+                            <textarea class="notes-textarea" 
+                                      id="category-${cat.id}-notes" 
+                                      placeholder="Notes for ${cat.name} (optional)"></textarea>
+                        </div>
+                    `;
+                }
+            }).join('');
+            
+            // Re-apply translations for dynamically created content
+            if (window.i18n) {
+                i18n.translatePage();
+            }
+        }
+
+        // Helper function to get emoji for rating values
+        function getEmojiForValue(categoryName, value) {
+            if (categoryName.toLowerCase().includes('emotion')) {
+                const emojis = ['😢', '😟', '😐', '🙂', '😄'];
+                return emojis[value - 1] || '';
+            } else if (categoryName.toLowerCase().includes('energy')) {
+                const emojis = ['🔋', '🔋', '⚡', '⚡', '⚡'];
+                return emojis[value - 1] || '';
+            } else if (categoryName.toLowerCase().includes('activity')) {
+                const emojis = ['🛌', '🚶', '🚴', '🏃', '🏋️'];
+                return emojis[value - 1] || '';
+            }
+            return '';
         }
 
         // Calendar Week View Functions
@@ -1299,39 +1309,6 @@
             }
         }
 
-        function setupAdditionalCategories() {
-    const additionalDiv = document.getElementById('additionalCategories');
-    
-    // Debug log
-    console.log('All tracking categories:', trackingCategories);
-    
-    // Don't filter - show ALL categories
-    const additionalCategories = trackingCategories;
-    
-    if (additionalCategories.length > 0) {
-        additionalDiv.innerHTML = additionalCategories.map(cat => `
-            <div class="form-section">
-                <h3>${cat.name}</h3>
-                <p style="color: #666; font-size: 0.9rem;">${cat.description}</p>
-                <div class="rating-scale">
-                    ${[1,2,3,4,5].map(val => `
-                        <button type="button" 
-                                class="rating-button" 
-                                data-category="cat-${cat.id}" 
-                                data-value="${val}"
-                                onclick="selectRating(this)">
-                            <span>${val}</span>
-                        </button>
-                    `).join('')}
-                </div>
-                <textarea class="notes-textarea" 
-                          id="category-${cat.id}-notes" 
-                          placeholder="Notes for ${cat.name} (optional)"></textarea>
-            </div>
-        `).join('');
-    }
-}
-
         function selectRating(button) {
             const category = button.dataset.category;
             
@@ -1359,36 +1336,39 @@
                     return;
                 }
                 
-                // Gather basic ratings
-                const emotionalValue = document.querySelector('.rating-button[data-category="emotional"].selected')?.dataset.value;
-                const medicationValue = document.querySelector('.rating-button[data-category="medication"].selected')?.dataset.value;
-                const activityValue = document.querySelector('.rating-button[data-category="activity"].selected')?.dataset.value;
+                // Gather all category responses
+                const categoryResponses = {};
+                const categoryNotes = {};
+                
+                // Process each category
+                trackingCategories.forEach(cat => {
+                    const selected = document.querySelector(`.rating-button[data-category="${cat.id}"].selected`);
+                    if (selected) {
+                        categoryResponses[cat.id] = parseInt(selected.dataset.value);
+                    }
+                    
+                    // Get notes
+                    const notesElement = document.getElementById(`category-${cat.id}-notes`);
+                    if (notesElement && notesElement.value) {
+                        categoryNotes[cat.id] = notesElement.value;
+                    }
+                });
 
-                if (!emotionalValue || !medicationValue || !activityValue) {
+                // Check if at least some categories were filled
+                if (Object.keys(categoryResponses).length === 0) {
                     showMessage(i18n.t('client.complete_ratings'), 'error');
                     return;
                 }
 
-                // Gather category responses
-                const categoryResponses = {};
-                trackingCategories.forEach(cat => {
-                    const selected = document.querySelector(`.rating-button[data-category="cat-${cat.id}"].selected`);
-                    if (selected) {
-                        categoryResponses[cat.id] = parseInt(selected.dataset.value);
-                    }
-                });
-
                 // Gather goal completions for the selected date
                 const goalCompletions = {};
                 weeklyGoals.forEach(goal => {
-                    // Only include if the date falls within the goal's week
                     const goalWeekStart = new Date(goal.week_start);
                     const goalWeekEnd = new Date(goalWeekStart);
                     goalWeekEnd.setDate(goalWeekEnd.getDate() + 6);
                     
                     const selectedDateObj = new Date(checkinDate);
                     if (selectedDateObj >= goalWeekStart && selectedDateObj <= goalWeekEnd) {
-                        // Check if there's a checkbox for this goal
                         const checkbox = document.querySelector(`#goal-${goal.id}`);
                         if (checkbox) {
                             goalCompletions[goal.id] = checkbox.checked;
@@ -1396,15 +1376,11 @@
                     }
                 });
 
+                // Prepare the check-in data
                 const checkinData = {
                     date: checkinDate,
-                    emotional_value: parseInt(emotionalValue),
-                    emotional_notes: document.getElementById('emotionalNotes').value,
-                    medication_value: parseInt(medicationValue),
-                    medication_notes: document.getElementById('medicationNotes').value,
-                    activity_value: parseInt(activityValue),
-                    activity_notes: document.getElementById('activityNotes').value,
                     category_responses: categoryResponses,
+                    category_notes: categoryNotes,
                     goal_completions: goalCompletions
                 };
 
@@ -1566,7 +1542,7 @@
                     // Get filename from response headers
                     const contentDisposition = response.headers.get('content-disposition');
                     const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
-                    const filename = filenameMatch ? filenameMatch[1] : `client_report_${week}.xlsx`;
+                    const filename = filenameMatch ? filenameMatch[1] : `my_therapy_report_${week}.xlsx`;
                     
                     // Download file
                     const blob = await response.blob();
