@@ -401,7 +401,20 @@ def client_dashboard_page():
     except Exception as e:
         app.logger.error(f"Error serving client_dashboard.html: {e}")
         return f"Error: {str(e)}", 500
-
+    # ADD THE NEW ROUTE HERE:
+@app.route('/i18n.js')
+def serve_i18n():
+    """Serve the i18n.js file"""
+    try:
+        file_path = os.path.join(BASE_DIR, 'i18n.js')
+        if os.path.exists(file_path):
+            return send_file(file_path, mimetype='application/javascript')
+        else:
+            app.logger.error(f"i18n.js not found at {file_path}")
+            return "i18n.js not found", 404
+    except Exception as e:
+        app.logger.error(f"Error serving i18n.js: {e}")
+        return f"Error: {str(e)}", 500
 
 # ============= API ENDPOINTS =============
 
