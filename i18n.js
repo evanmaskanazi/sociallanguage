@@ -4,10 +4,10 @@
 const i18n = {
     // Current language
     currentLang: localStorage.getItem('userLanguage') || 'en',
-    
+
     // RTL languages
     rtlLanguages: ['he', 'ar'],
-    
+
     // Translations
     translations: {
         en: {
@@ -28,7 +28,7 @@ const i18n = {
             'btn.delete': 'Delete',
             'btn.download': 'Download',
             'btn.generate': 'Generate',
-            
+
             // Navigation
             'nav.overview': 'Overview',
             'nav.clients': 'Clients',
@@ -38,7 +38,7 @@ const i18n = {
             'nav.reports': 'Reports',
             'nav.add_client': 'Add Client',
             'nav.settings': 'Settings',
-            
+
             // Login Page
             'login.title': 'Login to Your Account',
             'login.email': 'Email',
@@ -50,7 +50,7 @@ const i18n = {
             'login.welcome_back': 'Welcome back!',
             'login.instruction': 'Therapists and clients can login here with their credentials.',
             'login.forgot_coming_soon': 'Password reset functionality coming soon!',
-            
+
             // Registration
             'register.title': 'Create Account',
             'register.therapist': 'Therapist Registration',
@@ -68,7 +68,7 @@ const i18n = {
             'register.password_length': 'Password must be at least 8 characters long',
             'register.license_exists': 'This license number is already registered. Please use a different one.',
             'register.email_exists': 'This email is already registered. Please use the login tab.',
-            
+
             // Dashboard
             'dashboard.welcome': 'Welcome back',
             'dashboard.good_morning': 'Good morning',
@@ -80,7 +80,7 @@ const i18n = {
             'dashboard.active_clients': 'Active Clients',
             'dashboard.recent_checkins': 'Recent Check-ins',
             'dashboard.pending_missions': 'Pending Missions',
-            
+
             // Client Management
             'client.serial': 'Client ID',
             'client.start_date': 'Start Date',
@@ -94,7 +94,7 @@ const i18n = {
             'client.view': 'View',
             'client.add_goal': 'Add Goal',
             'client.add_note': 'Add Note',
-            
+
             // Check-in
             'checkin.title': 'Daily Check-in',
             'checkin.date': 'Date',
@@ -111,14 +111,14 @@ const i18n = {
             'checkin.med_no': 'No',
             'checkin.med_partial': 'Partial',
             'checkin.med_na': 'N/A',
-            
+
             // Goals
             'goals.weekly': 'Weekly Goals',
             'goals.add': 'Add New Goal',
             'goals.completed': 'Completed',
             'goals.pending': 'Pending',
             'goals.text': 'Goal Description',
-            
+
             // Reports
             'reports.generate': 'Generate Report',
             'reports.weekly': 'Weekly Report',
@@ -126,7 +126,7 @@ const i18n = {
             'reports.select_week': 'Select Week',
             'reports.excel': 'Download Excel',
             'reports.email': 'Email Report',
-            
+
             // Messages
             'msg.success': 'Success!',
             'msg.error': 'Error',
@@ -139,7 +139,7 @@ const i18n = {
             'msg.login_success': 'Login successful! Redirecting...',
             'msg.registration_success': 'Registration successful! Logging you in...',
             'msg.network_error': 'Network error. Please try again.',
-            
+
             // Days of week
             'day.monday': 'Monday',
             'day.tuesday': 'Tuesday',
@@ -155,7 +155,7 @@ const i18n = {
             'day.fri': 'Fri',
             'day.sat': 'Sat',
             'day.sun': 'Sun',
-            
+
             // Months
             'month.january': 'January',
             'month.february': 'February',
@@ -169,7 +169,7 @@ const i18n = {
             'month.october': 'October',
             'month.november': 'November',
             'month.december': 'December',
-            
+
             // Tracking Categories
             'category.emotion_level': 'Emotion Level',
             'category.emotion_level_desc': 'Overall emotional state',
@@ -187,7 +187,7 @@ const i18n = {
             'category.medication_desc': 'Medication adherence',
             'category.physical_activity': 'Physical Activity',
             'category.physical_activity_desc': 'Physical activity level',
-            
+
             // Client specific
             'client.dashboard_title': 'My Therapy Journey',
             'client.encouragement': 'Your journey to wellness continues. Every step counts!',
@@ -246,7 +246,7 @@ const i18n = {
             'client.password_too_short': 'Password must be at least 8 characters long',
             'client.incorrect_password': 'Current password is incorrect',
             'client.error_changing_password': 'Error changing password:',
-            
+
             // Therapist specific
             'therapist.dashboard_title': 'Therapist Dashboard',
             'therapist.dashboard_overview': 'Dashboard Overview',
@@ -323,7 +323,7 @@ const i18n = {
             'therapist.recent_notes': 'Recent Notes & Missions',
             'therapist.mission': 'MISSION',
             'therapist.no_notes': 'No notes yet',
-            
+
             // Index page
             'hero.subtitle': 'A comprehensive therapy companion system for therapists and clients',
             'hero.get_started': 'Get Started',
@@ -352,7 +352,7 @@ const i18n = {
             'how.step4.desc': 'Therapists review progress, add notes, and adjust treatment plans as needed.',
             'footer.copyright': '© 2024 Therapeutic Companion. Supporting wellness journeys with care and technology.'
         },
-        
+
         he: {
             // Common
             'app.title': 'מלווה טיפולי',
@@ -371,7 +371,7 @@ const i18n = {
             'btn.delete': 'מחיקה',
             'btn.download': 'הורדה',
             'btn.generate': 'יצירה',
-            
+
             // Navigation
             'nav.overview': 'סקירה כללית',
             'nav.clients': 'מטופלים',
@@ -381,7 +381,7 @@ const i18n = {
             'nav.reports': 'דוחות',
             'nav.add_client': 'הוספת מטופל',
             'nav.settings': 'הגדרות',
-            
+
             // Login Page
             'login.title': 'התחברות לחשבון',
             'login.email': 'דוא״ל',
@@ -393,7 +393,7 @@ const i18n = {
             'login.welcome_back': 'ברוך הבא!',
             'login.instruction': 'מטפלים ומטופלים יכולים להתחבר כאן עם האישורים שלהם.',
             'login.forgot_coming_soon': 'פונקציית איפוס סיסמה תגיע בקרוב!',
-            
+
             // Registration
             'register.title': 'יצירת חשבון',
             'register.therapist': 'רישום מטפל',
@@ -411,7 +411,7 @@ const i18n = {
             'register.password_length': 'הסיסמה חייבת להיות באורך של לפחות 8 תווים',
             'register.license_exists': 'מספר רישיון זה כבר רשום. אנא השתמש במספר אחר.',
             'register.email_exists': 'כתובת דוא״ל זו כבר רשומה. אנא השתמש בלשונית ההתחברות.',
-            
+
             // Dashboard
             'dashboard.welcome': 'ברוך הבא',
             'dashboard.good_morning': 'בוקר טוב',
@@ -423,7 +423,7 @@ const i18n = {
             'dashboard.active_clients': 'מטופלים פעילים',
             'dashboard.recent_checkins': 'צ׳ק-אין אחרונים',
             'dashboard.pending_missions': 'משימות ממתינות',
-            
+
             // Client Management
             'client.serial': 'מזהה מטופל',
             'client.start_date': 'תאריך התחלה',
@@ -437,7 +437,7 @@ const i18n = {
             'client.view': 'צפייה',
             'client.add_goal': 'הוספת יעד',
             'client.add_note': 'הוספת הערה',
-            
+
             // Check-in
             'checkin.title': 'צ׳ק-אין יומי',
             'checkin.date': 'תאריך',
@@ -454,14 +454,14 @@ const i18n = {
             'checkin.med_no': 'לא',
             'checkin.med_partial': 'חלקי',
             'checkin.med_na': 'לא רלוונטי',
-            
+
             // Goals
             'goals.weekly': 'יעדים שבועיים',
             'goals.add': 'הוספת יעד חדש',
             'goals.completed': 'הושלם',
             'goals.pending': 'ממתין',
             'goals.text': 'תיאור היעד',
-            
+
             // Reports
             'reports.generate': 'יצירת דוח',
             'reports.weekly': 'דוח שבועי',
@@ -469,7 +469,7 @@ const i18n = {
             'reports.select_week': 'בחר שבוע',
             'reports.excel': 'הורדת אקסל',
             'reports.email': 'שליחת דוח במייל',
-            
+
             // Messages
             'msg.success': 'הצלחה!',
             'msg.error': 'שגיאה',
@@ -482,7 +482,7 @@ const i18n = {
             'msg.login_success': 'התחברות הצליחה! מעביר...',
             'msg.registration_success': 'ההרשמה הצליחה! מחבר אותך...',
             'msg.network_error': 'שגיאת רשת. אנא נסה שוב.',
-            
+
             // Days of week
             'day.monday': 'יום שני',
             'day.tuesday': 'יום שלישי',
@@ -498,7 +498,7 @@ const i18n = {
             'day.fri': 'ו׳',
             'day.sat': 'ש׳',
             'day.sun': 'א׳',
-            
+
             // Months
             'month.january': 'ינואר',
             'month.february': 'פברואר',
@@ -512,7 +512,7 @@ const i18n = {
             'month.october': 'אוקטובר',
             'month.november': 'נובמבר',
             'month.december': 'דצמבר',
-            
+
             // Tracking Categories
             'category.emotion_level': 'רמה רגשית',
             'category.emotion_level_desc': 'מצב רגשי כללי',
@@ -530,7 +530,7 @@ const i18n = {
             'category.medication_desc': 'היענות לתרופות',
             'category.physical_activity': 'פעילות גופנית',
             'category.physical_activity_desc': 'רמת פעילות גופנית',
-            
+
             // Client specific
             'client.dashboard_title': 'המסע הטיפולי שלי',
             'client.encouragement': 'המסע שלך לבריאות ממשיך. כל צעד נחשב!',
@@ -589,7 +589,7 @@ const i18n = {
             'client.password_too_short': 'הסיסמה חייבת להיות באורך של לפחות 8 תווים',
             'client.incorrect_password': 'הסיסמה הנוכחית שגויה',
             'client.error_changing_password': 'שגיאה בשינוי הסיסמה:',
-            
+
             // Therapist specific
             'therapist.dashboard_title': 'לוח בקרה למטפל',
             'therapist.dashboard_overview': 'סקירת לוח בקרה',
@@ -666,7 +666,7 @@ const i18n = {
             'therapist.recent_notes': 'הערות ומשימות אחרונות',
             'therapist.mission': 'משימה',
             'therapist.no_notes': 'אין הערות עדיין',
-            
+
             // Index page
             'hero.subtitle': 'מערכת ליווי טיפולית מקיפה למטפלים ומטופלים',
             'hero.get_started': 'התחל עכשיו',
@@ -695,7 +695,7 @@ const i18n = {
             'how.step4.desc': 'מטפלים סוקרים התקדמות, מוסיפים הערות ומתאימים תוכניות טיפול לפי הצורך.',
             'footer.copyright': '© 2024 מלווה טיפולי. תומכים במסעות בריאות עם אכפתיות וטכנולוגיה.'
         },
-        
+
         ru: {
             // Common
             'app.title': 'Терапевтический Компаньон',
@@ -714,7 +714,7 @@ const i18n = {
             'btn.delete': 'Удалить',
             'btn.download': 'Скачать',
             'btn.generate': 'Создать',
-            
+
             // Navigation
             'nav.overview': 'Обзор',
             'nav.clients': 'Клиенты',
@@ -724,7 +724,7 @@ const i18n = {
             'nav.reports': 'Отчеты',
             'nav.add_client': 'Добавить клиента',
             'nav.settings': 'Настройки',
-            
+
             // Login Page
             'login.title': 'Вход в аккаунт',
             'login.email': 'Электронная почта',
@@ -736,7 +736,7 @@ const i18n = {
             'login.welcome_back': 'С возвращением!',
             'login.instruction': 'Терапевты и клиенты могут войти здесь со своими учетными данными.',
             'login.forgot_coming_soon': 'Функция сброса пароля скоро появится!',
-            
+
             // Registration
             'register.title': 'Создать аккаунт',
             'register.therapist': 'Регистрация терапевта',
@@ -754,7 +754,7 @@ const i18n = {
             'register.password_length': 'Пароль должен содержать не менее 8 символов',
             'register.license_exists': 'Этот номер лицензии уже зарегистрирован. Пожалуйста, используйте другой.',
             'register.email_exists': 'Этот email уже зарегистрирован. Пожалуйста, используйте вкладку входа.',
-            
+
             // Dashboard
             'dashboard.welcome': 'С возвращением',
             'dashboard.good_morning': 'Доброе утро',
@@ -766,7 +766,7 @@ const i18n = {
             'dashboard.active_clients': 'Активные клиенты',
             'dashboard.recent_checkins': 'Недавние отметки',
             'dashboard.pending_missions': 'Ожидающие задания',
-            
+
             // Client Management
             'client.serial': 'ID клиента',
             'client.start_date': 'Дата начала',
@@ -780,7 +780,7 @@ const i18n = {
             'client.view': 'Просмотр',
             'client.add_goal': 'Добавить цель',
             'client.add_note': 'Добавить заметку',
-            
+
             // Check-in
             'checkin.title': 'Ежедневная отметка',
             'checkin.date': 'Дата',
@@ -797,14 +797,14 @@ const i18n = {
             'checkin.med_no': 'Нет',
             'checkin.med_partial': 'Частично',
             'checkin.med_na': 'Не применимо',
-            
+
             // Goals
             'goals.weekly': 'Недельные цели',
             'goals.add': 'Добавить новую цель',
             'goals.completed': 'Выполнено',
             'goals.pending': 'В ожидании',
             'goals.text': 'Описание цели',
-            
+
             // Reports
             'reports.generate': 'Создать отчет',
             'reports.weekly': 'Недельный отчет',
@@ -812,7 +812,7 @@ const i18n = {
             'reports.select_week': 'Выберите неделю',
             'reports.excel': 'Скачать Excel',
             'reports.email': 'Отправить отчет',
-            
+
             // Messages
             'msg.success': 'Успешно!',
             'msg.error': 'Ошибка',
@@ -825,7 +825,7 @@ const i18n = {
             'msg.login_success': 'Вход выполнен успешно! Перенаправление...',
             'msg.registration_success': 'Регистрация успешна! Выполняется вход...',
             'msg.network_error': 'Ошибка сети. Пожалуйста, попробуйте еще раз.',
-            
+
             // Days of week
             'day.monday': 'Понедельник',
             'day.tuesday': 'Вторник',
@@ -841,7 +841,7 @@ const i18n = {
             'day.fri': 'Пт',
             'day.sat': 'Сб',
             'day.sun': 'Вс',
-            
+
             // Months
             'month.january': 'Январь',
             'month.february': 'Февраль',
@@ -855,7 +855,7 @@ const i18n = {
             'month.october': 'Октябрь',
             'month.november': 'Ноябрь',
             'month.december': 'Декабрь',
-            
+
             // Tracking Categories
             'category.emotion_level': 'Эмоциональный уровень',
             'category.emotion_level_desc': 'Общее эмоциональное состояние',
@@ -873,7 +873,7 @@ const i18n = {
             'category.medication_desc': 'Приверженность лечению',
             'category.physical_activity': 'Физическая активность',
             'category.physical_activity_desc': 'Уровень физической активности',
-            
+
             // Client specific
             'client.dashboard_title': 'Мой терапевтический путь',
             'client.encouragement': 'Ваш путь к здоровью продолжается. Каждый шаг важен!',
@@ -932,7 +932,7 @@ const i18n = {
             'client.password_too_short': 'Пароль должен содержать не менее 8 символов',
             'client.incorrect_password': 'Текущий пароль неверный',
             'client.error_changing_password': 'Ошибка при изменении пароля:',
-            
+
             // Therapist specific
             'therapist.dashboard_title': 'Панель терапевта',
             'therapist.dashboard_overview': 'Обзор панели',
@@ -1009,7 +1009,7 @@ const i18n = {
             'therapist.recent_notes': 'Недавние заметки и миссии',
             'therapist.mission': 'МИССИЯ',
             'therapist.no_notes': 'Заметок пока нет',
-            
+
             // Index page
             'hero.subtitle': 'Комплексная система терапевтического сопровождения для терапевтов и клиентов',
             'hero.get_started': 'Начать',
@@ -1038,7 +1038,7 @@ const i18n = {
             'how.step4.desc': 'Терапевты просматривают прогресс, добавляют заметки и корректируют планы лечения по мере необходимости.',
             'footer.copyright': '© 2024 Терапевтический Компаньон. Поддерживаем путь к здоровью с заботой и технологиями.'
         },
-        
+
         ar: {
             // Common
             'app.title': 'الرفيق العلاجي',
@@ -1057,7 +1057,7 @@ const i18n = {
             'btn.delete': 'حذف',
             'btn.download': 'تحميل',
             'btn.generate': 'إنشاء',
-            
+
             // Navigation
             'nav.overview': 'نظرة عامة',
             'nav.clients': 'العملاء',
@@ -1067,7 +1067,7 @@ const i18n = {
             'nav.reports': 'التقارير',
             'nav.add_client': 'إضافة عميل',
             'nav.settings': 'الإعدادات',
-            
+
             // Login Page
             'login.title': 'تسجيل الدخول إلى حسابك',
             'login.email': 'البريد الإلكتروني',
@@ -1079,7 +1079,7 @@ const i18n = {
             'login.welcome_back': 'مرحباً بعودتك!',
             'login.instruction': 'يمكن للمعالجين والعملاء تسجيل الدخول هنا باستخدام بيانات الاعتماد الخاصة بهم.',
             'login.forgot_coming_soon': 'وظيفة إعادة تعيين كلمة المرور قادمة قريباً!',
-            
+
             // Registration
             'register.title': 'إنشاء حساب',
             'register.therapist': 'تسجيل المعالج',
@@ -1097,7 +1097,7 @@ const i18n = {
             'register.password_length': 'يجب أن تكون كلمة المرور 8 أحرف على الأقل',
             'register.license_exists': 'رقم الترخيص هذا مسجل بالفعل. يرجى استخدام رقم آخر.',
             'register.email_exists': 'هذا البريد الإلكتروني مسجل بالفعل. يرجى استخدام علامة تبويب تسجيل الدخول.',
-            
+
             // Dashboard
             'dashboard.welcome': 'مرحباً بعودتك',
             'dashboard.good_morning': 'صباح الخير',
@@ -1109,7 +1109,7 @@ const i18n = {
             'dashboard.active_clients': 'العملاء النشطون',
             'dashboard.recent_checkins': 'تسجيلات الحضور الأخيرة',
             'dashboard.pending_missions': 'المهام المعلقة',
-            
+
             // Client Management
             'client.serial': 'معرف العميل',
             'client.start_date': 'تاريخ البدء',
@@ -1123,7 +1123,7 @@ const i18n = {
             'client.view': 'عرض',
             'client.add_goal': 'إضافة هدف',
             'client.add_note': 'إضافة ملاحظة',
-            
+
             // Check-in
             'checkin.title': 'تسجيل الحضور اليومي',
             'checkin.date': 'التاريخ',
@@ -1140,14 +1140,14 @@ const i18n = {
             'checkin.med_no': 'لا',
             'checkin.med_partial': 'جزئي',
             'checkin.med_na': 'غير منطبق',
-            
+
             // Goals
             'goals.weekly': 'الأهداف الأسبوعية',
             'goals.add': 'إضافة هدف جديد',
             'goals.completed': 'مكتمل',
             'goals.pending': 'معلق',
             'goals.text': 'وصف الهدف',
-            
+
             // Reports
             'reports.generate': 'إنشاء تقرير',
             'reports.weekly': 'التقرير الأسبوعي',
@@ -1155,7 +1155,7 @@ const i18n = {
             'reports.select_week': 'اختر الأسبوع',
             'reports.excel': 'تحميل Excel',
             'reports.email': 'إرسال التقرير بالبريد',
-            
+
             // Messages
             'msg.success': 'نجح!',
             'msg.error': 'خطأ',
@@ -1168,7 +1168,7 @@ const i18n = {
             'msg.login_success': 'تم تسجيل الدخول بنجاح! جاري التحويل...',
             'msg.registration_success': 'تم التسجيل بنجاح! جاري تسجيل دخولك...',
             'msg.network_error': 'خطأ في الشبكة. يرجى المحاولة مرة أخرى.',
-            
+
             // Days of week
             'day.monday': 'الإثنين',
             'day.tuesday': 'الثلاثاء',
@@ -1184,7 +1184,7 @@ const i18n = {
             'day.fri': 'جم',
             'day.sat': 'سب',
             'day.sun': 'أح',
-            
+
             // Months
             'month.january': 'يناير',
             'month.february': 'فبراير',
@@ -1198,7 +1198,7 @@ const i18n = {
             'month.october': 'أكتوبر',
             'month.november': 'نوفمبر',
             'month.december': 'ديسمبر',
-            
+
             // Tracking Categories
             'category.emotion_level': 'المستوى العاطفي',
             'category.emotion_level_desc': 'الحالة العاطفية العامة',
@@ -1216,7 +1216,7 @@ const i18n = {
             'category.medication_desc': 'الالتزام بالأدوية',
             'category.physical_activity': 'النشاط البدني',
             'category.physical_activity_desc': 'مستوى النشاط البدني',
-            
+
             // Client specific
             'client.dashboard_title': 'رحلتي العلاجية',
             'client.encouragement': 'رحلتك نحو العافية مستمرة. كل خطوة مهمة!',
@@ -1275,7 +1275,7 @@ const i18n = {
             'client.password_too_short': 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل',
             'client.incorrect_password': 'كلمة المرور الحالية غير صحيحة',
             'client.error_changing_password': 'خطأ في تغيير كلمة المرور:',
-            
+
             // Therapist specific
             'therapist.dashboard_title': 'لوحة تحكم المعالج',
             'therapist.dashboard_overview': 'نظرة عامة على لوحة التحكم',
@@ -1352,7 +1352,7 @@ const i18n = {
             'therapist.recent_notes': 'الملاحظات والمهام الأخيرة',
             'therapist.mission': 'مهمة',
             'therapist.no_notes': 'لا توجد ملاحظات بعد',
-            
+
             // Index page
             'hero.subtitle': 'نظام رفيق علاجي شامل للمعالجين والعملاء',
             'hero.get_started': 'ابدأ الآن',
@@ -1382,60 +1382,59 @@ const i18n = {
             'footer.copyright': '© 2024 الرفيق العلاجي. ندعم رحلات العافية بالرعاية والتكنولوجيا.'
         }
     },
-    
+
     // Initialize i18n
     init() {
         console.log('i18n.init() called');
-        
+
         // Set initial language from localStorage or browser
         const savedLang = localStorage.getItem('userLanguage');
         const browserLang = navigator.language.split('-')[0];
-        
+
         if (savedLang && this.translations[savedLang]) {
             this.currentLang = savedLang;
         } else if (this.translations[browserLang]) {
             this.currentLang = browserLang;
         }
-        
+
         console.log('Current language set to:', this.currentLang);
-        
+
         // Apply RTL if needed
         this.applyRTL();
-        
+
         // Force initialize language switcher after a short delay to ensure DOM is ready
         setTimeout(() => {
             console.log('Attempting to initialize language switcher...');
             this.initLanguageSwitcher();
         }, 100);
-        
+
         // Translate page
         this.translatePage();
     },
-    
+
     // Get translation
     t(key, replacements = {}) {
-        const translation = this.translations[this.currentLang]?.[key] || 
-                          this.translations.en[key] || 
+        const translation = this.translations[this.currentLang]?.[key] ||
+                          this.translations.en[key] ||
                           key;
-        
+
         // If no replacements, return translation as-is
         if (!replacements || Object.keys(replacements).length === 0) {
             return translation;
         }
-        
+
         // Replace placeholders like {name} with values
         let result = translation;
         for (const [placeholder, value] of Object.entries(replacements)) {
             // Properly escape special regex characters
-            const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\            'category.anxiety_level': 'Уровень тревожности',
-            'category.anxiety_level_desc': 'Уровень испытываемой тревоги',
-            'category.motivation');
+            const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
             result = result.replace(new RegExp(`\\{${escapedPlaceholder}\\}`, 'g'), value);
         }
-        
+
         return result;
     },
-    
+
     // Change language
     setLanguage(lang) {
         if (this.translations[lang]) {
@@ -1443,7 +1442,7 @@ const i18n = {
             localStorage.setItem('userLanguage', lang);
             this.applyRTL();
             this.translatePage();
-            
+
             // Update language switcher
             const switcher = document.getElementById('languageSwitcher');
             if (switcher) {
@@ -1451,43 +1450,43 @@ const i18n = {
             }
         }
     },
-    
+
     // Apply RTL
     applyRTL() {
         const isRTL = this.rtlLanguages.includes(this.currentLang);
         document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
         document.documentElement.lang = this.currentLang;
-        
+
         // Add RTL class for additional styling
         document.body.classList.toggle('rtl', isRTL);
     },
-    
+
     // Translate entire page
     translatePage() {
         // Translate elements with data-i18n attribute
         document.querySelectorAll('[data-i18n]').forEach(element => {
             const key = element.getAttribute('data-i18n');
             const translation = this.t(key);
-            
+
             if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
                 element.placeholder = translation;
             } else {
                 element.textContent = translation;
             }
         });
-        
+
         // Translate elements with data-i18n-html (for HTML content)
         document.querySelectorAll('[data-i18n-html]').forEach(element => {
             const key = element.getAttribute('data-i18n-html');
             element.innerHTML = this.t(key);
         });
-        
+
         // Translate elements with data-i18n-placeholder
         document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
             const key = element.getAttribute('data-i18n-placeholder');
             element.placeholder = this.t(key);
         });
-        
+
         // Update page title
         const titleElement = document.querySelector('title');
         if (titleElement) {
@@ -1495,23 +1494,23 @@ const i18n = {
             titleElement.textContent = this.t('app.title') + (baseTitle ? ' - ' + baseTitle : '');
         }
     },
-    
+
     // Initialize language switcher
     initLanguageSwitcher() {
         console.log('initLanguageSwitcher() called');
-        
+
         // Remove any existing language switcher first
         const existing = document.getElementById('languageSwitcher');
         if (existing) {
             console.log('Removing existing language switcher');
             existing.remove();
         }
-        
+
         // Create language switcher
         const switcher = document.createElement('select');
         switcher.id = 'languageSwitcher';
         switcher.className = 'language-switcher';
-        
+
         // Add options
         const languages = [
             { code: 'en', name: 'English', flag: '🇬🇧' },
@@ -1519,7 +1518,7 @@ const i18n = {
             { code: 'ru', name: 'Русский', flag: '🇷🇺' },
             { code: 'ar', name: 'العربية', flag: '🇸🇦' }
         ];
-        
+
         languages.forEach(lang => {
             const option = document.createElement('option');
             option.value = lang.code;
@@ -1529,12 +1528,12 @@ const i18n = {
             }
             switcher.appendChild(option);
         });
-        
+
         // Add change event
         switcher.addEventListener('change', (e) => {
             this.setLanguage(e.target.value);
         });
-        
+
         // Add styles if they don't exist
         if (!document.getElementById('i18n-styles')) {
             const style = document.createElement('style');
@@ -1553,51 +1552,51 @@ const i18n = {
                     cursor: pointer;
                     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
                 }
-                
+
                 .rtl .language-switcher {
                     left: 1rem;
                     right: auto;
                 }
-                
+
                 /* Adjust header for language switcher */
                 .header-content {
                     padding-right: 150px;
                 }
-                
+
                 .rtl .header-content {
                     padding-right: 0;
                     padding-left: 150px;
                 }
-                
+
                 /* RTL specific styles */
                 .rtl {
                     text-align: right;
                 }
-                
+
                 .rtl .stats-grid,
                 .rtl .progress-grid,
                 .rtl .week-view {
                     direction: ltr;
                 }
-                
+
                 .rtl .action-buttons,
                 .rtl .search-bar {
                     flex-direction: row-reverse;
                 }
-                
+
                 .rtl .stat-card,
                 .rtl .progress-card {
                     text-align: right;
                 }
-                
+
                 .rtl .modal-header {
                     flex-direction: row-reverse;
                 }
-                
+
                 .rtl table {
                     direction: rtl;
                 }
-                
+
                 .rtl th,
                 .rtl td {
                     text-align: right;
@@ -1605,35 +1604,35 @@ const i18n = {
             `;
             document.head.appendChild(style);
         }
-        
+
         // Add to page
         document.body.appendChild(switcher);
         console.log('Language switcher created and added to page');
-        
+
         // If there's a backup switcher, hide it
         const backup = document.getElementById('languageSwitcherBackup');
         if (backup) {
             backup.style.display = 'none';
         }
     },
-    
+
     // Helper to format dates according to locale
     formatDate(date, format = 'short') {
         const d = new Date(date);
-        const options = format === 'short' 
+        const options = format === 'short'
             ? { year: 'numeric', month: '2-digit', day: '2-digit' }
             : { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            
+
         return d.toLocaleDateString(this.currentLang, options);
     },
-    
+
     // Get day name
     getDayName(dayIndex, short = false) {
         const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
         const key = short ? `day.${days[dayIndex].substr(0, 3)}` : `day.${days[dayIndex]}`;
         return this.t(key);
     },
-    
+
     // Get month name
     getMonthName(monthIndex) {
         const months = ['january', 'february', 'march', 'april', 'may', 'june',
