@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Therapist Dashboard - Therapeutic Companion</title>
-    
+
     <!-- Add i18n script -->
     <script src="i18n.js"></script>
-    
+
     <style>
         * {
             margin: 0;
@@ -672,7 +672,7 @@
         <!-- Overview Tab -->
         <div id="overview" class="tab-content active">
             <h2 data-i18n="therapist.dashboard_overview">Dashboard Overview</h2>
-            
+
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon clients">👥</div>
@@ -681,7 +681,7 @@
                         <p data-i18n="dashboard.total_clients">Total Clients</p>
                     </div>
                 </div>
-                
+
                 <div class="stat-card">
                     <div class="stat-icon active">✅</div>
                     <div class="stat-content">
@@ -689,7 +689,7 @@
                         <p data-i18n="dashboard.active_clients">Active Clients</p>
                     </div>
                 </div>
-                
+
                 <div class="stat-card">
                     <div class="stat-icon checkins">📊</div>
                     <div class="stat-content">
@@ -697,7 +697,7 @@
                         <p data-i18n="therapist.checkins_week">Check-ins This Week</p>
                     </div>
                 </div>
-                
+
                 <div class="stat-card">
                     <div class="stat-icon missions">🎯</div>
                     <div class="stat-content">
@@ -761,14 +761,14 @@
         <!-- Add Client Tab -->
         <div id="add-client" class="tab-content">
             <h2 data-i18n="therapist.add_new_client">Add New Client</h2>
-            
+
             <div class="form-section">
                 <h3 data-i18n="therapist.client_account_info">Client Account Information</h3>
                 <div class="form-group">
                     <label for="clientEmail" data-i18n="therapist.email_required">Email Address*</label>
                     <input type="email" id="clientEmail" class="form-input" placeholder="client@example.com" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="tempPassword" data-i18n="therapist.temp_password">Temporary Password (optional)</label>
                     <input type="text" id="tempPassword" class="form-input" data-i18n-placeholder="therapist.auto_generate_note">
@@ -805,7 +805,7 @@
         <!-- Reports Tab -->
         <div id="reports" class="tab-content">
             <h2 data-i18n="therapist.client_reports">Client Reports</h2>
-            
+
             <div class="form-section">
                 <h3 data-i18n="therapist.generate_weekly_report">Generate Weekly Report</h3>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -815,13 +815,13 @@
                             <option value="" data-i18n="therapist.select_client_option">Select a client...</option>
                         </select>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="reportWeek" data-i18n="reports.select_week">Select Week</label>
                         <input type="week" id="reportWeek" class="form-input">
                     </div>
                 </div>
-                
+
                 <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
                     <button class="btn btn-primary" onclick="generateReport()">
                         <span>📊</span> <span data-i18n="therapist.generate_excel">Generate Excel Report</span>
@@ -874,7 +874,7 @@
                 'category.medication_desc': 'Medication adherence',
                 'category.physical_activity': 'Physical Activity',
                 'category.physical_activity_desc': 'Physical activity level',
-                
+
                 'therapist.dashboard_title': 'Therapist Dashboard',
                 'therapist.dashboard_overview': 'Dashboard Overview',
                 'therapist.checkins_week': 'Check-ins This Week',
@@ -956,7 +956,7 @@
                 'category.medication_desc': 'היענות לנטילת תרופות',
                 'category.physical_activity': 'פעילות גופנית',
                 'category.physical_activity_desc': 'רמת הפעילות הגופנית',
-                
+
                 'therapist.dashboard_title': 'לוח בקרה למטפל',
                 'therapist.dashboard_overview': 'סקירת לוח בקרה',
                 'therapist.checkins_week': 'צ׳ק-אינים השבוע',
@@ -1038,7 +1038,7 @@
                 'category.medication_desc': 'Приверженность лечению',
                 'category.physical_activity': 'Физическая активность',
                 'category.physical_activity_desc': 'Уровень физической активности',
-                
+
                 'therapist.dashboard_title': 'Панель терапевта',
                 'therapist.dashboard_overview': 'Обзор панели',
                 'therapist.checkins_week': 'Отметок на этой неделе',
@@ -1120,7 +1120,7 @@
                 'category.medication_desc': 'الالتزام بالأدوية',
                 'category.physical_activity': 'النشاط البدني',
                 'category.physical_activity_desc': 'مستوى النشاط البدني',
-                
+
                 'therapist.dashboard_title': 'لوحة تحكم المعالج',
                 'therapist.dashboard_overview': 'نظرة عامة على لوحة التحكم',
                 'therapist.checkins_week': 'تسجيلات الحضور هذا الأسبوع',
@@ -1205,7 +1205,7 @@
             const translation = i18n.t(key);
             return translation !== key ? translation : description;
         }
-        
+
         // Check authentication
         if (!authToken) {
             window.location.href = '/login.html';
@@ -1216,7 +1216,7 @@
             loadDashboard();
             loadTrackingCategories();
             setCurrentWeek();
-            
+
             // Update placeholders
             updatePlaceholders();
         });
@@ -1248,7 +1248,7 @@
 
                 const data = await response.json();
                 therapistData = data.therapist;
-                
+
                 // Update UI
                 document.getElementById('therapistName').textContent = therapistData.name;
                 document.getElementById('licenseInfo').textContent = `${i18n.t('therapist.license')}: ${therapistData.license_number}`;
@@ -1256,7 +1256,7 @@
                 document.getElementById('activeClients').textContent = data.statistics.active_clients;
                 document.getElementById('recentCheckins').textContent = data.statistics.recent_checkins;
                 document.getElementById('pendingMissions').textContent = data.statistics.pending_missions;
-                
+
                 // Update recent activity to show it's not implemented
                 document.getElementById('recentActivity').innerHTML = `
                     <div style="padding: 2rem; background: #f8f9fa; border-radius: 8px; text-align: center;">
@@ -1266,7 +1266,7 @@
                         </p>
                     </div>
                 `;
-                
+
                 // Load clients list
                 loadClients();
             } catch (error) {
@@ -1275,7 +1275,7 @@
         }
 
         // Load tracking categories
-        
+
 async function loadTrackingCategories() {
     try {
         const response = await fetch('/api/categories/translated', {
@@ -1288,7 +1288,7 @@ async function loadTrackingCategories() {
         if (response.ok) {
             const data = await response.json();
             trackingCategories = data.categories;
-            
+
             // Update selection UI with translations from backend
             const container = document.getElementById('trackingCategoriesSelection');
             container.innerHTML = trackingCategories.map(cat => {
@@ -1300,7 +1300,7 @@ async function loadTrackingCategories() {
                     </label>
                 `;
             }).join('');
-            
+
             // Add a note for the therapist
             container.innerHTML += `
                 <p style="margin-top: 1rem; color: #666; font-style: italic;">
@@ -1309,7 +1309,7 @@ async function loadTrackingCategories() {
             `;
             return; // Exit early on success
         }
-        
+
         // If translated endpoint fails, try regular categories endpoint
         const response2 = await fetch('/api/categories', {
             headers: {
@@ -1321,13 +1321,13 @@ async function loadTrackingCategories() {
         if (response2.ok) {
             const data = await response2.json();
             trackingCategories = data.categories;
-            
+
             // Need to translate these ourselves
             const container = document.getElementById('trackingCategoriesSelection');
             container.innerHTML = trackingCategories.map(cat => {
                 const translatedName = translateCategoryName(cat.original_name || cat.name);
                 const translatedDesc = translateCategoryDescription(cat.original_name || cat.name, cat.description);
-                
+
                 return `
                     <label style="display: block; margin-bottom: 0.5rem;">
                         <input type="checkbox" value="${cat.id}" checked>
@@ -1335,7 +1335,7 @@ async function loadTrackingCategories() {
                     </label>
                 `;
             }).join('');
-            
+
             container.innerHTML += `
                 <p style="margin-top: 1rem; color: #666; font-style: italic;">
                     ${i18n.t('therapist.all_categories_note')}
@@ -1343,10 +1343,10 @@ async function loadTrackingCategories() {
             `;
             return;
         }
-        
+
         // Final fallback - use hardcoded categories
         throw new Error('Failed to load categories from API');
-        
+
     } catch (error) {
         console.error('Error loading categories:', error);
         // Use hardcoded categories as final fallback
@@ -1360,13 +1360,13 @@ async function loadTrackingCategories() {
             { id: 7, name: 'Medication', original_name: 'Medication', description: 'Medication adherence', is_default: true },
             { id: 8, name: 'Physical Activity', original_name: 'Physical Activity', description: 'Physical activity level', is_default: true }
         ];
-        
+
         // Update UI with translated fallback categories
         const container = document.getElementById('trackingCategoriesSelection');
         container.innerHTML = trackingCategories.map(cat => {
             const translatedName = translateCategoryName(cat.name);
             const translatedDesc = translateCategoryDescription(cat.name, cat.description);
-            
+
             return `
                 <label style="display: block; margin-bottom: 0.5rem;">
                     <input type="checkbox" value="${cat.id}" checked>
@@ -1374,7 +1374,7 @@ async function loadTrackingCategories() {
                 </label>
             `;
         }).join('');
-        
+
         container.innerHTML += `
             <p style="margin-top: 1rem; color: #666; font-style: italic;">
                 ${i18n.t('therapist.all_categories_note')}
@@ -1399,7 +1399,7 @@ async function loadTrackingCategories() {
 
                 const data = await response.json();
                 clientsList = data.clients;
-                
+
                 updateClientsTable();
                 updateReportClientSelect();
             } catch (error) {
@@ -1410,7 +1410,7 @@ async function loadTrackingCategories() {
         // Update clients table
         function updateClientsTable() {
             const tbody = document.getElementById('clientTableBody');
-            
+
             if (clientsList.length === 0) {
                 tbody.innerHTML = `
                     <tr>
@@ -1421,16 +1421,14 @@ async function loadTrackingCategories() {
                 `;
                 return;
             }
-            
+
             tbody.innerHTML = clientsList.map(client => {
                 const completionRate = client.week_completion.split('/');
                 const percentage = (parseInt(completionRate[0]) / parseInt(completionRate[1])) * 100;
-                
+
                 // The tracking_categories array already contains translated names from the backend
-                const trackingDisplay = client.tracking_categories.map(cat => 
-                        translateCategoryName(cat)
-                            ).join(', ');
-                
+                const trackingDisplay = client.tracking_categories.join(', ');
+
                 return `
                     <tr>
                         <td class="client-serial">${client.serial}</td>
@@ -1477,10 +1475,10 @@ async function loadTrackingCategories() {
 
                 const data = await response.json();
                 const client = data.client;
-                
+
                 // Update modal
                 document.getElementById('modalClientSerial').textContent = `${i18n.t('nav.clients')}: ${client.serial}`;
-                
+
                 const modalBody = document.getElementById('modalBody');
                 modalBody.innerHTML = `
                     <div class="form-section">
@@ -1489,7 +1487,7 @@ async function loadTrackingCategories() {
                         <p><strong>${i18n.t('client.start_date')}:</strong> ${new Date(client.start_date).toLocaleDateString()}</p>
                         <p><strong>${i18n.t('client.status')}:</strong> ${client.is_active ? i18n.t('client.active') : i18n.t('client.inactive')}</p>
                     </div>
-                    
+
                     <div class="form-section">
                         <h3>${i18n.t('therapist.this_week_progress')}</h3>
                         <div class="week-view">
@@ -1505,10 +1503,10 @@ async function loadTrackingCategories() {
                             }).join('')}
                         </div>
                     </div>
-                    
+
                     <div class="form-section">
                         <h3>${i18n.t('therapist.active_goals')}</h3>
-                        ${client.active_goals.length > 0 ? 
+                        ${client.active_goals.length > 0 ?
                             client.active_goals.map(goal => `
                                 <div class="note-item">
                                     <p>${goal.text}</p>
@@ -1524,7 +1522,7 @@ async function loadTrackingCategories() {
                             `<p style="color: #999;">${i18n.t('therapist.no_active_goals')}</p>`
                         }
                     </div>
-                    
+
                     <div class="form-section">
                         <h3>${i18n.t('therapist.add_note_mission')}</h3>
                         <textarea id="noteContent" class="form-textarea" placeholder="${i18n.t('therapist.enter_note_placeholder')}"></textarea>
@@ -1535,7 +1533,7 @@ async function loadTrackingCategories() {
                         </div>
                         <button class="btn btn-primary btn-small" onclick="addNote(${client.id})" style="margin-top: 1rem;">${i18n.t('client.add_note')}</button>
                     </div>
-                    
+
                     <div class="form-section">
                         <h3>${i18n.t('therapist.recent_notes')}</h3>
                         <div class="notes-list">
@@ -1552,7 +1550,7 @@ async function loadTrackingCategories() {
                         </div>
                     </div>
                 `;
-                
+
                 // Show modal
                 document.getElementById('clientModal').classList.add('active');
             } catch (error) {
@@ -1571,7 +1569,7 @@ async function loadTrackingCategories() {
             document.querySelectorAll('.nav-tab').forEach(tab => {
                 tab.classList.remove('active');
             });
-            
+
             // Find and activate the correct tab
             if (event && event.target) {
                 event.target.classList.add('active');
@@ -1585,13 +1583,13 @@ async function loadTrackingCategories() {
                     }
                 });
             }
-            
+
             // Update content
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
             document.getElementById(tabName).classList.add('active');
-            
+
             // Clear any non-persistent messages when changing tabs
             clearNonPersistentMessages();
         }
@@ -1606,7 +1604,7 @@ async function loadTrackingCategories() {
         function addGoalInput() {
             const container = document.getElementById('initialGoalsContainer');
             const goalCount = container.querySelectorAll('.form-group').length;
-            
+
             if (goalCount < 5) {
                 const div = document.createElement('div');
                 div.className = 'form-group';
@@ -1623,18 +1621,18 @@ async function loadTrackingCategories() {
             try {
                 const email = document.getElementById('clientEmail').value;
                 const password = document.getElementById('tempPassword').value;
-                
+
                 if (!email) {
                     showMessage(i18n.t('therapist.please_enter_email'), 'error');
                     return;
                 }
-                
+
                 // Get selected categories
                 const selectedCategories = [];
                 document.querySelectorAll('#trackingCategoriesSelection input:checked').forEach(input => {
                     selectedCategories.push(parseInt(input.value));
                 });
-                
+
                 // Get goals
                 const goals = [];
                 document.querySelectorAll('#initialGoalsContainer input').forEach(input => {
@@ -1642,14 +1640,14 @@ async function loadTrackingCategories() {
                         goals.push(input.value.trim());
                     }
                 });
-                
+
                 const data = {
                     email: email,
                     password: password || undefined,
                     tracking_categories: selectedCategories,
                     initial_goals: goals
                 };
-                
+
                 const response = await fetch('/api/therapist/create-client', {
                     method: 'POST',
                     headers: {
@@ -1659,14 +1657,14 @@ async function loadTrackingCategories() {
                     },
                     body: JSON.stringify(data)
                 });
-                
+
                 if (!response.ok) {
                     const error = await response.json();
                     throw new Error(error.error || 'Failed to create client');
                 }
-                
+
                 const result = await response.json();
-                
+
                 // Show persistent success message with credentials
                 showMessage(`
                     <strong>${i18n.t('therapist.client_created')}</strong><br>
@@ -1676,22 +1674,22 @@ async function loadTrackingCategories() {
                     <br>
                     <em>${i18n.t('therapist.save_credentials')}</em>
                 `, 'important', true);
-                
+
                 // Clear form
                 document.getElementById('clientEmail').value = '';
                 document.getElementById('tempPassword').value = '';
                 document.querySelectorAll('#initialGoalsContainer input').forEach(input => {
                     input.value = '';
                 });
-                
+
                 // Reload clients
                 loadClients();
-                
+
                 // Switch to clients tab after a delay
                 setTimeout(() => {
                     showTab('clients');
                 }, 2000);
-                
+
             } catch (error) {
                 showMessage(i18n.t('therapist.error_creating') + ' ' + error.message, 'error');
             }
@@ -1701,7 +1699,7 @@ async function loadTrackingCategories() {
         async function addGoal(clientId) {
             const goalText = prompt(i18n.t('therapist.enter_goal'));
             if (!goalText) return;
-            
+
             try {
                 const response = await fetch('/api/therapist/add-goal', {
                     method: 'POST',
@@ -1715,11 +1713,11 @@ async function loadTrackingCategories() {
                         goal_text: goalText
                     })
                 });
-                
+
                 if (!response.ok) {
                     throw new Error('Failed to add goal');
                 }
-                
+
                 showMessage(i18n.t('therapist.goal_added'), 'success');
                 loadClients();
             } catch (error) {
@@ -1731,12 +1729,12 @@ async function loadTrackingCategories() {
         async function addNote(clientId) {
             const content = document.getElementById('noteContent').value;
             const isMission = document.getElementById('isMission').checked;
-            
+
             if (!content.trim()) {
                 showMessage(i18n.t('therapist.please_enter_note'), 'error');
                 return;
             }
-            
+
             try {
                 const response = await fetch('/api/therapist/add-note', {
                     method: 'POST',
@@ -1751,13 +1749,13 @@ async function loadTrackingCategories() {
                         is_mission: isMission
                     })
                 });
-                
+
                 if (!response.ok) {
                     throw new Error('Failed to add note');
                 }
-                
+
                 showMessage(i18n.t('therapist.note_added'), 'success');
-                
+
                 // Reload client details
                 viewClientDetails(clientId);
             } catch (error) {
@@ -1769,7 +1767,7 @@ async function loadTrackingCategories() {
         function updateReportClientSelect() {
             const select = document.getElementById('reportClient');
             select.innerHTML = `<option value="">${i18n.t('therapist.select_client_option')}</option>` +
-                clientsList.map(client => 
+                clientsList.map(client =>
                     `<option value="${client.id}">${client.serial} - ${i18n.t('therapist.started')} ${new Date(client.start_date).toLocaleDateString()}</option>`
                 ).join('');
         }
@@ -1778,28 +1776,28 @@ async function loadTrackingCategories() {
         async function generateReport() {
             const clientId = document.getElementById('reportClient').value;
             const week = document.getElementById('reportWeek').value;
-            
+
             if (!clientId || !week) {
                 showMessage(i18n.t('therapist.select_both'), 'error');
                 return;
             }
-            
+
             try {
                 showMessage(i18n.t('therapist.generating_report'), 'success');
-                
+
                 const response = await fetch(`/api/reports/generate/${clientId}/${week}`, {
                     headers: {
                         'Authorization': `Bearer ${authToken}`,
                         'Accept-Language': i18n.currentLang
                     }
                 });
-                
+
                 if (response.ok) {
                     // Get filename from response headers
                     const contentDisposition = response.headers.get('content-disposition');
                     const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
                     const filename = filenameMatch ? filenameMatch[1] : `therapy_report_${week}.xlsx`;
-                    
+
                     // Download file
                     const blob = await response.blob();
                     const url = window.URL.createObjectURL(blob);
@@ -1811,7 +1809,7 @@ async function loadTrackingCategories() {
                     a.click();
                     window.URL.revokeObjectURL(url);
                     document.body.removeChild(a);
-                    
+
                     showMessage(i18n.t('therapist.report_downloaded'), 'success');
                 } else {
                     const error = await response.json();
@@ -1826,15 +1824,15 @@ async function loadTrackingCategories() {
         async function prepareEmailReport() {
             const clientId = document.getElementById('reportClient').value;
             const week = document.getElementById('reportWeek').value;
-            
+
             if (!clientId || !week) {
                 showMessage(i18n.t('therapist.select_both'), 'error');
                 return;
             }
-            
+
             try {
                 showMessage(i18n.t('therapist.preparing_email'), 'info');
-                
+
                 const response = await fetch('/api/therapist/email-report', {
                     method: 'POST',
                     headers: {
@@ -1847,20 +1845,20 @@ async function loadTrackingCategories() {
                         week: week
                     })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (response.ok && result.success) {
                     // Show email preview
                     const statusDiv = document.getElementById('reportStatus');
                     const statusContent = document.getElementById('reportStatusContent');
                     statusDiv.style.display = 'block';
-                    
+
                     // Use email_content field (that's what the backend returns)
                     const emailContent = result.email_content || result.content || 'No content available';
                     const recipient = result.recipient || 'Not specified';
                     const subject = result.subject || 'Weekly Therapy Report';
-                    
+
                     statusContent.innerHTML = `
                         <div class="form-section">
                             <h4>${i18n.t('therapist.email_preview')}</h4>
@@ -1874,7 +1872,7 @@ async function loadTrackingCategories() {
                             </p>
                         </div>
                     `;
-                    
+
                     showMessage(i18n.t('therapist.email_prepared'), 'success');
                 } else {
                     // Hide status div if there's an error
@@ -1910,22 +1908,22 @@ async function loadTrackingCategories() {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${type}`;
             messageDiv.dataset.persistent = persistent;
-            
+
             // Create message content
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
             contentDiv.innerHTML = text;
             messageDiv.appendChild(contentDiv);
-            
+
             // Add close button
             const closeBtn = document.createElement('button');
             closeBtn.className = 'message-close';
             closeBtn.innerHTML = '×';
             closeBtn.onclick = () => messageDiv.remove();
             messageDiv.appendChild(closeBtn);
-            
+
             container.appendChild(messageDiv);
-            
+
             // Only auto-remove non-persistent messages
             if (!persistent) {
                 setTimeout(() => {
