@@ -1,0 +1,1772 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Therapist Dashboard - Therapeutic Companion</title>
+    
+    <!-- Add i18n script -->
+    <script src="i18n.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .therapist-info {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .license-badge {
+            background: rgba(255,255,255,0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        /* Navigation */
+        .nav-tabs {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            padding: 0 2rem;
+            display: flex;
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .nav-tab {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .nav-tab:hover {
+            color: #2c3e50;
+        }
+
+        .nav-tab.active {
+            color: #2c3e50;
+            border-bottom-color: #3498db;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        .stat-icon.clients { background: #e3f2fd; color: #2196f3; }
+        .stat-icon.active { background: #e8f5e9; color: #4caf50; }
+        .stat-icon.checkins { background: #fff3e0; color: #ff9800; }
+        .stat-icon.missions { background: #fce4ec; color: #e91e63; }
+
+        .stat-content h3 {
+            font-size: 2rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .stat-content p {
+            color: #666;
+            margin: 0;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Client List */
+        .client-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .search-input {
+            padding: 0.75rem 1.5rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            width: 300px;
+        }
+
+        .filter-select {
+            padding: 0.75rem 1rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        /* Client Table */
+        .client-table {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .client-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .client-table th {
+            background: #f8f9fa;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .client-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .client-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .client-serial {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-badge.active {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-badge.inactive {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .completion-rate {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .completion-bar {
+            width: 100px;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .completion-fill {
+            height: 100%;
+            background: #4caf50;
+            transition: width 0.3s ease;
+        }
+
+        /* Client Detail Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            padding: 2rem;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        /* Forms */
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .form-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 0.75rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            resize: vertical;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        /* Action buttons */
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Progress tracking */
+        .progress-section {
+            margin-top: 2rem;
+        }
+
+        .progress-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .progress-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .progress-card h4 {
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        /* Week view */
+        .week-view {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .day-cell {
+            text-align: center;
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        .day-cell.completed {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .day-cell.missed {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .day-cell.pending {
+            background: #f5f5f5;
+            color: #999;
+        }
+
+        /* Notes and missions */
+        .notes-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .note-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+
+        .note-item.mission {
+            border-left: 4px solid #e91e63;
+        }
+
+        .note-meta {
+            font-size: 0.875rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .mission-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: #e91e63;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+
+        /* Messages */
+        .message {
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            animation: slideDown 0.3s ease-out;
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.important {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+            font-weight: 500;
+        }
+
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .message-content {
+            flex: 1;
+        }
+
+        .message-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: inherit;
+            opacity: 0.7;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .message-close:hover {
+            opacity: 1;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Report Status */
+        #reportStatus {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        #reportStatusContent pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background: white;
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* RTL Support */
+        .rtl .header-content,
+        .rtl .therapist-info,
+        .rtl .client-list-header,
+        .rtl .search-bar,
+        .rtl .action-buttons,
+        .rtl .modal-header {
+            flex-direction: row-reverse;
+        }
+
+        .rtl .nav-tabs {
+            direction: rtl;
+        }
+
+        .rtl .client-table th,
+        .rtl .client-table td {
+            text-align: right;
+        }
+
+        .rtl .note-item.mission {
+            border-left: none;
+            border-right: 4px solid #e91e63;
+        }
+
+        .rtl .mission-badge {
+            right: auto;
+            left: 1rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav-tabs {
+                overflow-x: auto;
+                gap: 1rem;
+                padding: 0 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .search-bar {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .search-input {
+                width: 100%;
+            }
+
+            .client-table {
+                overflow-x: auto;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1 data-i18n="therapist.dashboard_title">Therapist Dashboard</h1>
+            <div class="therapist-info">
+                <div class="license-badge" id="licenseInfo" data-i18n="msg.loading">Loading...</div>
+                <span id="therapistName" data-i18n="msg.loading">Loading...</span>
+                <button class="btn btn-secondary btn-small" onclick="logout()" data-i18n="btn.logout">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="nav-tabs">
+        <div class="nav-tab active" onclick="showTab('overview', event)" data-i18n="nav.overview">Overview</div>
+        <div class="nav-tab" onclick="showTab('clients', event)" data-i18n="nav.clients">Clients</div>
+        <div class="nav-tab" onclick="showTab('add-client', event)" data-i18n="nav.add_client">Add Client</div>
+        <div class="nav-tab" onclick="showTab('reports', event)" data-i18n="nav.reports">Reports</div>
+    </nav>
+
+    <div class="container">
+        <!-- Success/Error Messages -->
+        <div id="messageContainer"></div>
+
+        <!-- Overview Tab -->
+        <div id="overview" class="tab-content active">
+            <h2 data-i18n="therapist.dashboard_overview">Dashboard Overview</h2>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon clients">👥</div>
+                    <div class="stat-content">
+                        <h3 id="totalClients">0</h3>
+                        <p data-i18n="dashboard.total_clients">Total Clients</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon active">✅</div>
+                    <div class="stat-content">
+                        <h3 id="activeClients">0</h3>
+                        <p data-i18n="dashboard.active_clients">Active Clients</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon checkins">📊</div>
+                    <div class="stat-content">
+                        <h3 id="recentCheckins">0</h3>
+                        <p data-i18n="therapist.checkins_week">Check-ins This Week</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon missions">🎯</div>
+                    <div class="stat-content">
+                        <h3 id="pendingMissions">0</h3>
+                        <p data-i18n="dashboard.pending_missions">Pending Missions</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-section">
+                <h3 data-i18n="therapist.recent_activity">Recent Activity</h3>
+                <div id="recentActivity" class="loading">
+                    <div class="spinner"></div>
+                    <p data-i18n="therapist.loading_activity">Loading recent activity...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clients Tab -->
+        <div id="clients" class="tab-content">
+            <div class="client-list-header">
+                <h2 data-i18n="therapist.client_management">Client Management</h2>
+                <div class="search-bar">
+                    <input type="text" class="search-input" data-i18n-placeholder="therapist.search_placeholder" onkeyup="filterClients()">
+                    <select class="filter-select" onchange="filterClients()">
+                        <option value="all" data-i18n="therapist.all_clients">All Clients</option>
+                        <option value="active" data-i18n="therapist.active_only">Active Only</option>
+                        <option value="inactive" data-i18n="therapist.inactive_only">Inactive Only</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="showTab('add-client', event)">
+                        <span>➕</span> <span data-i18n="therapist.add_new_client">Add New Client</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="client-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-i18n="client.serial">Client Serial</th>
+                            <th data-i18n="client.start_date">Start Date</th>
+                            <th data-i18n="client.status">Status</th>
+                            <th data-i18n="client.last_checkin">Last Check-in</th>
+                            <th data-i18n="therapist.week_completion">Week Completion</th>
+                            <th data-i18n="client.tracking">Tracking</th>
+                            <th data-i18n="client.actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientTableBody">
+                        <tr>
+                            <td colspan="7" class="loading">
+                                <div class="spinner"></div>
+                                <p data-i18n="therapist.loading_clients">Loading clients...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Add Client Tab -->
+        <div id="add-client" class="tab-content">
+            <h2 data-i18n="therapist.add_new_client">Add New Client</h2>
+            
+            <div class="form-section">
+                <h3 data-i18n="therapist.client_account_info">Client Account Information</h3>
+                <div class="form-group">
+                    <label for="clientEmail" data-i18n="therapist.email_required">Email Address*</label>
+                    <input type="email" id="clientEmail" class="form-input" placeholder="client@example.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="tempPassword" data-i18n="therapist.temp_password">Temporary Password (optional)</label>
+                    <input type="text" id="tempPassword" class="form-input" data-i18n-placeholder="therapist.auto_generate_note">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3 data-i18n="therapist.tracking_categories">Tracking Categories</h3>
+                <p style="color: #666; margin-bottom: 1rem;" data-i18n="therapist.select_categories">Select which categories this client should track:</p>
+                <div id="trackingCategoriesSelection">
+                    <!-- Categories will be loaded dynamically -->
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3 data-i18n="therapist.initial_goals">Initial Goals (Optional)</h3>
+                <p style="color: #666; margin-bottom: 1rem;" data-i18n="therapist.setup_goals">Set up to 5 initial weekly goals for the client:</p>
+                <div id="initialGoalsContainer">
+                    <div class="form-group">
+                        <input type="text" class="form-input" data-i18n-placeholder="therapist.goal_placeholder">
+                    </div>
+                </div>
+                <button class="btn btn-secondary btn-small" onclick="addGoalInput()">
+                    <span data-i18n="therapist.add_another_goal">+ Add Another Goal</span>
+                </button>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button class="btn btn-primary" onclick="createClient()" data-i18n="therapist.create_client_btn">Create Client Account</button>
+                <button class="btn btn-secondary" onclick="showTab('clients', event)" data-i18n="btn.cancel">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Reports Tab -->
+        <div id="reports" class="tab-content">
+            <h2 data-i18n="therapist.client_reports">Client Reports</h2>
+            
+            <div class="form-section">
+                <h3 data-i18n="therapist.generate_weekly_report">Generate Weekly Report</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="reportClient" data-i18n="reports.select_client">Select Client</label>
+                        <select id="reportClient" class="form-input">
+                            <option value="" data-i18n="therapist.select_client_option">Select a client...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reportWeek" data-i18n="reports.select_week">Select Week</label>
+                        <input type="week" id="reportWeek" class="form-input">
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="generateReport()">
+                        <span>📊</span> <span data-i18n="therapist.generate_excel">Generate Excel Report</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="prepareEmailReport()">
+                        <span>📧</span> <span data-i18n="therapist.prepare_email">Prepare Email Report</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="reportStatus" style="display: none;">
+                <h4 data-i18n="therapist.report_status">Report Status</h4>
+                <div id="reportStatusContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Detail Modal -->
+    <div id="clientModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalClientSerial" data-i18n="therapist.client_details">Client Details</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Client details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add translations for therapist dashboard
+        if (window.i18n && window.i18n.translations) {
+            // English
+            Object.assign(window.i18n.translations.en, {
+                'therapist.dashboard_title': 'Therapist Dashboard',
+                'therapist.dashboard_overview': 'Dashboard Overview',
+                'therapist.checkins_week': 'Check-ins This Week',
+                'therapist.recent_activity': 'Recent Activity',
+                'therapist.loading_activity': 'Loading recent activity...',
+                'therapist.client_management': 'Client Management',
+                'therapist.search_placeholder': 'Search by serial or date...',
+                'therapist.all_clients': 'All Clients',
+                'therapist.active_only': 'Active Only',
+                'therapist.inactive_only': 'Inactive Only',
+                'therapist.add_new_client': 'Add New Client',
+                'therapist.week_completion': 'Week Completion',
+                'therapist.loading_clients': 'Loading clients...',
+                'therapist.client_account_info': 'Client Account Information',
+                'therapist.email_required': 'Email Address*',
+                'therapist.temp_password': 'Temporary Password (optional)',
+                'therapist.auto_generate_note': 'Leave blank to auto-generate',
+                'therapist.tracking_categories': 'Tracking Categories',
+                'therapist.select_categories': 'Select which categories this client should track:',
+                'therapist.initial_goals': 'Initial Goals (Optional)',
+                'therapist.setup_goals': 'Set up to 5 initial weekly goals for the client:',
+                'therapist.goal_placeholder': 'Goal 1 (e.g., Take a 15-minute walk daily)',
+                'therapist.add_another_goal': '+ Add Another Goal',
+                'therapist.create_client_btn': 'Create Client Account',
+                'therapist.client_reports': 'Client Reports',
+                'therapist.generate_weekly_report': 'Generate Weekly Report',
+                'therapist.select_client_option': 'Select a client...',
+                'therapist.generate_excel': 'Generate Excel Report',
+                'therapist.prepare_email': 'Prepare Email Report',
+                'therapist.report_status': 'Report Status',
+                'therapist.client_details': 'Client Details',
+                'therapist.no_clients': 'No clients found. Add your first client to get started.',
+                'therapist.license': 'License',
+                'therapist.activity_coming_soon': 'Recent activity feature coming soon',
+                'therapist.check_clients_tab': 'Check the Clients tab to view individual client progress',
+                'therapist.max_goals': 'Maximum 5 goals can be added initially',
+                'therapist.please_enter_email': 'Please enter client email',
+                'therapist.client_created': 'Client created successfully!',
+                'therapist.serial': 'Serial',
+                'therapist.email': 'Email',
+                'therapist.temp_password_label': 'Temporary password',
+                'therapist.goal_added': 'Goal added successfully!',
+                'therapist.enter_goal': 'Enter the goal for this week:',
+                'therapist.note_added': 'Note added successfully!',
+                'therapist.please_enter_note': 'Please enter a note',
+                'therapist.mark_as_mission': 'Mark as mission',
+                'therapist.this_week_progress': 'This Week\'s Progress',
+                'therapist.select_both': 'Please select both client and week',
+                'therapist.generating_report': 'Generating report...',
+                'therapist.report_downloaded': 'Report downloaded successfully!',
+                'therapist.preparing_email': 'Preparing email report...',
+                'therapist.email_prepared': 'Email report prepared! Review the preview below.',
+                'therapist.error_loading': 'Error loading dashboard:',
+                'therapist.error_creating': 'Error creating client:',
+                'therapist.error_adding_goal': 'Error adding goal:',
+                'therapist.error_adding_note': 'Error adding note:',
+                'therapist.error_loading_details': 'Error loading client details:',
+                'therapist.error_generating': 'Error generating report:',
+                'therapist.error_preparing': 'Error preparing email report:'
+            });
+
+            // Hebrew
+            Object.assign(window.i18n.translations.he, {
+                'therapist.dashboard_title': 'לוח בקרה למטפל',
+                'therapist.dashboard_overview': 'סקירת לוח בקרה',
+                'therapist.checkins_week': 'צ׳ק-אינים השבוע',
+                'therapist.recent_activity': 'פעילות אחרונה',
+                'therapist.loading_activity': 'טוען פעילות אחרונה...',
+                'therapist.client_management': 'ניהול מטופלים',
+                'therapist.search_placeholder': 'חיפוש לפי מספר סידורי או תאריך...',
+                'therapist.all_clients': 'כל המטופלים',
+                'therapist.active_only': 'פעילים בלבד',
+                'therapist.inactive_only': 'לא פעילים בלבד',
+                'therapist.add_new_client': 'הוסף מטופל חדש',
+                'therapist.week_completion': 'השלמת שבוע',
+                'therapist.loading_clients': 'טוען מטופלים...',
+                'therapist.client_account_info': 'פרטי חשבון מטופל',
+                'therapist.email_required': 'כתובת דוא״ל*',
+                'therapist.temp_password': 'סיסמה זמנית (אופציונלי)',
+                'therapist.auto_generate_note': 'השאר ריק ליצירה אוטומטית',
+                'therapist.tracking_categories': 'קטגוריות מעקב',
+                'therapist.select_categories': 'בחר אילו קטגוריות המטופל יעקוב אחריהן:',
+                'therapist.initial_goals': 'יעדים ראשוניים (אופציונלי)',
+                'therapist.setup_goals': 'הגדר עד 5 יעדים שבועיים ראשוניים למטופל:',
+                'therapist.goal_placeholder': 'יעד 1 (למשל, הליכה של 15 דקות ביום)',
+                'therapist.add_another_goal': '+ הוסף יעד נוסף',
+                'therapist.create_client_btn': 'צור חשבון מטופל',
+                'therapist.client_reports': 'דוחות מטופלים',
+                'therapist.generate_weekly_report': 'צור דוח שבועי',
+                'therapist.select_client_option': 'בחר מטופל...',
+                'therapist.generate_excel': 'צור דוח אקסל',
+                'therapist.prepare_email': 'הכן דוח דוא״ל',
+                'therapist.report_status': 'סטטוס דוח',
+                'therapist.client_details': 'פרטי מטופל',
+                'therapist.no_clients': 'לא נמצאו מטופלים. הוסף את המטופל הראשון שלך כדי להתחיל.',
+                'therapist.license': 'רישיון',
+                'therapist.activity_coming_soon': 'תכונת פעילות אחרונה תגיע בקרוב',
+                'therapist.check_clients_tab': 'בדוק את לשונית המטופלים כדי לראות התקדמות אישית',
+                'therapist.max_goals': 'ניתן להוסיף מקסימום 5 יעדים בהתחלה',
+                'therapist.please_enter_email': 'אנא הזן דוא״ל של המטופל',
+                'therapist.client_created': 'המטופל נוצר בהצלחה!',
+                'therapist.serial': 'מספר סידורי',
+                'therapist.email': 'דוא״ל',
+                'therapist.temp_password_label': 'סיסמה זמנית',
+                'therapist.goal_added': 'היעד נוסף בהצלחה!',
+                'therapist.enter_goal': 'הזן את היעד לשבוע זה:',
+                'therapist.note_added': 'ההערה נוספה בהצלחה!',
+                'therapist.please_enter_note': 'אנא הזן הערה',
+                'therapist.mark_as_mission': 'סמן כמשימה',
+                'therapist.this_week_progress': 'התקדמות השבוע',
+                'therapist.select_both': 'אנא בחר גם מטופל וגם שבוע',
+                'therapist.generating_report': 'מייצר דוח...',
+                'therapist.report_downloaded': 'הדוח הורד בהצלחה!',
+                'therapist.preparing_email': 'מכין דוח דוא״ל...',
+                'therapist.email_prepared': 'דוח הדוא״ל הוכן! עיין בתצוגה המקדימה למטה.',
+                'therapist.error_loading': 'שגיאה בטעינת לוח הבקרה:',
+                'therapist.error_creating': 'שגיאה ביצירת מטופל:',
+                'therapist.error_adding_goal': 'שגיאה בהוספת יעד:',
+                'therapist.error_adding_note': 'שגיאה בהוספת הערה:',
+                'therapist.error_loading_details': 'שגיאה בטעינת פרטי מטופל:',
+                'therapist.error_generating': 'שגיאה ביצירת דוח:',
+                'therapist.error_preparing': 'שגיאה בהכנת דוח דוא״ל:'
+            });
+
+            // Russian
+            Object.assign(window.i18n.translations.ru, {
+                'therapist.dashboard_title': 'Панель терапевта',
+                'therapist.dashboard_overview': 'Обзор панели',
+                'therapist.checkins_week': 'Отметок на этой неделе',
+                'therapist.recent_activity': 'Недавняя активность',
+                'therapist.loading_activity': 'Загрузка недавней активности...',
+                'therapist.client_management': 'Управление клиентами',
+                'therapist.search_placeholder': 'Поиск по серийному номеру или дате...',
+                'therapist.all_clients': 'Все клиенты',
+                'therapist.active_only': 'Только активные',
+                'therapist.inactive_only': 'Только неактивные',
+                'therapist.add_new_client': 'Добавить нового клиента',
+                'therapist.week_completion': 'Завершение недели',
+                'therapist.loading_clients': 'Загрузка клиентов...',
+                'therapist.client_account_info': 'Информация об учетной записи клиента',
+                'therapist.email_required': 'Адрес электронной почты*',
+                'therapist.temp_password': 'Временный пароль (необязательно)',
+                'therapist.auto_generate_note': 'Оставьте пустым для автогенерации',
+                'therapist.tracking_categories': 'Категории отслеживания',
+                'therapist.select_categories': 'Выберите, какие категории будет отслеживать этот клиент:',
+                'therapist.initial_goals': 'Начальные цели (необязательно)',
+                'therapist.setup_goals': 'Установите до 5 начальных еженедельных целей для клиента:',
+                'therapist.goal_placeholder': 'Цель 1 (например, 15-минутная прогулка ежедневно)',
+                'therapist.add_another_goal': '+ Добавить еще цель',
+                'therapist.create_client_btn': 'Создать учетную запись клиента',
+                'therapist.client_reports': 'Отчеты клиентов',
+                'therapist.generate_weekly_report': 'Создать недельный отчет',
+                'therapist.select_client_option': 'Выберите клиента...',
+                'therapist.generate_excel': 'Создать отчет Excel',
+                'therapist.prepare_email': 'Подготовить отчет по email',
+                'therapist.report_status': 'Статус отчета',
+                'therapist.client_details': 'Детали клиента',
+                'therapist.no_clients': 'Клиенты не найдены. Добавьте первого клиента, чтобы начать.',
+                'therapist.license': 'Лицензия',
+                'therapist.activity_coming_soon': 'Функция недавней активности скоро появится',
+                'therapist.check_clients_tab': 'Проверьте вкладку Клиенты для просмотра индивидуального прогресса',
+                'therapist.max_goals': 'Максимум можно добавить 5 целей изначально',
+                'therapist.please_enter_email': 'Пожалуйста, введите email клиента',
+                'therapist.client_created': 'Клиент успешно создан!',
+                'therapist.serial': 'Серийный номер',
+                'therapist.email': 'Email',
+                'therapist.temp_password_label': 'Временный пароль',
+                'therapist.goal_added': 'Цель успешно добавлена!',
+                'therapist.enter_goal': 'Введите цель на эту неделю:',
+                'therapist.note_added': 'Заметка успешно добавлена!',
+                'therapist.please_enter_note': 'Пожалуйста, введите заметку',
+                'therapist.mark_as_mission': 'Отметить как миссию',
+                'therapist.this_week_progress': 'Прогресс на этой неделе',
+                'therapist.select_both': 'Пожалуйста, выберите и клиента, и неделю',
+                'therapist.generating_report': 'Создание отчета...',
+                'therapist.report_downloaded': 'Отчет успешно загружен!',
+                'therapist.preparing_email': 'Подготовка email отчета...',
+                'therapist.email_prepared': 'Email отчет подготовлен! Просмотрите предварительный просмотр ниже.',
+                'therapist.error_loading': 'Ошибка загрузки панели:',
+                'therapist.error_creating': 'Ошибка создания клиента:',
+                'therapist.error_adding_goal': 'Ошибка добавления цели:',
+                'therapist.error_adding_note': 'Ошибка добавления заметки:',
+                'therapist.error_loading_details': 'Ошибка загрузки деталей клиента:',
+                'therapist.error_generating': 'Ошибка создания отчета:',
+                'therapist.error_preparing': 'Ошибка подготовки email отчета:'
+            });
+
+            // Arabic
+            Object.assign(window.i18n.translations.ar, {
+                'therapist.dashboard_title': 'لوحة تحكم المعالج',
+                'therapist.dashboard_overview': 'نظرة عامة على لوحة التحكم',
+                'therapist.checkins_week': 'تسجيلات الحضور هذا الأسبوع',
+                'therapist.recent_activity': 'النشاط الأخير',
+                'therapist.loading_activity': 'جاري تحميل النشاط الأخير...',
+                'therapist.client_management': 'إدارة العملاء',
+                'therapist.search_placeholder': 'البحث حسب الرقم التسلسلي أو التاريخ...',
+                'therapist.all_clients': 'جميع العملاء',
+                'therapist.active_only': 'النشطون فقط',
+                'therapist.inactive_only': 'غير النشطين فقط',
+                'therapist.add_new_client': 'إضافة عميل جديد',
+                'therapist.week_completion': 'إكمال الأسبوع',
+                'therapist.loading_clients': 'جاري تحميل العملاء...',
+                'therapist.client_account_info': 'معلومات حساب العميل',
+                'therapist.email_required': 'عنوان البريد الإلكتروني*',
+                'therapist.temp_password': 'كلمة مرور مؤقتة (اختياري)',
+                'therapist.auto_generate_note': 'اتركه فارغاً للإنشاء التلقائي',
+                'therapist.tracking_categories': 'فئات التتبع',
+                'therapist.select_categories': 'اختر الفئات التي سيتتبعها هذا العميل:',
+                'therapist.initial_goals': 'الأهداف الأولية (اختياري)',
+                'therapist.setup_goals': 'حدد ما يصل إلى 5 أهداف أسبوعية أولية للعميل:',
+                'therapist.goal_placeholder': 'الهدف 1 (مثل المشي لمدة 15 دقيقة يومياً)',
+                'therapist.add_another_goal': '+ إضافة هدف آخر',
+                'therapist.create_client_btn': 'إنشاء حساب العميل',
+                'therapist.client_reports': 'تقارير العملاء',
+                'therapist.generate_weekly_report': 'إنشاء تقرير أسبوعي',
+                'therapist.select_client_option': 'اختر عميلاً...',
+                'therapist.generate_excel': 'إنشاء تقرير Excel',
+                'therapist.prepare_email': 'إعداد تقرير البريد الإلكتروني',
+                'therapist.report_status': 'حالة التقرير',
+                'therapist.client_details': 'تفاصيل العميل',
+                'therapist.no_clients': 'لم يتم العثور على عملاء. أضف عميلك الأول للبدء.',
+                'therapist.license': 'الترخيص',
+                'therapist.activity_coming_soon': 'ميزة النشاط الأخير قادمة قريباً',
+                'therapist.check_clients_tab': 'تحقق من علامة تبويب العملاء لعرض التقدم الفردي',
+                'therapist.max_goals': 'يمكن إضافة 5 أهداف كحد أقصى في البداية',
+                'therapist.please_enter_email': 'يرجى إدخال البريد الإلكتروني للعميل',
+                'therapist.client_created': 'تم إنشاء العميل بنجاح!',
+                'therapist.serial': 'الرقم التسلسلي',
+                'therapist.email': 'البريد الإلكتروني',
+                'therapist.temp_password_label': 'كلمة المرور المؤقتة',
+                'therapist.goal_added': 'تمت إضافة الهدف بنجاح!',
+                'therapist.enter_goal': 'أدخل الهدف لهذا الأسبوع:',
+                'therapist.note_added': 'تمت إضافة الملاحظة بنجاح!',
+                'therapist.please_enter_note': 'يرجى إدخال ملاحظة',
+                'therapist.mark_as_mission': 'وضع علامة كمهمة',
+                'therapist.this_week_progress': 'تقدم هذا الأسبوع',
+                'therapist.select_both': 'يرجى اختيار كل من العميل والأسبوع',
+                'therapist.generating_report': 'جاري إنشاء التقرير...',
+                'therapist.report_downloaded': 'تم تنزيل التقرير بنجاح!',
+                'therapist.preparing_email': 'جاري إعداد تقرير البريد الإلكتروني...',
+                'therapist.email_prepared': 'تم إعداد تقرير البريد الإلكتروني! راجع المعاينة أدناه.',
+                'therapist.error_loading': 'خطأ في تحميل لوحة التحكم:',
+                'therapist.error_creating': 'خطأ في إنشاء العميل:',
+                'therapist.error_adding_goal': 'خطأ في إضافة الهدف:',
+                'therapist.error_adding_note': 'خطأ في إضافة الملاحظة:',
+                'therapist.error_loading_details': 'خطأ في تحميل تفاصيل العميل:',
+                'therapist.error_generating': 'خطأ في إنشاء التقرير:',
+                'therapist.error_preparing': 'خطأ في إعداد تقرير البريد الإلكتروني:'
+            });
+
+            // Re-translate page
+            i18n.translatePage();
+        }
+
+        // Global variables
+        let authToken = localStorage.getItem('authToken');
+        let therapistData = null;
+        let clientsList = [];
+        let trackingCategories = [];
+
+        // Check authentication
+        if (!authToken) {
+            window.location.href = '/login.html';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboard();
+            loadTrackingCategories();
+            setCurrentWeek();
+            
+            // Update placeholders
+            updatePlaceholders();
+        });
+
+        // Update placeholders
+        function updatePlaceholders() {
+            document.querySelector('.search-input').placeholder = i18n.t('therapist.search_placeholder');
+            document.getElementById('tempPassword').placeholder = i18n.t('therapist.auto_generate_note');
+            document.querySelector('#initialGoalsContainer input').placeholder = i18n.t('therapist.goal_placeholder');
+        }
+
+        // Load dashboard data
+        async function loadDashboard() {
+            try {
+                const response = await fetch('/api/therapist/dashboard', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        logout();
+                        return;
+                    }
+                    throw new Error('Failed to load dashboard');
+                }
+
+                const data = await response.json();
+                therapistData = data.therapist;
+                
+                // Update UI
+                document.getElementById('therapistName').textContent = therapistData.name;
+                document.getElementById('licenseInfo').textContent = `${i18n.t('therapist.license')}: ${therapistData.license_number}`;
+                document.getElementById('totalClients').textContent = data.statistics.total_clients;
+                document.getElementById('activeClients').textContent = data.statistics.active_clients;
+                document.getElementById('recentCheckins').textContent = data.statistics.recent_checkins;
+                document.getElementById('pendingMissions').textContent = data.statistics.pending_missions;
+                
+                // Update recent activity to show it's not implemented
+                document.getElementById('recentActivity').innerHTML = `
+                    <div style="padding: 2rem; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                        <p style="color: #666;">${i18n.t('therapist.activity_coming_soon')}</p>
+                        <p style="color: #999; font-size: 0.875rem; margin-top: 0.5rem;">
+                            ${i18n.t('therapist.check_clients_tab')}
+                        </p>
+                    </div>
+                `;
+                
+                // Load clients list
+                loadClients();
+            } catch (error) {
+                showMessage(i18n.t('therapist.error_loading') + ' ' + error.message, 'error');
+            }
+        }
+
+        // Load tracking categories
+        async function loadTrackingCategories() {
+            try {
+                // For now, hardcode the categories
+                // In production, this would fetch from the API
+                trackingCategories = [
+                    { id: 1, name: 'Emotion Level', description: 'Overall emotional state', is_default: true },
+                    { id: 2, name: 'Energy', description: 'Physical and mental energy levels', is_default: true },
+                    { id: 3, name: 'Social Activity', description: 'Engagement in social interactions', is_default: true },
+                    { id: 4, name: 'Sleep Quality', description: 'Quality of sleep', is_default: false },
+                    { id: 5, name: 'Anxiety Level', description: 'Level of anxiety experienced', is_default: false },
+                    { id: 6, name: 'Motivation', description: 'Level of motivation and drive', is_default: false }
+                ];
+                
+                // Update selection UI
+                const container = document.getElementById('trackingCategoriesSelection');
+                container.innerHTML = trackingCategories.map(cat => `
+                    <label style="display: block; margin-bottom: 0.5rem;">
+                        <input type="checkbox" value="${cat.id}" ${cat.is_default ? 'checked' : ''}>
+                        <strong>${cat.name}</strong> - ${cat.description}
+                    </label>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            }
+        }
+
+        // Load clients
+        async function loadClients() {
+            try {
+                const response = await fetch('/api/therapist/clients', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load clients');
+                }
+
+                const data = await response.json();
+                clientsList = data.clients;
+                
+                updateClientsTable();
+                updateReportClientSelect();
+            } catch (error) {
+                showMessage(i18n.t('therapist.error_loading') + ' ' + error.message, 'error');
+            }
+        }
+
+        // Update clients table
+        function updateClientsTable() {
+            const tbody = document.getElementById('clientTableBody');
+            
+            if (clientsList.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: #999;">
+                            ${i18n.t('therapist.no_clients')}
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = clientsList.map(client => {
+                const completionRate = client.week_completion.split('/');
+                const percentage = (parseInt(completionRate[0]) / parseInt(completionRate[1])) * 100;
+                
+                return `
+                    <tr>
+                        <td class="client-serial">${client.serial}</td>
+                        <td>${new Date(client.start_date).toLocaleDateString()}</td>
+                        <td>
+                            <span class="status-badge ${client.is_active ? 'active' : 'inactive'}">
+                                ${client.is_active ? i18n.t('client.active') : i18n.t('client.inactive')}
+                            </span>
+                        </td>
+                        <td>${client.last_checkin ? new Date(client.last_checkin).toLocaleDateString() : i18n.t('msg.never')}</td>
+                        <td>
+                            <div class="completion-rate">
+                                <div class="completion-bar">
+                                    <div class="completion-fill" style="width: ${percentage}%"></div>
+                                </div>
+                                <span>${client.week_completion}</span>
+                            </div>
+                        </td>
+                        <td>${client.tracking_categories.join(', ')}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-primary btn-small" onclick="viewClientDetails(${client.id})">${i18n.t('client.view')}</button>
+                                <button class="btn btn-secondary btn-small" onclick="addGoal(${client.id})">${i18n.t('client.add_goal')}</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // View client details
+        async function viewClientDetails(clientId) {
+            try {
+                const response = await fetch(`/api/therapist/client/${clientId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load client details');
+                }
+
+                const data = await response.json();
+                const client = data.client;
+                
+                // Update modal
+                document.getElementById('modalClientSerial').textContent = `${i18n.t('nav.clients')}: ${client.serial}`;
+                
+                const modalBody = document.getElementById('modalBody');
+                modalBody.innerHTML = `
+                    <div class="form-section">
+                        <h3>${i18n.t('therapist.client_info')}</h3>
+                        <p><strong>${i18n.t('therapist.serial')}:</strong> ${client.serial}</p>
+                        <p><strong>${i18n.t('client.start_date')}:</strong> ${new Date(client.start_date).toLocaleDateString()}</p>
+                        <p><strong>${i18n.t('client.status')}:</strong> ${client.is_active ? i18n.t('client.active') : i18n.t('client.inactive')}</p>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3>${i18n.t('therapist.week_progress')}</h3>
+                        <div class="week-view">
+                            ${[0,1,2,3,4,5,6].map(i => i18n.getDayName(i, true)).map((day, i) => {
+                                const checkin = client.recent_checkins[i];
+                                let status = 'pending';
+                                if (checkin) {
+                                    status = 'completed';
+                                } else if (new Date().getDay() > i) {
+                                    status = 'missed';
+                                }
+                                return `<div class="day-cell ${status}">${day}</div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3>${i18n.t('therapist.active_goals')}</h3>
+                        ${client.active_goals.length > 0 ? 
+                            client.active_goals.map(goal => `
+                                <div class="note-item">
+                                    <p>${goal.text}</p>
+                                    <div class="week-view" style="margin-top: 0.5rem;">
+                                        ${Object.entries(goal.completions).map(([date, completed]) => `
+                                            <div class="day-cell ${completed === true ? 'completed' : completed === false ? 'missed' : 'pending'}">
+                                                ${new Date(date).toLocaleDateString(i18n.currentLang, { weekday: 'short' })[0]}
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `).join('') :
+                            `<p style="color: #999;">${i18n.t('therapist.no_active_goals')}</p>`
+                        }
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3>${i18n.t('therapist.add_note_mission')}</h3>
+                        <textarea id="noteContent" class="form-textarea" placeholder="${i18n.t('therapist.enter_note_placeholder')}"></textarea>
+                        <div style="margin-top: 1rem;">
+                            <label>
+                                <input type="checkbox" id="isMission"> ${i18n.t('therapist.mark_as_mission')}
+                            </label>
+                        </div>
+                        <button class="btn btn-primary btn-small" onclick="addNote(${client.id})" style="margin-top: 1rem;">${i18n.t('client.add_note')}</button>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3>${i18n.t('therapist.recent_notes')}</h3>
+                        <div class="notes-list">
+                            ${client.notes.length > 0 ?
+                                client.notes.map(note => `
+                                    <div class="note-item ${note.is_mission ? 'mission' : ''}">
+                                        ${note.is_mission ? `<span class="mission-badge">${i18n.t('therapist.mission')}</span>` : ''}
+                                        <p class="note-meta">${new Date(note.created_at).toLocaleString()}</p>
+                                        <p>${note.content}</p>
+                                    </div>
+                                `).join('') :
+                                `<p style="color: #999;">${i18n.t('therapist.no_notes')}</p>`
+                            }
+                        </div>
+                    </div>
+                `;
+                
+                // Show modal
+                document.getElementById('clientModal').classList.add('active');
+            } catch (error) {
+                showMessage(i18n.t('therapist.error_loading_details') + ' ' + error.message, 'error');
+            }
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('clientModal').classList.remove('active');
+        }
+
+        // Show tab - Fixed to handle both event and no event
+        function showTab(tabName, event) {
+            // Update nav tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Find and activate the correct tab
+            if (event && event.target) {
+                event.target.classList.add('active');
+            } else {
+                // Find the tab by matching text content
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    if (tab.textContent.toLowerCase().includes(tabName.toLowerCase()) ||
+                        (tabName === 'add-client' && tab.textContent.includes('Add Client')) ||
+                        (tabName === 'clients' && tab.textContent === 'Clients')) {
+                        tab.classList.add('active');
+                    }
+                });
+            }
+            
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+            
+            // Clear any non-persistent messages when changing tabs
+            clearNonPersistentMessages();
+        }
+
+        // Filter clients
+        function filterClients() {
+            // TODO: Implement client filtering
+            console.log('Filter clients');
+        }
+
+        // Add goal input
+        function addGoalInput() {
+            const container = document.getElementById('initialGoalsContainer');
+            const goalCount = container.querySelectorAll('.form-group').length;
+            
+            if (goalCount < 5) {
+                const div = document.createElement('div');
+                div.className = 'form-group';
+                const goalNum = goalCount + 1;
+                div.innerHTML = `<input type="text" class="form-input" placeholder="${i18n.t('goals.text')} ${goalNum}">`;
+                container.appendChild(div);
+            } else {
+                showMessage(i18n.t('therapist.max_goals'), 'error');
+            }
+        }
+
+        // Create client
+        async function createClient() {
+            try {
+                const email = document.getElementById('clientEmail').value;
+                const password = document.getElementById('tempPassword').value;
+                
+                if (!email) {
+                    showMessage(i18n.t('therapist.please_enter_email'), 'error');
+                    return;
+                }
+                
+                // Get selected categories
+                const selectedCategories = [];
+                document.querySelectorAll('#trackingCategoriesSelection input:checked').forEach(input => {
+                    selectedCategories.push(parseInt(input.value));
+                });
+                
+                // Get goals
+                const goals = [];
+                document.querySelectorAll('#initialGoalsContainer input').forEach(input => {
+                    if (input.value.trim()) {
+                        goals.push(input.value.trim());
+                    }
+                });
+                
+                const data = {
+                    email: email,
+                    password: password || undefined,
+                    tracking_categories: selectedCategories,
+                    initial_goals: goals
+                };
+                
+                const response = await fetch('/api/therapist/create-client', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to create client');
+                }
+                
+                const result = await response.json();
+                
+                // Show persistent success message with credentials
+                showMessage(`
+                    <strong>${i18n.t('therapist.client_created')}</strong><br>
+                    <strong>${i18n.t('therapist.serial')}:</strong> ${result.client.serial}<br>
+                    <strong>${i18n.t('therapist.email')}:</strong> ${result.client.email}<br>
+                    <strong>${i18n.t('therapist.temp_password_label')}:</strong> ${result.client.temporary_password}<br>
+                    <br>
+                    <em>${i18n.t('therapist.save_credentials')}</em>
+                `, 'important', true);
+                
+                // Clear form
+                document.getElementById('clientEmail').value = '';
+                document.getElementById('tempPassword').value = '';
+                document.querySelectorAll('#initialGoalsContainer input').forEach(input => {
+                    input.value = '';
+                });
+                
+                // Reload clients
+                loadClients();
+                
+                // Switch to clients tab after a delay
+                setTimeout(() => {
+                    showTab('clients');
+                }, 2000);
+                
+            } catch (error) {
+                showMessage(i18n.t('therapist.error_creating') + ' ' + error.message, 'error');
+            }
+        }
+
+        // Add goal
+        async function addGoal(clientId) {
+            const goalText = prompt(i18n.t('therapist.enter_goal'));
+            if (!goalText) return;
+            
+            try {
+                const response = await fetch('/api/therapist/add-goal', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        client_id: clientId,
+                        goal_text: goalText
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to add goal');
+                }
+                
+                showMessage(i18n.t('therapist.goal_added'), 'success');
+                loadClients();
+            } catch (error) {
+                showMessage(i18n.t('therapist.error_adding_goal') + ' ' + error.message, 'error');
+            }
+        }
+
+        // Add note
+        async function addNote(clientId) {
+            const content = document.getElementById('noteContent').value;
+            const isMission = document.getElementById('isMission').checked;
+            
+            if (!content.trim()) {
+                showMessage(i18n.t('therapist.please_enter_note'), 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/therapist/add-note', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        client_id: clientId,
+                        content: content,
+                        is_mission: isMission
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to add note');
+                }
+                
+                showMessage(i18n.t('therapist.note_added'), 'success');
+                
+                // Reload client details
+                viewClientDetails(clientId);
+            } catch (error) {
+                showMessage(i18n.t('therapist.error_adding_note') + ' ' + error.message, 'error');
+            }
+        }
+
+        // Update report client select
+        function updateReportClientSelect() {
+            const select = document.getElementById('reportClient');
+            select.innerHTML = `<option value="">${i18n.t('therapist.select_client_option')}</option>` +
+                clientsList.map(client => 
+                    `<option value="${client.id}">${client.serial} - ${i18n.t('therapist.started')} ${new Date(client.start_date).toLocaleDateString()}</option>`
+                ).join('');
+        }
+
+        // Generate Excel report
+        async function generateReport() {
+            const clientId = document.getElementById('reportClient').value;
+            const week = document.getElementById('reportWeek').value;
+            
+            if (!clientId || !week) {
+                showMessage(i18n.t('therapist.select_both'), 'error');
+                return;
+            }
+            
+            try {
+                showMessage(i18n.t('therapist.generating_report'), 'success');
+                
+                const response = await fetch(`/api/reports/generate/${clientId}/${week}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    // Get filename from response headers
+                    const contentDisposition = response.headers.get('content-disposition');
+                    const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
+                    const filename = filenameMatch ? filenameMatch[1] : `therapy_report_${week}.xlsx`;
+                    
+                    // Download file
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    showMessage(i18n.t('therapist.report_downloaded'), 'success');
+                } else {
+                    const error = await response.json();
+                    showMessage(error.error || i18n.t('msg.error'), 'error');
+                }
+            } catch (error) {
+                showMessage(i18n.t('therapist.error_generating') + ' ' + error.message, 'error');
+            }
+        }
+
+        // Prepare email report - FIXED
+        async function prepareEmailReport() {
+            const clientId = document.getElementById('reportClient').value;
+            const week = document.getElementById('reportWeek').value;
+            
+            if (!clientId || !week) {
+                showMessage(i18n.t('therapist.select_both'), 'error');
+                return;
+            }
+            
+            try {
+                showMessage(i18n.t('therapist.preparing_email'), 'info');
+                
+                const response = await fetch('/api/therapist/email-report', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        client_id: parseInt(clientId),
+                        week: week
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    // Show email preview
+                    const statusDiv = document.getElementById('reportStatus');
+                    const statusContent = document.getElementById('reportStatusContent');
+                    statusDiv.style.display = 'block';
+                    
+                    // Use email_content field (that's what the backend returns)
+                    const emailContent = result.email_content || result.content || 'No content available';
+                    const recipient = result.recipient || 'Not specified';
+                    const subject = result.subject || 'Weekly Therapy Report';
+                    
+                    statusContent.innerHTML = `
+                        <div class="form-section">
+                            <h4>${i18n.t('therapist.email_preview')}</h4>
+                            <p><strong>${i18n.t('therapist.to')}</strong> ${recipient}</p>
+                            <p><strong>${i18n.t('therapist.subject')}</strong> ${subject}</p>
+                            <div style="margin-top: 1rem; background: white; padding: 1rem; border-radius: 6px; border: 1px solid #e0e0e0;">
+                                <pre style="white-space: pre-wrap; font-family: inherit;">${emailContent}</pre>
+                            </div>
+                            <p style="margin-top: 1rem; color: #666;">
+                                <em>${result.note || i18n.t('therapist.copy_email_note')}</em>
+                            </p>
+                        </div>
+                    `;
+                    
+                    showMessage(i18n.t('therapist.email_prepared'), 'success');
+                } else {
+                    // Hide status div if there's an error
+                    document.getElementById('reportStatus').style.display = 'none';
+                    showMessage(result.error || i18n.t('msg.error'), 'error');
+                }
+            } catch (error) {
+                document.getElementById('reportStatus').style.display = 'none';
+                showMessage(i18n.t('therapist.error_preparing') + ' ' + error.message, 'error');
+            }
+        }
+
+        // Set current week
+        function setCurrentWeek() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const week = getWeekNumber(now);
+            document.getElementById('reportWeek').value = `${year}-W${week.toString().padStart(2, '0')}`;
+        }
+
+        // Get week number
+        function getWeekNumber(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+
+        // Show message - Updated to support persistent messages
+        function showMessage(text, type = 'success', persistent = false) {
+            const container = document.getElementById('messageContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.dataset.persistent = persistent;
+            
+            // Create message content
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.innerHTML = text;
+            messageDiv.appendChild(contentDiv);
+            
+            // Add close button
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'message-close';
+            closeBtn.innerHTML = '×';
+            closeBtn.onclick = () => messageDiv.remove();
+            messageDiv.appendChild(closeBtn);
+            
+            container.appendChild(messageDiv);
+            
+            // Only auto-remove non-persistent messages
+            if (!persistent) {
+                setTimeout(() => {
+                    messageDiv.remove();
+                }, 5000);
+            }
+        }
+
+        // Clear non-persistent messages
+        function clearNonPersistentMessages() {
+            const messages = document.querySelectorAll('.message');
+            messages.forEach(msg => {
+                if (msg.dataset.persistent !== 'true') {
+                    msg.remove();
+                }
+            });
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userRole');
+            window.location.href = '/login.html';
+        }
+    </script>
+</body>
+</html>

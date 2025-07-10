@@ -1,0 +1,663 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Therapeutic Companion - Login</title>
+    
+    <!-- Add i18n script -->
+    <script src="i18n.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .auth-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            overflow: hidden;
+            width: 100%;
+            max-width: 400px;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .auth-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .auth-header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-header p {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+
+        .auth-body {
+            padding: 2rem;
+        }
+
+        .tab-switcher {
+            display: flex;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 1rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            color: #666;
+            white-space: nowrap;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab-button:hover {
+            color: #4CAF50;
+        }
+
+        .tab-button.active {
+            color: #4CAF50;
+            font-weight: 600;
+        }
+
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #4CAF50;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+
+        .role-notice {
+            text-align: center;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+
+        .role-notice h3 {
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+        }
+
+        .role-notice p {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.875rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            text-align: center;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .forgot-password a {
+            color: #4CAF50;
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            color: #0d47a1;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .client-notice {
+            background: #fff3cd;
+            color: #856404;
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+            text-align: left;
+        }
+
+        /* RTL Support */
+        .rtl .auth-header,
+        .rtl .role-notice,
+        .rtl .forgot-password {
+            text-align: right;
+        }
+
+        .rtl .info-box {
+            border-left: none;
+            border-right: 4px solid #2196f3;
+        }
+
+        .rtl .client-notice {
+            text-align: right;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .auth-container {
+                margin: 1rem;
+            }
+
+            .auth-header {
+                padding: 1.5rem;
+            }
+
+            .auth-body {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-header">
+            <h1 data-i18n="app.title">Therapeutic Companion</h1>
+            <p data-i18n="app.tagline">Your journey to wellness starts here</p>
+        </div>
+        
+        <div class="auth-body">
+            <div id="messageContainer"></div>
+            
+            <div class="tab-switcher">
+                <button class="tab-button active" onclick="showTab('login')" data-i18n="btn.login">Login</button>
+                <button class="tab-button" onclick="showTab('register')" data-i18n="btn.register">Register</button>
+            </div>
+            
+            <!-- Login Form -->
+            <div id="loginForm" class="tab-content">
+                <div class="info-box">
+                    <strong data-i18n="login.welcome_back">Welcome back!</strong>
+                    <span data-i18n="login.instruction">Therapists and clients can login here with their credentials.</span>
+                </div>
+                
+                <form onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label class="form-label" for="loginEmail" data-i18n="login.email">Email</label>
+                        <input type="email" id="loginEmail" class="form-input" required placeholder="your@email.com">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="loginPassword" data-i18n="login.password">Password</label>
+                        <input type="password" id="loginPassword" class="form-input" required placeholder="••••••••">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" id="loginBtn">
+                        <span id="loginBtnText" data-i18n="btn.login">Login</span>
+                    </button>
+                    
+                    <div class="forgot-password">
+                        <a href="#" onclick="showForgotPassword()" data-i18n="login.forgot_password">Forgot your password?</a>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Registration Form -->
+            <div id="registerForm" class="tab-content" style="display: none;">
+                <div class="role-notice">
+                    <h3>👨‍⚕️ <span data-i18n="register.therapist">Therapist Registration</span></h3>
+                    <p data-i18n="register.therapist_desc">Create your professional account to start managing clients.</p>
+                    <div class="client-notice">
+                        <strong data-i18n="register.client_note_title">Note for Clients:</strong> 
+                        <span data-i18n="register.client_note_desc">Client accounts must be created by your therapist. If you're a client, please use the Login tab with credentials provided by your therapist.</span>
+                    </div>
+                </div>
+
+                <form onsubmit="handleRegister(event)">
+                    <div class="form-group">
+                        <label class="form-label" for="therapistName" data-i18n="register.full_name">Full Name*</label>
+                        <input type="text" id="therapistName" class="form-input" required placeholder="Dr. Jane Smith">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="licenseNumber" data-i18n="register.license">License Number*</label>
+                        <input type="text" id="licenseNumber" class="form-input" required placeholder="LIC123456">
+                        <small style="color: #666;" data-i18n="register.license_note">Must be unique - each license can only be registered once</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="organization" data-i18n="register.organization">Organization (Optional)</label>
+                        <input type="text" id="organization" class="form-input" placeholder="Mental Health Clinic">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="registerEmail" data-i18n="login.email">Email*</label>
+                        <input type="email" id="registerEmail" class="form-input" required placeholder="your@email.com">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="registerPassword" data-i18n="login.password">Password*</label>
+                        <input type="password" id="registerPassword" class="form-input" required placeholder="At least 8 characters">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="confirmPassword" data-i18n="register.confirm_password">Confirm Password*</label>
+                        <input type="password" id="confirmPassword" class="form-input" required placeholder="Repeat password">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" id="registerBtn">
+                        <span id="registerBtnText" data-i18n="register.create_account">Create Therapist Account</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add login page specific translations
+        if (window.i18n && window.i18n.translations) {
+            // English
+            Object.assign(window.i18n.translations.en, {
+                'login.welcome_back': 'Welcome back!',
+                'login.instruction': 'Therapists and clients can login here with their credentials.',
+                'register.therapist_desc': 'Create your professional account to start managing clients.',
+                'register.client_note_title': 'Note for Clients:',
+                'register.client_note_desc': 'Client accounts must be created by your therapist. If you\'re a client, please use the Login tab with credentials provided by your therapist.',
+                'register.license_note': 'Must be unique - each license can only be registered once',
+                'register.create_account': 'Create Therapist Account',
+                'login.forgot_coming_soon': 'Password reset functionality coming soon!',
+                'register.passwords_mismatch': 'Passwords do not match',
+                'register.password_length': 'Password must be at least 8 characters long',
+                'msg.login_success': 'Login successful! Redirecting...',
+                'msg.registration_success': 'Registration successful! Logging you in...',
+                'msg.network_error': 'Network error. Please try again.',
+                'register.license_exists': 'This license number is already registered. Please use a different one.',
+                'register.email_exists': 'This email is already registered. Please use the login tab.'
+            });
+
+            // Hebrew
+            Object.assign(window.i18n.translations.he, {
+                'login.welcome_back': 'ברוך הבא!',
+                'login.instruction': 'מטפלים ומטופלים יכולים להתחבר כאן עם האישורים שלהם.',
+                'register.therapist_desc': 'צור את החשבון המקצועי שלך כדי להתחיל לנהל מטופלים.',
+                'register.client_note_title': 'הערה למטופלים:',
+                'register.client_note_desc': 'חשבונות מטופלים חייבים להיווצר על ידי המטפל שלך. אם אתה מטופל, אנא השתמש בלשונית ההתחברות עם האישורים שסופקו על ידי המטפל שלך.',
+                'register.license_note': 'חייב להיות ייחודי - כל רישיון יכול להירשם פעם אחת בלבד',
+                'register.create_account': 'צור חשבון מטפל',
+                'login.forgot_coming_soon': 'פונקציית איפוס סיסמה תגיע בקרוב!',
+                'register.passwords_mismatch': 'הסיסמאות אינן תואמות',
+                'register.password_length': 'הסיסמה חייבת להיות באורך של לפחות 8 תווים',
+                'msg.login_success': 'התחברות הצליחה! מעביר...',
+                'msg.registration_success': 'ההרשמה הצליחה! מחבר אותך...',
+                'msg.network_error': 'שגיאת רשת. אנא נסה שוב.',
+                'register.license_exists': 'מספר רישיון זה כבר רשום. אנא השתמש במספר אחר.',
+                'register.email_exists': 'כתובת דוא״ל זו כבר רשומה. אנא השתמש בלשונית ההתחברות.'
+            });
+
+            // Russian
+            Object.assign(window.i18n.translations.ru, {
+                'login.welcome_back': 'С возвращением!',
+                'login.instruction': 'Терапевты и клиенты могут войти здесь со своими учетными данными.',
+                'register.therapist_desc': 'Создайте свой профессиональный аккаунт, чтобы начать управлять клиентами.',
+                'register.client_note_title': 'Примечание для клиентов:',
+                'register.client_note_desc': 'Учетные записи клиентов должны быть созданы вашим терапевтом. Если вы клиент, используйте вкладку входа с учетными данными, предоставленными вашим терапевтом.',
+                'register.license_note': 'Должен быть уникальным - каждая лицензия может быть зарегистрирована только один раз',
+                'register.create_account': 'Создать аккаунт терапевта',
+                'login.forgot_coming_soon': 'Функция сброса пароля скоро появится!',
+                'register.passwords_mismatch': 'Пароли не совпадают',
+                'register.password_length': 'Пароль должен содержать не менее 8 символов',
+                'msg.login_success': 'Вход выполнен успешно! Перенаправление...',
+                'msg.registration_success': 'Регистрация успешна! Выполняется вход...',
+                'msg.network_error': 'Ошибка сети. Пожалуйста, попробуйте еще раз.',
+                'register.license_exists': 'Этот номер лицензии уже зарегистрирован. Пожалуйста, используйте другой.',
+                'register.email_exists': 'Этот email уже зарегистрирован. Пожалуйста, используйте вкладку входа.'
+            });
+
+            // Arabic
+            Object.assign(window.i18n.translations.ar, {
+                'login.welcome_back': 'مرحباً بعودتك!',
+                'login.instruction': 'يمكن للمعالجين والعملاء تسجيل الدخول هنا باستخدام بيانات الاعتماد الخاصة بهم.',
+                'register.therapist_desc': 'أنشئ حسابك المهني لبدء إدارة العملاء.',
+                'register.client_note_title': 'ملاحظة للعملاء:',
+                'register.client_note_desc': 'يجب إنشاء حسابات العملاء بواسطة المعالج الخاص بك. إذا كنت عميلاً، يرجى استخدام علامة تبويب تسجيل الدخول مع بيانات الاعتماد المقدمة من المعالج الخاص بك.',
+                'register.license_note': 'يجب أن يكون فريداً - يمكن تسجيل كل ترخيص مرة واحدة فقط',
+                'register.create_account': 'إنشاء حساب معالج',
+                'login.forgot_coming_soon': 'وظيفة إعادة تعيين كلمة المرور قادمة قريباً!',
+                'register.passwords_mismatch': 'كلمات المرور غير متطابقة',
+                'register.password_length': 'يجب أن تكون كلمة المرور 8 أحرف على الأقل',
+                'msg.login_success': 'تم تسجيل الدخول بنجاح! جاري التحويل...',
+                'msg.registration_success': 'تم التسجيل بنجاح! جاري تسجيل دخولك...',
+                'msg.network_error': 'خطأ في الشبكة. يرجى المحاولة مرة أخرى.',
+                'register.license_exists': 'رقم الترخيص هذا مسجل بالفعل. يرجى استخدام رقم آخر.',
+                'register.email_exists': 'هذا البريد الإلكتروني مسجل بالفعل. يرجى استخدام علامة تبويب تسجيل الدخول.'
+            });
+
+            // Re-translate page
+            i18n.translatePage();
+        }
+
+        // Show tab
+        function showTab(tab) {
+            // Update buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update forms
+            if (tab === 'login') {
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('registerForm').style.display = 'none';
+            } else {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('registerForm').style.display = 'block';
+            }
+            
+            // Clear messages
+            clearMessages();
+        }
+
+        // Handle login
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            // Show loading
+            const loginBtn = document.getElementById('loginBtn');
+            const loginBtnText = document.getElementById('loginBtnText');
+            loginBtn.disabled = true;
+            loginBtnText.innerHTML = `<span class="loading"></span> ${i18n.t('msg.loading')}`;
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Save token
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('userRole', data.user.role);
+                    
+                    showMessage(i18n.t('msg.login_success'), 'success');
+                    
+                    // Redirect based on role
+                    setTimeout(() => {
+                        if (data.user.role === 'therapist') {
+                            window.location.href = '/therapist-dashboard.html';
+                        } else {
+                            window.location.href = '/client-dashboard.html';
+                        }
+                    }, 1000);
+                } else {
+                    showMessage(data.error || i18n.t('login.error'), 'error');
+                }
+            } catch (error) {
+                showMessage(i18n.t('msg.network_error'), 'error');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtnText.textContent = i18n.t('btn.login');
+            }
+        }
+
+        // Handle registration (therapists only)
+        async function handleRegister(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                showMessage(i18n.t('register.passwords_mismatch'), 'error');
+                return;
+            }
+            
+            if (password.length < 8) {
+                showMessage(i18n.t('register.password_length'), 'error');
+                return;
+            }
+            
+            // Prepare therapist data
+            const data = {
+                email,
+                password,
+                role: 'therapist',
+                name: document.getElementById('therapistName').value,
+                license_number: document.getElementById('licenseNumber').value,
+                organization: document.getElementById('organization').value || ''
+            };
+            
+            // Show loading
+            const registerBtn = document.getElementById('registerBtn');
+            const registerBtnText = document.getElementById('registerBtnText');
+            registerBtn.disabled = true;
+            registerBtnText.innerHTML = `<span class="loading"></span> ${i18n.t('msg.loading')}`;
+            
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage(i18n.t('msg.registration_success'), 'success');
+                    
+                    // Save token
+                    localStorage.setItem('authToken', result.token);
+                    localStorage.setItem('userRole', result.user.role);
+                    
+                    // Redirect to therapist dashboard
+                    setTimeout(() => {
+                        window.location.href = '/therapist-dashboard.html';
+                    }, 1500);
+                } else {
+                    if (result.error && result.error.includes('license_number')) {
+                        showMessage(i18n.t('register.license_exists'), 'error');
+                    } else if (result.error && result.error.includes('Email already registered')) {
+                        showMessage(i18n.t('register.email_exists'), 'error');
+                    } else {
+                        showMessage(result.error || i18n.t('msg.error'), 'error');
+                    }
+                }
+            } catch (error) {
+                showMessage(i18n.t('msg.network_error'), 'error');
+            } finally {
+                registerBtn.disabled = false;
+                registerBtnText.textContent = i18n.t('register.create_account');
+            }
+        }
+
+        // Show forgot password
+        function showForgotPassword() {
+            showMessage(i18n.t('login.forgot_coming_soon'), 'info');
+        }
+
+        // Show message
+        function showMessage(text, type = 'success') {
+            const container = document.getElementById('messageContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = text;
+            
+            container.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+
+        // Clear messages
+        function clearMessages() {
+            document.getElementById('messageContainer').innerHTML = '';
+        }
+
+        // Check if already logged in
+        const authToken = localStorage.getItem('authToken');
+        const userRole = localStorage.getItem('userRole');
+        
+        if (authToken && userRole) {
+            if (userRole === 'therapist') {
+                window.location.href = '/therapist-dashboard.html';
+            } else {
+                window.location.href = '/client-dashboard.html';
+            }
+        }
+    </script>
+</body>
+</html>

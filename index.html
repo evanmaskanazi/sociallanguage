@@ -1,0 +1,493 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Therapeutic Companion - Your Journey to Wellness</title>
+    
+    <!-- Add i18n script -->
+    <script src="i18n.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5rem 2rem;
+            text-align: center;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .hero p {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            animation: fadeInUp 1s ease-out 0.2s backwards;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeInUp 1s ease-out 0.4s backwards;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn-secondary:hover {
+            background: white;
+            color: #667eea;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 4rem 2rem;
+            background: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: #333;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .feature-card p {
+            color: #666;
+            line-height: 1.8;
+        }
+
+        /* How It Works */
+        .how-it-works {
+            padding: 4rem 2rem;
+            background: white;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .step {
+            text-align: center;
+        }
+
+        .step-number {
+            display: inline-block;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            line-height: 60px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .step h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .step p {
+            color: #666;
+        }
+
+        /* Footer */
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .footer p {
+            opacity: 0.8;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero p {
+                font-size: 1.2rem;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+
+        /* RTL Support */
+        .rtl .feature-card,
+        .rtl .step {
+            text-align: right;
+        }
+
+        .rtl .footer {
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 data-i18n="app.title">Your Journey to Wellness Starts Here</h1>
+            <p data-i18n="hero.subtitle">A comprehensive therapy companion system for therapists and clients</p>
+            <div class="cta-buttons">
+                <a href="/login.html" class="btn btn-primary" data-i18n="hero.get_started">Get Started</a>
+                <a href="#features" class="btn btn-secondary" data-i18n="hero.learn_more">Learn More</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title" data-i18n="features.title">Features for Everyone</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">👨‍⚕️</div>
+                    <h3 data-i18n="features.therapists.title">For Therapists</h3>
+                    <p data-i18n="features.therapists.desc">Manage multiple clients, track progress, set goals, and generate comprehensive reports—all in one secure platform.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">😊</div>
+                    <h3 data-i18n="features.clients.title">For Clients</h3>
+                    <p data-i18n="features.clients.desc">Daily check-ins, mood tracking, goal completion, and gentle reminders to support your mental health journey.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3 data-i18n="features.tracking.title">Progress Tracking</h3>
+                    <p data-i18n="features.tracking.desc">Visual insights into emotional patterns, medication adherence, and physical activity over time.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3 data-i18n="features.security.title">Secure & Private</h3>
+                    <p data-i18n="features.security.desc">Your data is protected with industry-standard encryption and strict privacy controls.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3 data-i18n="features.accessible.title">Accessible Anywhere</h3>
+                    <p data-i18n="features.accessible.desc">Use on any device—desktop, tablet, or mobile—to stay connected with your wellness journey.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3 data-i18n="features.goals.title">Goal Setting</h3>
+                    <p data-i18n="features.goals.desc">Weekly goals and missions to help maintain focus and celebrate achievements.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works">
+        <div class="container">
+            <h2 class="section-title" data-i18n="how.title">How It Works</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3 data-i18n="how.step1.title">Sign Up</h3>
+                    <p data-i18n="how.step1.desc">Therapists register with their license. Clients join using their therapist's code.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3 data-i18n="how.step2.title">Set Up Profile</h3>
+                    <p data-i18n="how.step2.desc">Choose tracking categories and set initial goals for the wellness journey.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3 data-i18n="how.step3.title">Daily Check-ins</h3>
+                    <p data-i18n="how.step3.desc">Clients complete brief daily assessments to track their progress.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <h3 data-i18n="how.step4.title">Monitor & Support</h3>
+                    <p data-i18n="how.step4.desc">Therapists review progress, add notes, and adjust treatment plans as needed.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p data-i18n="footer.copyright">&copy; 2024 Therapeutic Companion. Supporting wellness journeys with care and technology.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Add translations for index page
+        if (window.i18n && window.i18n.translations) {
+            // English
+            Object.assign(window.i18n.translations.en, {
+                'hero.subtitle': 'A comprehensive therapy companion system for therapists and clients',
+                'hero.get_started': 'Get Started',
+                'hero.learn_more': 'Learn More',
+                'features.title': 'Features for Everyone',
+                'features.therapists.title': 'For Therapists',
+                'features.therapists.desc': 'Manage multiple clients, track progress, set goals, and generate comprehensive reports—all in one secure platform.',
+                'features.clients.title': 'For Clients',
+                'features.clients.desc': 'Daily check-ins, mood tracking, goal completion, and gentle reminders to support your mental health journey.',
+                'features.tracking.title': 'Progress Tracking',
+                'features.tracking.desc': 'Visual insights into emotional patterns, medication adherence, and physical activity over time.',
+                'features.security.title': 'Secure & Private',
+                'features.security.desc': 'Your data is protected with industry-standard encryption and strict privacy controls.',
+                'features.accessible.title': 'Accessible Anywhere',
+                'features.accessible.desc': 'Use on any device—desktop, tablet, or mobile—to stay connected with your wellness journey.',
+                'features.goals.title': 'Goal Setting',
+                'features.goals.desc': 'Weekly goals and missions to help maintain focus and celebrate achievements.',
+                'how.title': 'How It Works',
+                'how.step1.title': 'Sign Up',
+                'how.step1.desc': 'Therapists register with their license. Clients join using their therapist\'s code.',
+                'how.step2.title': 'Set Up Profile',
+                'how.step2.desc': 'Choose tracking categories and set initial goals for the wellness journey.',
+                'how.step3.title': 'Daily Check-ins',
+                'how.step3.desc': 'Clients complete brief daily assessments to track their progress.',
+                'how.step4.title': 'Monitor & Support',
+                'how.step4.desc': 'Therapists review progress, add notes, and adjust treatment plans as needed.',
+                'footer.copyright': '© 2024 Therapeutic Companion. Supporting wellness journeys with care and technology.'
+            });
+
+            // Hebrew
+            Object.assign(window.i18n.translations.he, {
+                'hero.subtitle': 'מערכת ליווי טיפולית מקיפה למטפלים ומטופלים',
+                'hero.get_started': 'התחל עכשיו',
+                'hero.learn_more': 'למידע נוסף',
+                'features.title': 'תכונות לכולם',
+                'features.therapists.title': 'למטפלים',
+                'features.therapists.desc': 'ניהול מטופלים מרובים, מעקב התקדמות, הגדרת יעדים ויצירת דוחות מקיפים - הכל בפלטפורמה מאובטחת אחת.',
+                'features.clients.title': 'למטופלים',
+                'features.clients.desc': 'צ׳ק-אין יומי, מעקב מצב רוח, השלמת יעדים ותזכורות עדינות לתמיכה במסע הבריאות הנפשית שלך.',
+                'features.tracking.title': 'מעקב התקדמות',
+                'features.tracking.desc': 'תובנות חזותיות על דפוסים רגשיים, היענות לתרופות ופעילות גופנית לאורך זמן.',
+                'features.security.title': 'מאובטח ופרטי',
+                'features.security.desc': 'הנתונים שלך מוגנים בהצפנה ברמת התעשייה ובקרות פרטיות קפדניות.',
+                'features.accessible.title': 'נגיש מכל מקום',
+                'features.accessible.desc': 'השתמש בכל מכשיר - מחשב, טאבלט או נייד - כדי להישאר מחובר למסע הבריאות שלך.',
+                'features.goals.title': 'הגדרת יעדים',
+                'features.goals.desc': 'יעדים ומשימות שבועיות לשמירה על מיקוד וחגיגת הישגים.',
+                'how.title': 'איך זה עובד',
+                'how.step1.title': 'הרשמה',
+                'how.step1.desc': 'מטפלים נרשמים עם הרישיון שלהם. מטופלים מצטרפים באמצעות קוד המטפל.',
+                'how.step2.title': 'הגדרת פרופיל',
+                'how.step2.desc': 'בחירת קטגוריות מעקב והגדרת יעדים ראשוניים למסע הבריאות.',
+                'how.step3.title': 'צ׳ק-אין יומי',
+                'how.step3.desc': 'מטופלים משלימים הערכות יומיות קצרות למעקב אחר ההתקדמות.',
+                'how.step4.title': 'ניטור ותמיכה',
+                'how.step4.desc': 'מטפלים סוקרים התקדמות, מוסיפים הערות ומתאימים תוכניות טיפול לפי הצורך.',
+                'footer.copyright': '© 2024 מלווה טיפולי. תומכים במסעות בריאות עם אכפתיות וטכנולוגיה.'
+            });
+
+            // Russian
+            Object.assign(window.i18n.translations.ru, {
+                'hero.subtitle': 'Комплексная система терапевтического сопровождения для терапевтов и клиентов',
+                'hero.get_started': 'Начать',
+                'hero.learn_more': 'Узнать больше',
+                'features.title': 'Возможности для всех',
+                'features.therapists.title': 'Для терапевтов',
+                'features.therapists.desc': 'Управление несколькими клиентами, отслеживание прогресса, постановка целей и создание подробных отчетов — все на одной безопасной платформе.',
+                'features.clients.title': 'Для клиентов',
+                'features.clients.desc': 'Ежедневные отметки, отслеживание настроения, выполнение целей и мягкие напоминания для поддержки вашего психического здоровья.',
+                'features.tracking.title': 'Отслеживание прогресса',
+                'features.tracking.desc': 'Визуальное представление эмоциональных паттернов, приема лекарств и физической активности с течением времени.',
+                'features.security.title': 'Безопасно и конфиденциально',
+                'features.security.desc': 'Ваши данные защищены промышленным шифрованием и строгим контролем конфиденциальности.',
+                'features.accessible.title': 'Доступно везде',
+                'features.accessible.desc': 'Используйте на любом устройстве — компьютере, планшете или мобильном — чтобы оставаться на связи со своим путем к здоровью.',
+                'features.goals.title': 'Постановка целей',
+                'features.goals.desc': 'Еженедельные цели и миссии для поддержания фокуса и празднования достижений.',
+                'how.title': 'Как это работает',
+                'how.step1.title': 'Регистрация',
+                'how.step1.desc': 'Терапевты регистрируются со своей лицензией. Клиенты присоединяются, используя код своего терапевта.',
+                'how.step2.title': 'Настройка профиля',
+                'how.step2.desc': 'Выберите категории отслеживания и установите начальные цели для пути к здоровью.',
+                'how.step3.title': 'Ежедневные отметки',
+                'how.step3.desc': 'Клиенты проходят краткие ежедневные оценки для отслеживания своего прогресса.',
+                'how.step4.title': 'Мониторинг и поддержка',
+                'how.step4.desc': 'Терапевты просматривают прогресс, добавляют заметки и корректируют планы лечения по мере необходимости.',
+                'footer.copyright': '© 2024 Терапевтический Компаньон. Поддерживаем путь к здоровью с заботой и технологиями.'
+            });
+
+            // Arabic
+            Object.assign(window.i18n.translations.ar, {
+                'hero.subtitle': 'نظام رفيق علاجي شامل للمعالجين والعملاء',
+                'hero.get_started': 'ابدأ الآن',
+                'hero.learn_more': 'اعرف المزيد',
+                'features.title': 'ميزات للجميع',
+                'features.therapists.title': 'للمعالجين',
+                'features.therapists.desc': 'إدارة عدة عملاء، تتبع التقدم، تحديد الأهداف، وإنشاء تقارير شاملة — كل ذلك في منصة آمنة واحدة.',
+                'features.clients.title': 'للعملاء',
+                'features.clients.desc': 'تسجيلات الحضور اليومية، تتبع المزاج، إكمال الأهداف، والتذكيرات اللطيفة لدعم رحلة صحتك النفسية.',
+                'features.tracking.title': 'تتبع التقدم',
+                'features.tracking.desc': 'رؤى بصرية للأنماط العاطفية والالتزام بالأدوية والنشاط البدني بمرور الوقت.',
+                'features.security.title': 'آمن وخاص',
+                'features.security.desc': 'بياناتك محمية بتشفير على مستوى الصناعة وضوابط خصوصية صارمة.',
+                'features.accessible.title': 'متاح في أي مكان',
+                'features.accessible.desc': 'استخدمه على أي جهاز — سطح المكتب أو الجهاز اللوحي أو الهاتف المحمول — للبقاء على اتصال برحلة عافيتك.',
+                'features.goals.title': 'تحديد الأهداف',
+                'features.goals.desc': 'أهداف ومهام أسبوعية للمساعدة في الحفاظ على التركيز والاحتفال بالإنجازات.',
+                'how.title': 'كيف يعمل',
+                'how.step1.title': 'التسجيل',
+                'how.step1.desc': 'يسجل المعالجون بترخيصهم. ينضم العملاء باستخدام رمز المعالج الخاص بهم.',
+                'how.step2.title': 'إعداد الملف الشخصي',
+                'how.step2.desc': 'اختر فئات التتبع وحدد الأهداف الأولية لرحلة العافية.',
+                'how.step3.title': 'تسجيلات الحضور اليومية',
+                'how.step3.desc': 'يكمل العملاء تقييمات يومية موجزة لتتبع تقدمهم.',
+                'how.step4.title': 'المراقبة والدعم',
+                'how.step4.desc': 'يراجع المعالجون التقدم ويضيفون الملاحظات ويعدلون خطط العلاج حسب الحاجة.',
+                'footer.copyright': '© 2024 الرفيق العلاجي. ندعم رحلات العافية بالرعاية والتكنولوجيا.'
+            });
+
+            // Re-translate page after adding new translations
+            i18n.translatePage();
+        }
+
+        // Check if user is already logged in
+        const authToken = localStorage.getItem('authToken');
+        const userRole = localStorage.getItem('userRole');
+        
+        if (authToken && userRole) {
+            // Redirect to appropriate dashboard
+            if (userRole === 'therapist') {
+                window.location.href = '/therapist-dashboard.html';
+            } else if (userRole === 'client') {
+                window.location.href = '/client-dashboard.html';
+            }
+        }
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
