@@ -51,7 +51,6 @@ app.config['MAIL_USERNAME'] = os.environ.get('SYSTEM_EMAIL')
 app.config['MAIL_PASSWORD'] = os.environ.get('SYSTEM_EMAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SYSTEM_EMAIL')
 
-
 # Database connection pooling - ADD THIS SECTION
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_size': 5,
@@ -63,9 +62,6 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'options': '-c statement_timeout=30000'  # 30 second statement timeout
     }
 }
-
-
-
 
 # Initialize extensions
 db = SQLAlchemy(app)
@@ -402,6 +398,8 @@ def client_dashboard_page():
         app.logger.error(f"Error serving client_dashboard.html: {e}")
         return f"Error: {str(e)}", 500
     # ADD THE NEW ROUTE HERE:
+
+
 @app.route('/i18n.js')
 def serve_i18n():
     """Serve the i18n.js file"""
@@ -415,6 +413,7 @@ def serve_i18n():
     except Exception as e:
         app.logger.error(f"Error serving i18n.js: {e}")
         return f"Error: {str(e)}", 500
+
 
 # ============= API ENDPOINTS =============
 
@@ -1019,49 +1018,55 @@ def submit_checkin():
         existing = client.checkins.filter_by(checkin_date=checkin_date).first()
 
         if existing:
-            # Update existing
+            # Update existing check-in
             existing.checkin_time = datetime.now().time()
-            existing.emotional_value = data.get('emotional_value')
-            existing.emotional_notes = data.get('emotional_notes')
-            existing.medication_value = data.get('medication_value')
-            existing.medication_notes = data.get('medication_notes')
-            existing.activity_value = data.get('activity_value')
-            existing.activity_notes = data.get('activity_notes')
+
+            # Clear old category responses for this date
+            CategoryResponse.query.filter_by(
+                client_id=client.id,
+                response_date=checkin_date
+            ).delete()
         else:
-            # Create new
+            # Create new check-in
             checkin = DailyCheckin(
                 client_id=client.id,
                 checkin_date=checkin_date,
-                checkin_time=datetime.now().time(),
-                emotional_value=data.get('emotional_value'),
-                emotional_notes=data.get('emotional_notes'),
-                medication_value=data.get('medication_value'),
-                medication_notes=data.get('medication_notes'),
-                activity_value=data.get('activity_value'),
-                activity_notes=data.get('activity_notes')
+                checkin_time=datetime.now().time()
             )
             db.session.add(checkin)
+            db.session.flush()
+            existing = checkin
 
-        # Save category responses
+        # Process category responses
         category_responses = data.get('category_responses', {})
+        category_notes = data.get('category_notes', {})
+
         for cat_id, value in category_responses.items():
-            # Check if response exists
-            existing_response = CategoryResponse.query.filter_by(
+            # Get category to check its name
+            category = TrackingCategory.query.get(int(cat_id))
+            if not category:
+                continue
+
+            # Create category response
+            response = CategoryResponse(
                 client_id=client.id,
                 category_id=int(cat_id),
-                response_date=checkin_date
-            ).first()
+                response_date=checkin_date,
+                value=value,
+                notes=category_notes.get(cat_id, '')
+            )
+            db.session.add(response)
 
-            if existing_response:
-                existing_response.value = value
-            else:
-                response = CategoryResponse(
-                    client_id=client.id,
-                    category_id=int(cat_id),
-                    response_date=checkin_date,
-                    value=value
-                )
-                db.session.add(response)
+            # Also update the legacy fields in daily_checkins for backward compatibility
+            if 'emotion' in category.name.lower():
+                existing.emotional_value = value
+                existing.emotional_notes = category_notes.get(cat_id, '')
+            elif 'medication' in category.name.lower():
+                existing.medication_value = value
+                existing.medication_notes = category_notes.get(cat_id, '')
+            elif 'physical activity' in category.name.lower() or 'activity' in category.name.lower():
+                existing.activity_value = value
+                existing.activity_notes = category_notes.get(cat_id, '')
 
         # Save goal completions
         goal_completions = data.get('goal_completions', {})
@@ -1146,6 +1151,7 @@ def get_client_progress():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/api/client/change-password', methods=['POST'])
 @require_auth(['client'])
 def change_client_password():
@@ -1154,31 +1160,32 @@ def change_client_password():
         data = request.json
         current_password = data.get('current_password')
         new_password = data.get('new_password')
-        
+
         # Validate input
         if not all([current_password, new_password]):
             return jsonify({'error': 'Current password and new password are required'}), 400
-        
+
         if len(new_password) < 8:
             return jsonify({'error': 'New password must be at least 8 characters long'}), 400
-        
+
         # Verify current password
         user = request.current_user
         if not bcrypt.check_password_hash(user.password_hash, current_password):
             return jsonify({'error': 'Current password is incorrect'}), 401
-        
+
         # Update password
         user.password_hash = bcrypt.generate_password_hash(new_password).decode('utf-8')
         db.session.commit()
-        
+
         return jsonify({
             'success': True,
             'message': 'Password changed successfully'
         })
-        
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
 
 # ============= CLIENT REPORT ENDPOINTS =============
 
@@ -2172,7 +2179,7 @@ def email_therapy_report():
         # Validate input
         if not client_id:
             return jsonify({'error': 'Client ID is required'}), 400
-        
+
         if not week:
             return jsonify({'error': 'Week is required'}), 400
 
