@@ -24,6 +24,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
 from io import BytesIO
+import uuid
+from datetime import datetime, timedelta
 
 # Create Flask app
 app = Flask(__name__)
