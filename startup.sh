@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 echo "Starting Therapeutic Companion Application..."
@@ -23,10 +24,10 @@ echo ""
 echo "Initializing database..."
 python init_db.py
 
-# Run the migration to fix existing clients (safe to run multiple times)
+# Run the migration to fix existing clients
 echo ""
 echo "Fixing client tracking categories..."
-python migration_fix_categories.py 2>/dev/null || echo "Migration script not found or already completed"
+python migration_fix_categories.py
 
 # Start the application
 echo ""
