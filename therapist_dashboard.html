@@ -1203,7 +1203,6 @@
         async function loadTrackingCategories() {
     try {
         // For now, hardcode the categories
-        // In production, this would fetch from the API
         trackingCategories = [
             { id: 1, name: 'Emotion Level', description: 'Overall emotional state', is_default: true },
             { id: 2, name: 'Energy', description: 'Physical and mental energy levels', is_default: true },
@@ -1213,19 +1212,29 @@
             { id: 6, name: 'Motivation', description: 'Level of motivation and drive', is_default: false }
         ];
         
-        // Update selection UI - ALL categories should be checked by default
+        // Update selection UI with translations
         const container = document.getElementById('trackingCategoriesSelection');
-        container.innerHTML = trackingCategories.map(cat => `
-            <label style="display: block; margin-bottom: 0.5rem;">
-                <input type="checkbox" value="${cat.id}" checked> <!-- CHANGED: All checked by default -->
-                <strong>${cat.name}</strong> - ${cat.description}
-            </label>
-        `).join('');
+        container.innerHTML = trackingCategories.map(cat => {
+            // Generate translation keys
+            const nameKey = 'category.' + cat.name.toLowerCase().replace(/\s+/g, '_');
+            const descKey = nameKey + '_desc';
+            
+            // Get translated values
+            const translatedName = i18n.t(nameKey) !== nameKey ? i18n.t(nameKey) : cat.name;
+            const translatedDesc = i18n.t(descKey) !== descKey ? i18n.t(descKey) : cat.description;
+            
+            return `
+                <label style="display: block; margin-bottom: 0.5rem;">
+                    <input type="checkbox" value="${cat.id}" checked>
+                    <strong>${translatedName}</strong> - ${translatedDesc}
+                </label>
+            `;
+        }).join('');
         
         // Add a note for the therapist
         container.innerHTML += `
             <p style="margin-top: 1rem; color: #666; font-style: italic;">
-                Note: All categories are selected by default. Uncheck any you don't want the client to track.
+                ${i18n.t('therapist.all_categories_note', 'Note: All categories are selected by default. Uncheck any you don\'t want the client to track.')}
             </p>
         `;
     } catch (error) {
