@@ -1124,7 +1124,7 @@
                 clientData = data.client;
                 trackingCategories = data.tracking_categories;
                 weeklyGoals = data.weekly_goals;
-
+                console.log('Tracking categories received:', trackingCategories);
                 updateUI();
                 loadWeekView();
             } catch (error) {
@@ -1300,31 +1300,37 @@
         }
 
         function setupAdditionalCategories() {
-            const additionalDiv = document.getElementById('additionalCategories');
-            const additionalCategories = trackingCategories.filter(cat => 
-                !['Emotion Level', 'Medication', 'Physical Activity'].includes(cat.name)
-            );
-            
-            if (additionalCategories.length > 0) {
-                additionalDiv.innerHTML = additionalCategories.map(cat => `
-                    <div class="form-section">
-                        <h3>${cat.name}</h3>
-                        <p style="color: #666; font-size: 0.9rem;">${cat.description}</p>
-                        <div class="rating-scale">
-                            ${[1,2,3,4,5].map(val => `
-                                <button type="button" 
-                                        class="rating-button" 
-                                        data-category="cat-${cat.id}" 
-                                        data-value="${val}"
-                                        onclick="selectRating(this)">
-                                    <span>${val}</span>
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-                `).join('');
-            }
-        }
+    const additionalDiv = document.getElementById('additionalCategories');
+    
+    // Debug log
+    console.log('All tracking categories:', trackingCategories);
+    
+    // Don't filter - show ALL categories
+    const additionalCategories = trackingCategories;
+    
+    if (additionalCategories.length > 0) {
+        additionalDiv.innerHTML = additionalCategories.map(cat => `
+            <div class="form-section">
+                <h3>${cat.name}</h3>
+                <p style="color: #666; font-size: 0.9rem;">${cat.description}</p>
+                <div class="rating-scale">
+                    ${[1,2,3,4,5].map(val => `
+                        <button type="button" 
+                                class="rating-button" 
+                                data-category="cat-${cat.id}" 
+                                data-value="${val}"
+                                onclick="selectRating(this)">
+                            <span>${val}</span>
+                        </button>
+                    `).join('')}
+                </div>
+                <textarea class="notes-textarea" 
+                          id="category-${cat.id}-notes" 
+                          placeholder="Notes for ${cat.name} (optional)"></textarea>
+            </div>
+        `).join('');
+    }
+}
 
         function selectRating(button) {
             const category = button.dataset.category;
