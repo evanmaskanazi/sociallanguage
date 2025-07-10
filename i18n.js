@@ -687,16 +687,21 @@ const i18n = {
                       this.translations.en[key] || 
                       key;
     
+    // If no replacements, return translation as-is
+    if (!replacements || Object.keys(replacements).length === 0) {
+        return translation;
+    }
+    
     // Replace placeholders like {name} with values
     let result = translation;
     for (const [placeholder, value] of Object.entries(replacements)) {
-        // FIX: Escape special regex characters
+        // Properly escape special regex characters
         const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        result = result.replace(new RegExp(`{${escapedPlaceholder}}`, 'g'), value);
+        result = result.replace(new RegExp(`\\{${escapedPlaceholder}\\}`, 'g'), value);
     }
     
     return result;
-},
+}
     
     // Change language
     setLanguage(lang) {
