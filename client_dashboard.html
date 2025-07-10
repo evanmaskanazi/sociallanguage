@@ -1007,6 +1007,18 @@
         let currentWeekOffset = 0;
         let selectedDate = new Date();
 
+        function translateCategoryName(categoryName) {
+        const key = 'category.' + categoryName.toLowerCase().replace(/\s+/g, '_');
+        const translation = i18n.t(key);
+        return translation !== key ? translation : categoryName;
+                }
+
+        function translateCategoryDescription(categoryName, description) {
+        const key = 'category.' + categoryName.toLowerCase().replace(/\s+/g, '_') + '_desc';
+        const translation = i18n.t(key);
+        return translation !== key ? translation : description;
+           }
+        
         // Check authentication
         if (!authToken) {
             window.location.href = '/login.html';
