@@ -1365,6 +1365,7 @@ def client_dashboard():
             tracking_categories.append({
                 'id': plan.category_id,
                 'name': translated_name,
+                'original_name': plan.category.name,
                 'description': plan.category.description,  # Could also translate this
                 'today_value': today_response.value if today_response else None
             })
@@ -1697,6 +1698,7 @@ def update_client_tracking_plan():
     """Update client's tracking plan"""
     try:
         therapist = request.current_user.therapist
+        lang = get_language_from_header()
         data = request.json
 
         client_id = data.get('client_id')
