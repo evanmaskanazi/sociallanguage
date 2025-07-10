@@ -336,6 +336,31 @@ translations: {
         'therapist.recent_notes': 'Recent Notes & Missions',
         'therapist.mission': 'MISSION',
         'therapist.no_notes': 'No notes yet',
+        
+         // English
+        'email.dear_therapist': 'Dear Therapist',
+        'email.weekly_report_intro': 'Here is my weekly progress report for',
+        'email.report_generated_on': 'Report generated on',
+        'email.best_regards': 'Best regards',
+
+// Hebrew
+        'email.dear_therapist': 'מטפל יקר',
+        'email.weekly_report_intro': 'הנה דוח ההתקדמות השבועי שלי עבור',
+        'email.report_generated_on': 'הדוח נוצר בתאריך',
+        'email.best_regards': 'בברכה',
+
+// Russian
+        'email.dear_therapist': 'Уважаемый терапевт',
+        'email.weekly_report_intro': 'Вот мой еженедельный отчет о прогрессе за',
+        'email.report_generated_on': 'Отчет создан',
+        'email.best_regards': 'С уважением',
+
+// Arabic
+        'email.dear_therapist': 'المعالج العزيز',
+        'email.weekly_report_intro': 'هذا هو تقرير التقدم الأسبوعي الخاص بي لـ',
+        'email.report_generated_on': 'تم إنشاء التقرير في',
+        'email.best_regards': 'مع أطيب التحيات',
+        
 
         // Index page
         'hero.subtitle': 'A comprehensive therapy companion system for therapists and clients',
