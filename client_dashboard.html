@@ -572,6 +572,7 @@
         <div class="nav-tab" onclick="showTab('goals')" data-i18n="nav.goals">Goals</div>
         <div class="nav-tab" onclick="showTab('progress')" data-i18n="nav.progress">Progress</div>
         <div class="nav-tab" onclick="showTab('reports')" data-i18n="nav.reports">Reports</div>
+        <div class="nav-tab" onclick="showTab('settings')" data-i18n="nav.settings">Settings</div>
     </nav>
 
     <div class="container">
@@ -790,6 +791,35 @@
                 </div>
             </div>
         </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <h2 data-i18n="client.account_settings">Account Settings</h2>
+            
+            <div class="card">
+                <h3 data-i18n="client.change_password">Change Password</h3>
+                <p style="color: #666; margin-bottom: 1rem;" data-i18n="client.password_requirements">Password must be at least 8 characters long.</p>
+                
+                <form id="passwordChangeForm" onsubmit="changePassword(event)">
+                    <div class="form-group">
+                        <label for="currentPassword" data-i18n="client.current_password">Current Password</label>
+                        <input type="password" id="currentPassword" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="newPassword" data-i18n="client.new_password">New Password</label>
+                        <input type="password" id="newPassword" class="form-input" required minlength="8">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirmPassword" data-i18n="client.confirm_new_password">Confirm New Password</label>
+                        <input type="password" id="confirmPassword" class="form-input" required minlength="8">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" data-i18n="client.update_password">Update Password</button>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -797,6 +827,19 @@
         if (window.i18n && window.i18n.translations) {
             // English
             Object.assign(window.i18n.translations.en, {
+                'nav.settings': 'Settings',
+                'client.account_settings': 'Account Settings',
+                'client.change_password': 'Change Password',
+                'client.password_requirements': 'Password must be at least 8 characters long.',
+                'client.current_password': 'Current Password',
+                'client.new_password': 'New Password',
+                'client.confirm_new_password': 'Confirm New Password',
+                'client.update_password': 'Update Password',
+                'client.password_changed': 'Password changed successfully!',
+                'client.passwords_dont_match': 'New passwords do not match',
+                'client.password_too_short': 'Password must be at least 8 characters long',
+                'client.incorrect_password': 'Current password is incorrect',
+                'client.error_changing_password': 'Error changing password:',
                 'client.dashboard_title': 'My Therapy Journey',
                 'client.encouragement': 'Your journey to wellness continues. Every step counts!',
                 'client.previous_week': '← Previous Week',
@@ -845,6 +888,19 @@
 
             // Hebrew
             Object.assign(window.i18n.translations.he, {
+                'nav.settings': 'הגדרות',
+                'client.account_settings': 'הגדרות חשבון',
+                'client.change_password': 'שינוי סיסמה',
+                'client.password_requirements': 'הסיסמה חייבת להיות באורך של לפחות 8 תווים.',
+                'client.current_password': 'סיסמה נוכחית',
+                'client.new_password': 'סיסמה חדשה',
+                'client.confirm_new_password': 'אשר סיסמה חדשה',
+                'client.update_password': 'עדכן סיסמה',
+                'client.password_changed': 'הסיסמה שונתה בהצלחה!',
+                'client.passwords_dont_match': 'הסיסמאות החדשות אינן תואמות',
+                'client.password_too_short': 'הסיסמה חייבת להיות באורך של לפחות 8 תווים',
+                'client.incorrect_password': 'הסיסמה הנוכחית שגויה',
+                'client.error_changing_password': 'שגיאה בשינוי הסיסמה:',
                 'client.dashboard_title': 'המסע הטיפולי שלי',
                 'client.encouragement': 'המסע שלך לבריאות ממשיך. כל צעד נחשב!',
                 'client.previous_week': '→ שבוע קודם',
@@ -893,6 +949,19 @@
 
             // Russian
             Object.assign(window.i18n.translations.ru, {
+                'nav.settings': 'Настройки',
+                'client.account_settings': 'Настройки аккаунта',
+                'client.change_password': 'Изменить пароль',
+                'client.password_requirements': 'Пароль должен содержать не менее 8 символов.',
+                'client.current_password': 'Текущий пароль',
+                'client.new_password': 'Новый пароль',
+                'client.confirm_new_password': 'Подтвердите новый пароль',
+                'client.update_password': 'Обновить пароль',
+                'client.password_changed': 'Пароль успешно изменен!',
+                'client.passwords_dont_match': 'Новые пароли не совпадают',
+                'client.password_too_short': 'Пароль должен содержать не менее 8 символов',
+                'client.incorrect_password': 'Текущий пароль неверный',
+                'client.error_changing_password': 'Ошибка при изменении пароля:',
                 'client.dashboard_title': 'Мой терапевтический путь',
                 'client.encouragement': 'Ваш путь к здоровью продолжается. Каждый шаг важен!',
                 'client.previous_week': '← Предыдущая неделя',
@@ -941,6 +1010,19 @@
 
             // Arabic
             Object.assign(window.i18n.translations.ar, {
+                'nav.settings': 'الإعدادات',
+                'client.account_settings': 'إعدادات الحساب',
+                'client.change_password': 'تغيير كلمة المرور',
+                'client.password_requirements': 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.',
+                'client.current_password': 'كلمة المرور الحالية',
+                'client.new_password': 'كلمة المرور الجديدة',
+                'client.confirm_new_password': 'تأكيد كلمة المرور الجديدة',
+                'client.update_password': 'تحديث كلمة المرور',
+                'client.password_changed': 'تم تغيير كلمة المرور بنجاح!',
+                'client.passwords_dont_match': 'كلمات المرور الجديدة غير متطابقة',
+                'client.password_too_short': 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل',
+                'client.incorrect_password': 'كلمة المرور الحالية غير صحيحة',
+                'client.error_changing_password': 'خطأ في تغيير كلمة المرور:',
                 'client.dashboard_title': 'رحلتي العلاجية',
                 'client.encouragement': 'رحلتك نحو العافية مستمرة. كل خطوة مهمة!',
                 'client.previous_week': '→ الأسبوع السابق',
@@ -1608,6 +1690,57 @@
         document.getElementById('checkinDate').addEventListener('change', function() {
             checkDateStatus(new Date(this.value));
         });
+
+        // Password change function
+        async function changePassword(event) {
+            event.preventDefault();
+            
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Validate passwords match
+            if (newPassword !== confirmPassword) {
+                showMessage(i18n.t('client.passwords_dont_match'), 'error');
+                return;
+            }
+            
+            // Validate password length
+            if (newPassword.length < 8) {
+                showMessage(i18n.t('client.password_too_short'), 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/client/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage(i18n.t('client.password_changed'), 'success');
+                    // Clear form
+                    document.getElementById('passwordChangeForm').reset();
+                } else {
+                    if (result.error === 'Current password is incorrect') {
+                        showMessage(i18n.t('client.incorrect_password'), 'error');
+                    } else {
+                        showMessage(result.error || i18n.t('msg.error'), 'error');
+                    }
+                }
+            } catch (error) {
+                showMessage(i18n.t('client.error_changing_password') + ' ' + error.message, 'error');
+            }
+        }
     </script>
 </body>
 </html>
