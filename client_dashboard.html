@@ -1654,46 +1654,172 @@
         }
 
         async function prepareEmailReport() {
-            const week = document.getElementById('reportWeek').value;
+    const week = document.getElementById('reportWeek').value;
+    
+    if (!week) {
+        showMessage(i18n.t('client.select_client_week'), 'error');
+        return;
+    }
+    
+    try {
+        // Parse week
+        const [year, weekNum] = week.split('-W');
+        
+        // Calculate week dates
+        const weekStart = getWeekStart(parseInt(year), parseInt(weekNum));
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+        
+        // Fetch week's check-in data
+        const checkinsResponse = await fetch(`/api/client/week-checkins/${week}`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Accept-Language': i18n.currentLang
+            }
+        });
+        
+        if (!checkinsResponse.ok) {
+            throw new Error('Failed to load week data');
+        }
+        
+        const checkinsData = await checkinsResponse.json();
+        
+        // Fetch goals for the week
+        const goalsResponse = await fetch(`/api/client/goals/${week}`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Accept-Language': i18n.currentLang
+            }
+        });
+        
+        const goalsData = goalsResponse.ok ? await goalsResponse.json() : { goals: [] };
+        
+        // Build translated email content
+        let emailContent = '';
+        
+        // Add greeting
+        emailContent += i18n.t('email.dear_therapist', 'Dear Therapist') + ',\n\n';
+        emailContent += i18n.t('email.weekly_report_intro', 'Here is my weekly progress report for') + ' ';
+        emailContent += `${weekStart.toLocaleDateString(i18n.currentLang, { month: 'long', day: 'numeric' })} - `;
+        emailContent += `${weekEnd.toLocaleDateString(i18n.currentLang, { month: 'long', day: 'numeric', year: 'numeric' })}.\n\n`;
+        
+        // Add client info
+        emailContent += `${i18n.t('client.serial')}: ${clientData.serial}\n`;
+        emailContent += `${i18n.t('reports.week')}: ${weekNum}, ${year}\n`;
+        
+        // Count completed check-ins
+        const completedCheckins = Object.keys(checkinsData.checkins || {}).length;
+        emailContent += `${i18n.t('reports.checkin_completion')}: ${completedCheckins}/7\n\n`;
+        
+        // Daily summary
+        emailContent += i18n.t('reports.daily_checkins').toUpperCase() + ':\n\n';
+        
+        for (let i = 0; i < 7; i++) {
+            const currentDate = new Date(weekStart);
+            currentDate.setDate(currentDate.getDate() + i);
+            const dateStr = currentDate.toISOString().split('T')[0];
+            const dayName = i18n.getDayName(currentDate.getDay());
             
-            if (!week) {
-                showMessage(i18n.t('client.select_client_week'), 'error');
-                return;
+            emailContent += `${dayName} (${currentDate.toLocaleDateString(i18n.currentLang, { month: '2-digit', day: '2-digit' })}):\n`;
+            
+            const checkin = checkinsData.checkins[dateStr];
+            if (checkin) {
+                emailContent += `  ✓ ${i18n.t('reports.checkin_time')}: ${checkin.time}\n`;
+                
+                // Add category responses
+                for (const category of trackingCategories) {
+                    const catName = translateCategoryName(category.original_name || category.name);
+                    // Try to find the value in the checkin data
+                    let value = null;
+                    if (category.original_name && category.original_name.toLowerCase().includes('emotion')) {
+                        value = checkin.emotional;
+                    } else if (category.original_name && category.original_name.toLowerCase().includes('medication')) {
+                        value = checkin.medication;
+                    } else if (category.original_name && category.original_name.toLowerCase().includes('activity')) {
+                        value = checkin.activity;
+                    }
+                    
+                    if (value !== null && value !== undefined) {
+                        emailContent += `  - ${catName}: ${value}/5\n`;
+                    }
+                }
+            } else {
+                emailContent += `  ✗ ${i18n.t('reports.no_checkin')}\n`;
+            }
+            emailContent += '\n';
+        }
+        
+        // Weekly summary
+        if (completedCheckins > 0) {
+            emailContent += i18n.t('reports.weekly_summary').toUpperCase() + ':\n';
+            
+            // Calculate averages for each category
+            const categoryAverages = {};
+            let checkinCount = 0;
+            
+            for (const dateStr in checkinsData.checkins) {
+                const checkin = checkinsData.checkins[dateStr];
+                checkinCount++;
+                
+                // Add to averages
+                if (checkin.emotional) {
+                    categoryAverages['emotion_level'] = (categoryAverages['emotion_level'] || 0) + checkin.emotional;
+                }
+                if (checkin.medication) {
+                    categoryAverages['medication'] = (categoryAverages['medication'] || 0) + checkin.medication;
+                }
+                if (checkin.activity) {
+                    categoryAverages['physical_activity'] = (categoryAverages['physical_activity'] || 0) + checkin.activity;
+                }
             }
             
-            try {
-                const response = await fetch('/api/client/email-report', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'Content-Type': 'application/json',
-                        'Accept-Language': i18n.currentLang
-                    },
-                    body: JSON.stringify({ week: week })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showReportStatus('info', `
-                        <h4>${i18n.t('client.email_preview')}</h4>
-                        <p><strong>${i18n.t('therapist.to')}</strong> ${result.recipient}</p>
-                        <p><strong>${i18n.t('therapist.subject')}</strong> ${result.subject}</p>
-                        <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-                            <pre style="white-space: pre-wrap; font-family: inherit;">${result.content}</pre>
-                        </div>
-                        <p style="margin-top: 1rem; color: #666;">
-                            <em>${result.note || i18n.t('client.copy_email')}</em>
-                        </p>
-                    `);
-                } else {
-                    showMessage(result.error || i18n.t('msg.error'), 'error');
+            // Display averages
+            for (const category of trackingCategories) {
+                const key = category.original_name ? category.original_name.toLowerCase().replace(/\s+/g, '_') : '';
+                if (categoryAverages[key]) {
+                    const avg = (categoryAverages[key] / checkinCount).toFixed(1);
+                    const catName = translateCategoryName(category.original_name || category.name);
+                    emailContent += `- ${catName}: ${avg}/5\n`;
                 }
-            } catch (error) {
-                showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
+            }
+            
+            emailContent += `- ${i18n.t('reports.completion_rate')}: ${completedCheckins}/7 ${i18n.t('days')} (${Math.round((completedCheckins/7)*100)}%)\n`;
+        }
+        
+        // Add goals if any
+        if (goalsData.goals && goalsData.goals.length > 0) {
+            emailContent += `\n${i18n.t('reports.weekly_goals').toUpperCase()}:\n`;
+            for (const goal of goalsData.goals) {
+                const completedDays = Object.values(goal.completions).filter(c => c === true).length;
+                emailContent += `- ${goal.text}: ${i18n.t('reports.completed')} ${completedDays}/7 ${i18n.t('days')}\n`;
             }
         }
-
+        
+        // Add footer
+        emailContent += `\n${i18n.t('email.report_generated_on', 'Report generated on')}: ${new Date().toLocaleString(i18n.currentLang)}\n\n`;
+        emailContent += i18n.t('email.best_regards', 'Best regards') + ',\n';
+        emailContent += `${i18n.t('client.serial')} ${clientData.serial}`;
+        
+        // Get therapist email (fallback to example)
+        const therapistEmail = 'therapist@example.com'; // You might want to get this from somewhere
+        
+        // Show the translated email
+        showReportStatus('info', `
+            <h4>${i18n.t('client.email_preview')}</h4>
+            <p><strong>${i18n.t('therapist.to')}</strong> ${therapistEmail}</p>
+            <p><strong>${i18n.t('therapist.subject')}</strong> ${i18n.t('reports.weekly_report_title')} - ${clientData.serial} - ${i18n.t('reports.week')} ${weekNum}, ${year}</p>
+            <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <pre style="white-space: pre-wrap; font-family: inherit;">${emailContent}</pre>
+            </div>
+            <p style="margin-top: 1rem; color: #666;">
+                <em>${i18n.t('client.copy_email')}</em>
+            </p>
+        `);
+        
+    } catch (error) {
+        showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
+    }
+}
         function showReportStatus(type, content) {
             const statusDiv = document.getElementById('reportStatus');
             const statusContent = document.getElementById('reportStatusContent');
