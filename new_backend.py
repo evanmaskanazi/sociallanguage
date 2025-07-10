@@ -3041,7 +3041,11 @@ def reset_password_page():
 @app.route('/favicon.ico')
 def favicon():
     """Serve favicon"""
-    return send_file(os.path.join(BASE_DIR, 'favicon.ico'), mimetype='image/x-icon')
+    favicon_path = os.path.join(BASE_DIR, 'favicon.svg')
+    if os.path.exists(favicon_path):
+        return send_file(favicon_path, mimetype='image/svg+xml')
+    else:
+        return '', 204
 
 
 # ============= INITIALIZATION =============
