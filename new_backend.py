@@ -781,17 +781,13 @@ def create_client():
         db.session.add(client)
         db.session.flush()
 
-        # Add tracking categories
-        category_ids = data.get('tracking_categories', [])
-        if not category_ids:
-            # Add default categories
-            default_categories = TrackingCategory.query.filter_by(is_default=True).all()
-            category_ids = [cat.id for cat in default_categories]
-
-        for cat_id in category_ids:
+        # FIXED: Always add ALL tracking categories, not just default ones
+        all_categories = TrackingCategory.query.all()
+        for category in all_categories:
             plan = ClientTrackingPlan(
                 client_id=client.id,
-                category_id=cat_id
+                category_id=category.id,
+                is_active=True  # All categories active by default
             )
             db.session.add(plan)
 
@@ -799,13 +795,14 @@ def create_client():
         goals = data.get('initial_goals', [])
         week_start = date.today() - timedelta(days=date.today().weekday())
         for goal_text in goals:
-            goal = WeeklyGoal(
-                client_id=client.id,
-                therapist_id=therapist.id,
-                goal_text=goal_text,
-                week_start=week_start
-            )
-            db.session.add(goal)
+            if goal_text.strip():  # Only add non-empty goals
+                goal = WeeklyGoal(
+                    client_id=client.id,
+                    therapist_id=therapist.id,
+                    goal_text=goal_text,
+                    week_start=week_start
+                )
+                db.session.add(goal)
 
         # Add welcome note
         welcome_note = TherapistNote(
