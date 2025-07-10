@@ -683,18 +683,20 @@ const i18n = {
     
     // Get translation
     t(key, replacements = {}) {
-        const translation = this.translations[this.currentLang]?.[key] || 
-                          this.translations.en[key] || 
-                          key;
-        
-        // Replace placeholders like {name} with values
-        let result = translation;
-        for (const [placeholder, value] of Object.entries(replacements)) {
-            result = result.replace(new RegExp(`{${placeholder}}`, 'g'), value);
-        }
-        
-        return result;
-    },
+    const translation = this.translations[this.currentLang]?.[key] || 
+                      this.translations.en[key] || 
+                      key;
+    
+    // Replace placeholders like {name} with values
+    let result = translation;
+    for (const [placeholder, value] of Object.entries(replacements)) {
+        // FIX: Escape special regex characters
+        const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        result = result.replace(new RegExp(`{${escapedPlaceholder}}`, 'g'), value);
+    }
+    
+    return result;
+},
     
     // Change language
     setLanguage(lang) {
