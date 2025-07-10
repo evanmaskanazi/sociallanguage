@@ -1,4 +1,3 @@
-
 // i18n.js - Internationalization Module for Therapeutic Companion
 // Place this file in your project root and include it in all HTML files
 
