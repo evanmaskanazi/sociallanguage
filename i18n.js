@@ -1,3 +1,4 @@
+
 // i18n.js - Internationalization Module for Therapeutic Companion
 // Place this file in your project root and include it in all HTML files
 
@@ -661,6 +662,8 @@ const i18n = {
     
     // Initialize i18n
     init() {
+        console.log('i18n.init() called');
+        
         // Set initial language from localStorage or browser
         const savedLang = localStorage.getItem('userLanguage');
         const browserLang = navigator.language.split('-')[0];
@@ -671,11 +674,16 @@ const i18n = {
             this.currentLang = browserLang;
         }
         
+        console.log('Current language set to:', this.currentLang);
+        
         // Apply RTL if needed
         this.applyRTL();
         
-        // Initialize language switcher if it exists
-        this.initLanguageSwitcher();
+        // Force initialize language switcher after a short delay to ensure DOM is ready
+        setTimeout(() => {
+            console.log('Attempting to initialize language switcher...');
+            this.initLanguageSwitcher();
+        }, 100);
         
         // Translate page
         this.translatePage();
@@ -683,25 +691,25 @@ const i18n = {
     
     // Get translation
     t(key, replacements = {}) {
-    const translation = this.translations[this.currentLang]?.[key] || 
-                      this.translations.en[key] || 
-                      key;
-    
-    // If no replacements, return translation as-is
-    if (!replacements || Object.keys(replacements).length === 0) {
-        return translation;
-    }
-    
-    // Replace placeholders like {name} with values
-    let result = translation;
-    for (const [placeholder, value] of Object.entries(replacements)) {
-        // Properly escape special regex characters
-        const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        result = result.replace(new RegExp(`\\{${escapedPlaceholder}\\}`, 'g'), value);
-    }
-    
-    return result;
-}
+        const translation = this.translations[this.currentLang]?.[key] || 
+                          this.translations.en[key] || 
+                          key;
+        
+        // If no replacements, return translation as-is
+        if (!replacements || Object.keys(replacements).length === 0) {
+            return translation;
+        }
+        
+        // Replace placeholders like {name} with values
+        let result = translation;
+        for (const [placeholder, value] of Object.entries(replacements)) {
+            // Properly escape special regex characters
+            const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            result = result.replace(new RegExp(`\\{${escapedPlaceholder}\\}`, 'g'), value);
+        }
+        
+        return result;
+    },
     
     // Change language
     setLanguage(lang) {
@@ -759,9 +767,13 @@ const i18n = {
     
     // Initialize language switcher
     initLanguageSwitcher() {
-        // Check if switcher already exists
-        if (document.getElementById('languageSwitcher')) {
-            return;
+        console.log('initLanguageSwitcher() called');
+        
+        // Remove any existing language switcher first
+        const existing = document.getElementById('languageSwitcher');
+        if (existing) {
+            console.log('Removing existing language switcher');
+            existing.remove();
         }
         
         // Create language switcher
@@ -792,76 +804,86 @@ const i18n = {
             this.setLanguage(e.target.value);
         });
         
-        // Add styles
-        const style = document.createElement('style');
-        style.textContent = `
-            .language-switcher {
-                position: fixed;
-                top: 1rem;
-                ${this.rtlLanguages.includes(this.currentLang) ? 'left' : 'right'}: 1rem;
-                z-index: 9999;
-                padding: 0.5rem 1rem;
-                border-radius: 8px;
-                border: 1px solid #e0e0e0;
-                background: white;
-                font-size: 0.875rem;
-                cursor: pointer;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            }
-            
-            .rtl .language-switcher {
-                left: 1rem;
-                right: auto;
-            }
-            
-            /* Adjust header for language switcher */
-            .header-content {
-                padding-right: 150px;
-            }
-            
-            .rtl .header-content {
-                padding-right: 0;
-                padding-left: 150px;
-            }
-            
-            /* RTL specific styles */
-            .rtl {
-                text-align: right;
-            }
-            
-            .rtl .stats-grid,
-            .rtl .progress-grid,
-            .rtl .week-view {
-                direction: ltr;
-            }
-            
-            .rtl .action-buttons,
-            .rtl .search-bar {
-                flex-direction: row-reverse;
-            }
-            
-            .rtl .stat-card,
-            .rtl .progress-card {
-                text-align: right;
-            }
-            
-            .rtl .modal-header {
-                flex-direction: row-reverse;
-            }
-            
-            .rtl table {
-                direction: rtl;
-            }
-            
-            .rtl th,
-            .rtl td {
-                text-align: right;
-            }
-        `;
-        document.head.appendChild(style);
+        // Add styles if they don't exist
+        if (!document.getElementById('i18n-styles')) {
+            const style = document.createElement('style');
+            style.id = 'i18n-styles';
+            style.textContent = `
+                .language-switcher {
+                    position: fixed;
+                    top: 1rem;
+                    ${this.rtlLanguages.includes(this.currentLang) ? 'left' : 'right'}: 1rem;
+                    z-index: 9999;
+                    padding: 0.5rem 1rem;
+                    border-radius: 8px;
+                    border: 1px solid #e0e0e0;
+                    background: white;
+                    font-size: 0.875rem;
+                    cursor: pointer;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                }
+                
+                .rtl .language-switcher {
+                    left: 1rem;
+                    right: auto;
+                }
+                
+                /* Adjust header for language switcher */
+                .header-content {
+                    padding-right: 150px;
+                }
+                
+                .rtl .header-content {
+                    padding-right: 0;
+                    padding-left: 150px;
+                }
+                
+                /* RTL specific styles */
+                .rtl {
+                    text-align: right;
+                }
+                
+                .rtl .stats-grid,
+                .rtl .progress-grid,
+                .rtl .week-view {
+                    direction: ltr;
+                }
+                
+                .rtl .action-buttons,
+                .rtl .search-bar {
+                    flex-direction: row-reverse;
+                }
+                
+                .rtl .stat-card,
+                .rtl .progress-card {
+                    text-align: right;
+                }
+                
+                .rtl .modal-header {
+                    flex-direction: row-reverse;
+                }
+                
+                .rtl table {
+                    direction: rtl;
+                }
+                
+                .rtl th,
+                .rtl td {
+                    text-align: right;
+                }
+            `;
+            document.head.appendChild(style);
+        }
         
         // Add to page
         document.body.appendChild(switcher);
+        console.log('Language switcher created and added to page');
+        
+        // If there's a backup switcher, hide it
+        const backup = document.getElementById('languageSwitcherBackup');
+        if (backup) {
+            backup.style.display = 'none';
+        }
     },
     
     // Helper to format dates according to locale
@@ -891,8 +913,12 @@ const i18n = {
 
 // Auto-initialize when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => i18n.init());
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM loaded, initializing i18n...');
+        i18n.init();
+    });
 } else {
+    console.log('DOM already loaded, initializing i18n immediately...');
     i18n.init();
 }
 
