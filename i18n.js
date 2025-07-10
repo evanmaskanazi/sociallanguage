@@ -133,12 +133,22 @@ translations: {
         'goals.text': 'Goal Description',
 
         // Reports
-        'reports.generate': 'Generate Report',
+         'reports.generate': 'Generate Report',
         'reports.weekly': 'Weekly Report',
         'reports.select_client': 'Select Client',
         'reports.select_week': 'Select Week',
         'reports.excel': 'Download Excel',
         'reports.email': 'Email Report',
+        'reports.week': 'Week',
+        'reports.daily_checkins': 'Daily Check-ins',
+        'reports.checkin_time': 'Check-in Time',
+        'reports.no_checkin': 'No check-in',
+        'reports.weekly_summary': 'Weekly Summary',
+        'reports.checkin_completion': 'Check-in Completion',
+        'reports.completion_rate': 'Completion Rate',
+        'reports.completed': 'Completed',
+        'reports.weekly_goals': 'Weekly Goals',
+        'reports.weekly_report_title': 'Weekly Therapy Report',
 
         // Messages
         'msg.success': 'Success!',
@@ -200,6 +210,8 @@ translations: {
         'category.medication_desc': 'Medication adherence',
         'category.physical_activity': 'Physical Activity',
         'category.physical_activity_desc': 'Physical activity level',
+
+        
 
         // Client specific
         'client.dashboard_title': 'My Therapy Journey',
@@ -343,23 +355,10 @@ translations: {
         'email.report_generated_on': 'Report generated on',
         'email.best_regards': 'Best regards',
 
-// Hebrew
-        'email.dear_therapist': 'מטפל יקר',
-        'email.weekly_report_intro': 'הנה דוח ההתקדמות השבועי שלי עבור',
-        'email.report_generated_on': 'הדוח נוצר בתאריך',
-        'email.best_regards': 'בברכה',
 
-// Russian
-        'email.dear_therapist': 'Уважаемый терапевт',
-        'email.weekly_report_intro': 'Вот мой еженедельный отчет о прогрессе за',
-        'email.report_generated_on': 'Отчет создан',
-        'email.best_regards': 'С уважением',
+       
 
-// Arabic
-        'email.dear_therapist': 'المعالج العزيز',
-        'email.weekly_report_intro': 'هذا هو تقرير التقدم الأسبوعي الخاص بي لـ',
-        'email.report_generated_on': 'تم إنشاء التقرير في',
-        'email.best_regards': 'مع أطيب التحيات',
+        
         
 
         // Index page
@@ -431,6 +430,11 @@ translations: {
         'login.welcome_back': 'ברוך הבא!',
         'login.instruction': 'מטפלים ומטופלים יכולים להתחבר כאן עם האישורים שלהם.',
         'login.forgot_coming_soon': 'פונקציית איפוס סיסמה תגיע בקרוב!',
+
+        'email.dear_therapist': 'מטפל יקר',
+        'email.weekly_report_intro': 'הנה דוח ההתקדמות השבועי שלי עבור',
+        'email.report_generated_on': 'הדוח נוצר בתאריך',
+        'email.best_regards': 'בברכה',
 
         // Password Reset
         'reset.title': 'איפוס סיסמה',
@@ -523,6 +527,16 @@ translations: {
         'reports.select_week': 'בחר שבוע',
         'reports.excel': 'הורדת אקסל',
         'reports.email': 'שליחת דוח במייל',
+        'reports.week': 'שבוע',
+        'reports.daily_checkins': 'צ׳ק-אין יומי',
+        'reports.checkin_time': 'זמן צ׳ק-אין',
+        'reports.no_checkin': 'אין צ׳ק-אין',
+        'reports.weekly_summary': 'סיכום שבועי',
+        'reports.checkin_completion': 'השלמת צ׳ק-אין',
+        'reports.completion_rate': 'אחוז השלמה',
+        'reports.completed': 'הושלם',
+        'reports.weekly_goals': 'יעדים שבועיים',
+        'reports.weekly_report_title': 'דוח טיפולי שבועי',
 
         // Messages
         'msg.success': 'הצלחה!',
@@ -868,6 +882,11 @@ translations: {
         'checkin.med_partial': 'Частично',
         'checkin.med_na': 'Не применимо',
 
+        'email.dear_therapist': 'المعالج العزيز',
+        'email.weekly_report_intro': 'هذا هو تقرير التقدم الأسبوعي الخاص بي لـ',
+        'email.report_generated_on': 'تم إنشاء التقرير في',
+        'email.best_regards': 'مع أطيب التحيات',
+
         // Goals
         'goals.weekly': 'Недельные цели',
         'goals.add': 'Добавить новую цель',
@@ -882,6 +901,16 @@ translations: {
         'reports.select_week': 'Выберите неделю',
         'reports.excel': 'Скачать Excel',
         'reports.email': 'Отправить отчет',
+        'reports.week': 'Неделя',
+        'reports.daily_checkins': 'Ежедневные отметки',
+        'reports.checkin_time': 'Время отметки',
+        'reports.no_checkin': 'Нет отметки',
+        'reports.weekly_summary': 'Недельная сводка',
+        'reports.checkin_completion': 'Завершение отметок',
+        'reports.completion_rate': 'Процент выполнения',
+        'reports.completed': 'Выполнено',
+        'reports.weekly_goals': 'Недельные цели',
+        'reports.weekly_report_title': 'Недельный терапевтический отчет',
 
         // Messages
         'msg.success': 'Успешно!',
@@ -895,6 +924,12 @@ translations: {
         'msg.login_success': 'Вход выполнен успешно! Перенаправление...',
         'msg.registration_success': 'Регистрация успешна! Выполняется вход...',
         'msg.network_error': 'Ошибка сети. Пожалуйста, попробуйте еще раз.',
+
+        'email.dear_therapist': 'Уважаемый терапевт',
+        'email.weekly_report_intro': 'Вот мой еженедельный отчет о прогрессе за',
+        'email.report_generated_on': 'Отчет создан',
+        'email.best_regards': 'С уважением',
+
 
         // Days of week
         'day.monday': 'Понедельник',
@@ -964,6 +999,22 @@ translations: {
             'reset.update_password': 'تحديث كلمة المرور',
             'reset.password_updated': 'تم تحديث كلمة المرور بنجاح!',
             'reset.invalid_token': 'رابط إعادة التعيين غير صالح أو منتهي الصلاحية',
+               'reports.generate': 'إنشاء تقرير',
+            'reports.weekly': 'تقرير أسبوعي',
+            'reports.select_client': 'اختر العميل',
+            'reports.select_week': 'اختر الأسبوع',
+            'reports.excel': 'تحميل Excel',
+            'reports.email': 'إرسال التقرير',
+            'reports.week': 'الأسبوع',
+            'reports.daily_checkins': 'تسجيلات الحضور اليومية',
+            'reports.checkin_time': 'وقت تسجيل الحضور',
+            'reports.no_checkin': 'لا يوجد تسجيل حضور',
+            'reports.weekly_summary': 'الملخص الأسبوعي',
+            'reports.checkin_completion': 'إكمال تسجيل الحضور',
+            'reports.completion_rate': 'معدل الإنجاز',
+            'reports.completed': 'مكتمل',
+            'reports.weekly_goals': 'الأهداف الأسبوعية',
+            'reports.weekly_report_title': 'التقرير العلاجي الأسبوعي',
             // ... (rest of Arabic translations)
         }
     },
