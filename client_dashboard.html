@@ -1,1 +1,1818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Therapy Journey - Client Dashboard</title>
+    
+    <!-- Add i18n script -->
+    <script src="i18n.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            padding: 0 2rem;
+            display: flex;
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .nav-tab {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .nav-tab:hover {
+            color: #667eea;
+        }
+
+        .nav-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Welcome Message */
+        .welcome-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        .welcome-card h2 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .welcome-card p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .icon-emotion { background: #ffeaa7; }
+        .icon-medication { background: #74b9ff; }
+        .icon-activity { background: #55efc4; }
+        .icon-goals { background: #fd79a8; }
+        .icon-progress { background: #a29bfe; }
+
+        /* Date Selection */
+        .date-selection {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .date-input {
+            padding: 0.75rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        /* Calendar View */
+        .calendar-view {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+        }
+
+        .week-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .week-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+        }
+
+        .day-cell {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 0.5rem;
+            text-align: center;
+        }
+
+        .day-cell:hover {
+            border-color: #667eea;
+            transform: scale(1.05);
+        }
+
+        .day-cell.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .day-cell.completed {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+
+        .day-cell.missed {
+            background: #ffebee;
+            border-color: #f44336;
+        }
+
+        .day-cell .day-name {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .day-cell .day-date {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        .day-cell .status-icon {
+            font-size: 1rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Daily Check-in Form */
+        .checkin-form {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .form-section h3 {
+            color: #333;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Rating Scale */
+        .rating-scale {
+            display: flex;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        .rating-button {
+            min-width: 60px;
+            height: 60px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .rating-button:hover {
+            border-color: #667eea;
+            transform: scale(1.05);
+        }
+
+        .rating-button.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .rating-emoji {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Goals */
+        .goal-list {
+            list-style: none;
+        }
+
+        .goal-item {
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .goal-checkbox {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .goal-text {
+            flex: 1;
+            color: #333;
+        }
+
+        .goal-item.completed {
+            background: #e7f5ff;
+        }
+
+        .goal-item.completed .goal-text {
+            text-decoration: line-through;
+            color: #999;
+        }
+
+        /* Reports Section */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        /* Notes Textarea */
+        .notes-textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 0.75rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        .notes-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Messages */
+        .message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* RTL Support */
+        .rtl .header-content,
+        .rtl .user-info,
+        .rtl .week-navigation,
+        .rtl .card-header,
+        .rtl .date-selection,
+        .rtl .goal-item {
+            flex-direction: row-reverse;
+        }
+
+        .rtl .nav-tabs {
+            direction: rtl;
+        }
+
+        .rtl .form-section h3 {
+            flex-direction: row-reverse;
+        }
+
+        .rtl .notes-textarea,
+        .rtl .form-input {
+            text-align: right;
+            direction: rtl;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .nav-tabs {
+                overflow-x: auto;
+                gap: 1rem;
+                padding: 0 1rem;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .rating-scale {
+                justify-content: center;
+            }
+
+            .date-selection {
+                flex-direction: column;
+            }
+
+            .week-grid {
+                gap: 0.25rem;
+            }
+
+            .day-cell {
+                font-size: 0.875rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1 data-i18n="client.dashboard_title">My Therapy Journey</h1>
+            <div class="user-info">
+                <span id="clientSerial" data-i18n="msg.loading">Loading...</span>
+                <button class="logout-btn" onclick="logout()" data-i18n="btn.logout">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="nav-tabs">
+        <div class="nav-tab active" onclick="showTab('overview')" data-i18n="nav.overview">Overview</div>
+        <div class="nav-tab" onclick="showTab('checkin')" data-i18n="nav.checkin">Check-in</div>
+        <div class="nav-tab" onclick="showTab('goals')" data-i18n="nav.goals">Goals</div>
+        <div class="nav-tab" onclick="showTab('progress')" data-i18n="nav.progress">Progress</div>
+        <div class="nav-tab" onclick="showTab('reports')" data-i18n="nav.reports">Reports</div>
+        <div class="nav-tab" onclick="showTab('settings')" data-i18n="nav.settings">Settings</div>
+    </nav>
+
+    <div class="container">
+        <!-- Success/Error Messages -->
+        <div id="messageContainer"></div>
+
+        <!-- Overview Tab -->
+        <div id="overview" class="tab-content active">
+            <div class="welcome-card">
+                <h2 id="welcomeMessage" data-i18n="dashboard.welcome">Welcome back!</h2>
+                <p id="encouragementMessage" data-i18n="client.encouragement">Your journey to wellness continues. Every step counts!</p>
+            </div>
+
+            <!-- Calendar Week View -->
+            <div class="calendar-view">
+                <div class="week-navigation">
+                    <button class="btn btn-secondary btn-small" onclick="changeWeek(-1)">
+                        <span data-i18n="client.previous_week">← Previous Week</span>
+                    </button>
+                    <h3 id="currentWeekLabel" data-i18n="dashboard.this_week">This Week</h3>
+                    <button class="btn btn-secondary btn-small" onclick="changeWeek(1)">
+                        <span data-i18n="client.next_week">Next Week →</span>
+                    </button>
+                </div>
+                <div id="weekGrid" class="week-grid">
+                    <!-- Days will be populated here -->
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title" data-i18n="client.quick_stats">Quick Stats</h3>
+                        <div class="card-icon icon-progress">📊</div>
+                    </div>
+                    <div id="quickStats">
+                        <p data-i18n="msg.loading">Loading stats...</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title" data-i18n="client.week_goals">This Week's Goals</h3>
+                        <div class="card-icon icon-goals">🎯</div>
+                    </div>
+                    <ul class="goal-list" id="overviewGoalsList">
+                        <li data-i18n="msg.loading">Loading goals...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Check-in Tab -->
+        <div id="checkin" class="tab-content">
+            <h2 data-i18n="checkin.title">Daily Check-in</h2>
+            
+            <!-- Date Selection -->
+            <div class="date-selection">
+                <label for="checkinDate"><strong data-i18n="client.select_date">Select Date:</strong></label>
+                <input type="date" id="checkinDate" class="date-input">
+                <button class="btn btn-secondary btn-small" onclick="setToday()" data-i18n="dashboard.today">Today</button>
+                <span id="checkinDateStatus" style="margin-left: 1rem;"></span>
+            </div>
+
+            <div id="checkinForm" class="checkin-form">
+                <p style="color: #666; margin-bottom: 2rem;" data-i18n="client.checkin_intro">Take a moment to reflect on your day. Your responses help track your progress.</p>
+
+                <!-- Dynamic Categories Container -->
+                <div id="dynamicCategories">
+                    <!-- Categories will be loaded here dynamically -->
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button class="btn btn-primary" onclick="submitCheckin()" data-i18n="client.submit_checkin">Submit Check-in</button>
+                    <button class="btn btn-secondary" onclick="clearCheckinForm()" data-i18n="client.clear_form">Clear</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Goals Tab -->
+        <div id="goals" class="tab-content">
+            <h2 data-i18n="goals.weekly">Weekly Goals</h2>
+            
+            <div class="date-selection">
+                <label for="goalsWeek"><strong data-i18n="client.select_week">Select Week:</strong></label>
+                <input type="week" id="goalsWeek" class="date-input">
+                <button class="btn btn-secondary btn-small" onclick="loadWeeklyGoals()" data-i18n="client.load_goals">Load Goals</button>
+            </div>
+
+            <div id="goalsContent">
+                <h3 id="goalsWeekLabel" data-i18n="client.week_goals">This Week's Goals</h3>
+                <ul class="goal-list" id="goalsList">
+                    <li data-i18n="client.select_week_goals">Select a week to view goals</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Progress Tab -->
+        <div id="progress" class="tab-content">
+            <h2 data-i18n="client.your_progress">Your Progress</h2>
+            
+            <div class="date-selection">
+                <label><strong data-i18n="client.view_progress">View Progress:</strong></label>
+                <select id="progressRange" class="form-input" style="width: auto;">
+                    <option value="7" data-i18n="client.last_7_days">Last 7 days</option>
+                    <option value="30" data-i18n="client.last_30_days">Last 30 days</option>
+                    <option value="90" data-i18n="client.last_90_days">Last 90 days</option>
+                </select>
+                <button class="btn btn-secondary btn-small" onclick="loadProgress()" data-i18n="client.update">Update</button>
+            </div>
+
+            <div id="progressContent">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p data-i18n="client.loading_progress">Loading progress data...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Tab -->
+        <div id="reports" class="tab-content">
+            <h2 data-i18n="reports.generate">Generate Reports</h2>
+            
+            <div class="card">
+                <h3 data-i18n="reports.weekly">Weekly Report</h3>
+                <p style="color: #666; margin-bottom: 1rem;" data-i18n="client.report_desc">Generate a comprehensive report of your check-ins for any week.</p>
+                
+                <div class="form-group">
+                    <label for="reportWeek" data-i18n="reports.select_week">Select Week:</label>
+                    <input type="week" id="reportWeek" class="form-input">
+                </div>
+                
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="generateReport()" data-i18n="client.generate_excel">Generate Excel Report</button>
+                    <button class="btn btn-secondary" onclick="prepareEmailReport()" data-i18n="client.prepare_email">Prepare Email Report</button>
+                </div>
+                
+                <div id="reportStatus" style="margin-top: 2rem; display: none;">
+                    <h4 data-i18n="client.report_status">Report Status</h4>
+                    <div id="reportStatusContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <h2 data-i18n="client.account_settings">Account Settings</h2>
+            
+            <div class="card">
+                <h3 data-i18n="client.change_password">Change Password</h3>
+                <p style="color: #666; margin-bottom: 1rem;" data-i18n="client.password_requirements">Password must be at least 8 characters long.</p>
+                
+                <form id="passwordChangeForm" onsubmit="changePassword(event)">
+                    <div class="form-group">
+                        <label for="currentPassword" data-i18n="client.current_password">Current Password</label>
+                        <input type="password" id="currentPassword" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="newPassword" data-i18n="client.new_password">New Password</label>
+                        <input type="password" id="newPassword" class="form-input" required minlength="8">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirmPassword" data-i18n="client.confirm_new_password">Confirm New Password</label>
+                        <input type="password" id="confirmPassword" class="form-input" required minlength="8">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" data-i18n="client.update_password">Update Password</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add translations for client dashboard
+        if (window.i18n && window.i18n.translations) {
+            // English
+            Object.assign(window.i18n.translations.en, {
+                // Category translations
+                'category.emotion_level': 'Emotion Level',
+                'category.emotion_level_desc': 'Overall emotional state',
+                'category.energy': 'Energy',
+                'category.energy_desc': 'Physical and mental energy levels',
+                'category.social_activity': 'Social Activity',
+                'category.social_activity_desc': 'Engagement in social interactions',
+                'category.sleep_quality': 'Sleep Quality',
+                'category.sleep_quality_desc': 'Quality of sleep',
+                'category.anxiety_level': 'Anxiety Level',
+                'category.anxiety_level_desc': 'Level of anxiety experienced',
+                'category.motivation': 'Motivation',
+                'category.motivation_desc': 'Level of motivation and drive',
+                'category.medication': 'Medication',
+                'category.medication_desc': 'Medication adherence',
+                'category.physical_activity': 'Physical Activity',
+                'category.physical_activity_desc': 'Physical activity level',
+                
+                'nav.settings': 'Settings',
+                'client.account_settings': 'Account Settings',
+                'client.change_password': 'Change Password',
+                'client.password_requirements': 'Password must be at least 8 characters long.',
+                'client.current_password': 'Current Password',
+                'client.new_password': 'New Password',
+                'client.confirm_new_password': 'Confirm New Password',
+                'client.update_password': 'Update Password',
+                'client.password_changed': 'Password changed successfully!',
+                'client.passwords_dont_match': 'New passwords do not match',
+                'client.password_too_short': 'Password must be at least 8 characters long',
+                'client.incorrect_password': 'Current password is incorrect',
+                'client.error_changing_password': 'Error changing password:',
+                'client.dashboard_title': 'My Therapy Journey',
+                'client.encouragement': 'Your journey to wellness continues. Every step counts!',
+                'client.previous_week': '← Previous Week',
+                'client.next_week': 'Next Week →',
+                'client.quick_stats': 'Quick Stats',
+                'client.week_goals': 'This Week\'s Goals',
+                'client.select_date': 'Select Date:',
+                'client.checkin_intro': 'Take a moment to reflect on your day. Your responses help track your progress.',
+                'client.notes_placeholder': 'Any thoughts about {category}? (optional)',
+                'client.submit_checkin': 'Submit Check-in',
+                'client.clear_form': 'Clear',
+                'client.select_week': 'Select Week:',
+                'client.load_goals': 'Load Goals',
+                'client.select_week_goals': 'Select a week to view goals',
+                'client.your_progress': 'Your Progress',
+                'client.view_progress': 'View Progress:',
+                'client.last_7_days': 'Last 7 days',
+                'client.last_30_days': 'Last 30 days',
+                'client.last_90_days': 'Last 90 days',
+                'client.update': 'Update',
+                'client.loading_progress': 'Loading progress data...',
+                'client.report_desc': 'Generate a comprehensive report of your check-ins for any week.',
+                'client.generate_excel': 'Generate Excel Report',
+                'client.prepare_email': 'Prepare Email Report',
+                'client.report_status': 'Report Status',
+                'client.no_checkin': 'No check-in',
+                'client.today_marker': '(Today)',
+                'client.past_date': '(Past date)',
+                'client.future_date': '(Future date)',
+                'client.complete_ratings': 'Please complete all required ratings',
+                'client.no_goals_week': 'No goals set for this week',
+                'client.total_checkins': 'Total check-ins:',
+                'client.avg_emotional': 'Average emotional rating:',
+                'client.medication_adherence': 'Medication adherence:',
+                'client.avg_activity': 'Average activity level:',
+                'client.email_preview': 'Email Report Preview',
+                'client.copy_email': 'Copy this email content to send to your therapist',
+                'client.checkin_success': 'Check-in submitted successfully! 🎉',
+                'client.checkin_error': 'Cannot submit check-in for future dates',
+                'client.select_client_week': 'Please select a week',
+                'client.report_generated': 'Report generated and downloaded successfully!',
+                'client.error_progress': 'Error loading progress data'
+            });
+
+            // Hebrew
+            Object.assign(window.i18n.translations.he, {
+                // Category translations
+                'category.emotion_level': 'רמה רגשית',
+                'category.emotion_level_desc': 'מצב רגשי כללי',
+                'category.energy': 'אנרגיה',
+                'category.energy_desc': 'רמות אנרגיה פיזית ומנטלית',
+                'category.social_activity': 'פעילות חברתית',
+                'category.social_activity_desc': 'מעורבות באינטראקציות חברתיות',
+                'category.sleep_quality': 'איכות שינה',
+                'category.sleep_quality_desc': 'איכות השינה',
+                'category.anxiety_level': 'רמת חרדה',
+                'category.anxiety_level_desc': 'רמת החרדה שחווית',
+                'category.motivation': 'מוטיבציה',
+                'category.motivation_desc': 'רמת המוטיבציה והדחף',
+                'category.medication': 'תרופות',
+                'category.medication_desc': 'היענות לנטילת תרופות',
+                'category.physical_activity': 'פעילות גופנית',
+                'category.physical_activity_desc': 'רמת הפעילות הגופנית',
+                
+                'nav.settings': 'הגדרות',
+                'client.account_settings': 'הגדרות חשבון',
+                'client.change_password': 'שינוי סיסמה',
+                'client.password_requirements': 'הסיסמה חייבת להיות באורך של לפחות 8 תווים.',
+                'client.current_password': 'סיסמה נוכחית',
+                'client.new_password': 'סיסמה חדשה',
+                'client.confirm_new_password': 'אשר סיסמה חדשה',
+                'client.update_password': 'עדכן סיסמה',
+                'client.password_changed': 'הסיסמה שונתה בהצלחה!',
+                'client.passwords_dont_match': 'הסיסמאות החדשות אינן תואמות',
+                'client.password_too_short': 'הסיסמה חייבת להיות באורך של לפחות 8 תווים',
+                'client.incorrect_password': 'הסיסמה הנוכחית שגויה',
+                'client.error_changing_password': 'שגיאה בשינוי הסיסמה:',
+                'client.dashboard_title': 'המסע הטיפולי שלי',
+                'client.encouragement': 'המסע שלך לבריאות ממשיך. כל צעד נחשב!',
+                'client.previous_week': '→ שבוע קודם',
+                'client.next_week': 'שבוע הבא ←',
+                'client.quick_stats': 'סטטיסטיקות מהירות',
+                'client.week_goals': 'היעדים השבועיים',
+                'client.select_date': 'בחר תאריך:',
+                'client.checkin_intro': 'קח רגע לחשוב על היום שלך. התשובות שלך עוזרות לעקוב אחר ההתקדמות.',
+                'client.notes_placeholder': 'מחשבות על {category}? (אופציונלי)',
+                'client.submit_checkin': 'שלח צ׳ק-אין',
+                'client.clear_form': 'נקה',
+                'client.select_week': 'בחר שבוע:',
+                'client.load_goals': 'טען יעדים',
+                'client.select_week_goals': 'בחר שבוע כדי לראות יעדים',
+                'client.your_progress': 'ההתקדמות שלך',
+                'client.view_progress': 'צפה בהתקדמות:',
+                'client.last_7_days': '7 ימים אחרונים',
+                'client.last_30_days': '30 ימים אחרונים',
+                'client.last_90_days': '90 ימים אחרונים',
+                'client.update': 'עדכן',
+                'client.loading_progress': 'טוען נתוני התקדמות...',
+                'client.report_desc': 'צור דוח מקיף של הצ׳ק-אינים שלך לכל שבוע.',
+                'client.generate_excel': 'צור דוח אקסל',
+                'client.prepare_email': 'הכן דוח דוא״ל',
+                'client.report_status': 'סטטוס דוח',
+                'client.no_checkin': 'אין צ׳ק-אין',
+                'client.today_marker': '(היום)',
+                'client.past_date': '(תאריך עבר)',
+                'client.future_date': '(תאריך עתידי)',
+                'client.complete_ratings': 'אנא השלם את כל הדירוגים הנדרשים',
+                'client.no_goals_week': 'אין יעדים שהוגדרו לשבוע זה',
+                'client.total_checkins': 'סך כל הצ׳ק-אינים:',
+                'client.avg_emotional': 'דירוג רגשי ממוצע:',
+                'client.medication_adherence': 'היענות לתרופות:',
+                'client.avg_activity': 'רמת פעילות ממוצעת:',
+                'client.email_preview': 'תצוגה מקדימה של דוח דוא״ל',
+                'client.copy_email': 'העתק תוכן זה כדי לשלוח למטפל שלך',
+                'client.checkin_success': 'הצ׳ק-אין נשלח בהצלחה! 🎉',
+                'client.checkin_error': 'לא ניתן לשלוח צ׳ק-אין לתאריכים עתידיים',
+                'client.select_client_week': 'אנא בחר שבוע',
+                'client.report_generated': 'הדוח נוצר והורד בהצלחה!',
+                'client.error_progress': 'שגיאה בטעינת נתוני התקדמות'
+            });
+
+            // Russian
+            Object.assign(window.i18n.translations.ru, {
+                // Category translations
+                'category.emotion_level': 'Эмоциональный уровень',
+                'category.emotion_level_desc': 'Общее эмоциональное состояние',
+                'category.energy': 'Энергия',
+                'category.energy_desc': 'Уровни физической и умственной энергии',
+                'category.social_activity': 'Социальная активность',
+                'category.social_activity_desc': 'Участие в социальных взаимодействиях',
+                'category.sleep_quality': 'Качество сна',
+                'category.sleep_quality_desc': 'Качество сна',
+                'category.anxiety_level': 'Уровень тревожности',
+                'category.anxiety_level_desc': 'Испытываемый уровень тревожности',
+                'category.motivation': 'Мотивация',
+                'category.motivation_desc': 'Уровень мотивации и стремления',
+                'category.medication': 'Лекарства',
+                'category.medication_desc': 'Приверженность лечению',
+                'category.physical_activity': 'Физическая активность',
+                'category.physical_activity_desc': 'Уровень физической активности',
+                
+                'nav.settings': 'Настройки',
+                'client.account_settings': 'Настройки аккаунта',
+                'client.change_password': 'Изменить пароль',
+                'client.password_requirements': 'Пароль должен содержать не менее 8 символов.',
+                'client.current_password': 'Текущий пароль',
+                'client.new_password': 'Новый пароль',
+                'client.confirm_new_password': 'Подтвердите новый пароль',
+                'client.update_password': 'Обновить пароль',
+                'client.password_changed': 'Пароль успешно изменен!',
+                'client.passwords_dont_match': 'Новые пароли не совпадают',
+                'client.password_too_short': 'Пароль должен содержать не менее 8 символов',
+                'client.incorrect_password': 'Текущий пароль неверный',
+                'client.error_changing_password': 'Ошибка при изменении пароля:',
+                'client.dashboard_title': 'Мой терапевтический путь',
+                'client.encouragement': 'Ваш путь к здоровью продолжается. Каждый шаг важен!',
+                'client.previous_week': '← Предыдущая неделя',
+                'client.next_week': 'Следующая неделя →',
+                'client.quick_stats': 'Быстрая статистика',
+                'client.week_goals': 'Цели на эту неделю',
+                'client.select_date': 'Выберите дату:',
+                'client.checkin_intro': 'Уделите время размышлениям о вашем дне. Ваши ответы помогают отслеживать прогресс.',
+                'client.notes_placeholder': 'Мысли о {category}? (необязательно)',
+                'client.submit_checkin': 'Отправить отметку',
+                'client.clear_form': 'Очистить',
+                'client.select_week': 'Выберите неделю:',
+                'client.load_goals': 'Загрузить цели',
+                'client.select_week_goals': 'Выберите неделю для просмотра целей',
+                'client.your_progress': 'Ваш прогресс',
+                'client.view_progress': 'Просмотр прогресса:',
+                'client.last_7_days': 'Последние 7 дней',
+                'client.last_30_days': 'Последние 30 дней',
+                'client.last_90_days': 'Последние 90 дней',
+                'client.update': 'Обновить',
+                'client.loading_progress': 'Загрузка данных прогресса...',
+                'client.report_desc': 'Создайте полный отчет о ваших отметках за любую неделю.',
+                'client.generate_excel': 'Создать отчет Excel',
+                'client.prepare_email': 'Подготовить отчет по email',
+                'client.report_status': 'Статус отчета',
+                'client.no_checkin': 'Нет отметки',
+                'client.today_marker': '(Сегодня)',
+                'client.past_date': '(Прошедшая дата)',
+                'client.future_date': '(Будущая дата)',
+                'client.complete_ratings': 'Пожалуйста, заполните все обязательные оценки',
+                'client.no_goals_week': 'Нет целей на эту неделю',
+                'client.total_checkins': 'Всего отметок:',
+                'client.avg_emotional': 'Средняя эмоциональная оценка:',
+                'client.medication_adherence': 'Приверженность лечению:',
+                'client.avg_activity': 'Средний уровень активности:',
+                'client.email_preview': 'Предварительный просмотр email отчета',
+                'client.copy_email': 'Скопируйте это содержимое для отправки вашему терапевту',
+                'client.checkin_success': 'Отметка успешно отправлена! 🎉',
+                'client.checkin_error': 'Невозможно отправить отметку для будущих дат',
+                'client.select_client_week': 'Пожалуйста, выберите неделю',
+                'client.report_generated': 'Отчет создан и загружен успешно!',
+                'client.error_progress': 'Ошибка загрузки данных прогресса'
+            });
+
+            // Arabic
+            Object.assign(window.i18n.translations.ar, {
+                // Category translations
+                'category.emotion_level': 'المستوى العاطفي',
+                'category.emotion_level_desc': 'الحالة العاطفية العامة',
+                'category.energy': 'الطاقة',
+                'category.energy_desc': 'مستويات الطاقة الجسدية والعقلية',
+                'category.social_activity': 'النشاط الاجتماعي',
+                'category.social_activity_desc': 'المشاركة في التفاعلات الاجتماعية',
+                'category.sleep_quality': 'جودة النوم',
+                'category.sleep_quality_desc': 'جودة النوم',
+                'category.anxiety_level': 'مستوى القلق',
+                'category.anxiety_level_desc': 'مستوى القلق الذي تم اختباره',
+                'category.motivation': 'الدافع',
+                'category.motivation_desc': 'مستوى الدافع والحافز',
+                'category.medication': 'الأدوية',
+                'category.medication_desc': 'الالتزام بالأدوية',
+                'category.physical_activity': 'النشاط البدني',
+                'category.physical_activity_desc': 'مستوى النشاط البدني',
+                
+                'nav.settings': 'الإعدادات',
+                'client.account_settings': 'إعدادات الحساب',
+                'client.change_password': 'تغيير كلمة المرور',
+                'client.password_requirements': 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.',
+                'client.current_password': 'كلمة المرور الحالية',
+                'client.new_password': 'كلمة المرور الجديدة',
+                'client.confirm_new_password': 'تأكيد كلمة المرور الجديدة',
+                'client.update_password': 'تحديث كلمة المرور',
+                'client.password_changed': 'تم تغيير كلمة المرور بنجاح!',
+                'client.passwords_dont_match': 'كلمات المرور الجديدة غير متطابقة',
+                'client.password_too_short': 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل',
+                'client.incorrect_password': 'كلمة المرور الحالية غير صحيحة',
+                'client.error_changing_password': 'خطأ في تغيير كلمة المرور:',
+                'client.dashboard_title': 'رحلتي العلاجية',
+                'client.encouragement': 'رحلتك نحو العافية مستمرة. كل خطوة مهمة!',
+                'client.previous_week': '→ الأسبوع السابق',
+                'client.next_week': 'الأسبوع القادم ←',
+                'client.quick_stats': 'إحصائيات سريعة',
+                'client.week_goals': 'أهداف هذا الأسبوع',
+                'client.select_date': 'اختر التاريخ:',
+                'client.checkin_intro': 'خذ لحظة للتفكير في يومك. إجاباتك تساعد في تتبع تقدمك.',
+                'client.notes_placeholder': 'أي أفكار حول {category}؟ (اختياري)',
+                'client.submit_checkin': 'إرسال تسجيل الحضور',
+                'client.clear_form': 'مسح',
+                'client.select_week': 'اختر الأسبوع:',
+                'client.load_goals': 'تحميل الأهداف',
+                'client.select_week_goals': 'اختر أسبوعاً لعرض الأهداف',
+                'client.your_progress': 'تقدمك',
+                'client.view_progress': 'عرض التقدم:',
+                'client.last_7_days': 'آخر 7 أيام',
+                'client.last_30_days': 'آخر 30 يوماً',
+                'client.last_90_days': 'آخر 90 يوماً',
+                'client.update': 'تحديث',
+                'client.loading_progress': 'جاري تحميل بيانات التقدم...',
+                'client.report_desc': 'أنشئ تقريراً شاملاً لتسجيلات حضورك لأي أسبوع.',
+                'client.generate_excel': 'إنشاء تقرير Excel',
+                'client.prepare_email': 'إعداد تقرير البريد الإلكتروني',
+                'client.report_status': 'حالة التقرير',
+                'client.no_checkin': 'لا يوجد تسجيل حضور',
+                'client.today_marker': '(اليوم)',
+                'client.past_date': '(تاريخ سابق)',
+                'client.future_date': '(تاريخ مستقبلي)',
+                'client.complete_ratings': 'يرجى إكمال جميع التقييمات المطلوبة',
+                'client.no_goals_week': 'لا توجد أهداف محددة لهذا الأسبوع',
+                'client.total_checkins': 'إجمالي تسجيلات الحضور:',
+                'client.avg_emotional': 'متوسط التقييم العاطفي:',
+                'client.medication_adherence': 'الالتزام بالأدوية:',
+                'client.avg_activity': 'متوسط مستوى النشاط:',
+                'client.email_preview': 'معاينة تقرير البريد الإلكتروني',
+                'client.copy_email': 'انسخ هذا المحتوى لإرساله إلى معالجك',
+                'client.checkin_success': 'تم إرسال تسجيل الحضور بنجاح! 🎉',
+                'client.checkin_error': 'لا يمكن إرسال تسجيل الحضور للتواريخ المستقبلية',
+                'client.select_client_week': 'يرجى اختيار أسبوع',
+                'client.report_generated': 'تم إنشاء التقرير وتنزيله بنجاح!',
+                'client.error_progress': 'خطأ في تحميل بيانات التقدم'
+            });
+
+            // Re-translate page
+            i18n.translatePage();
+        }
+
+        // Global variables
+        let authToken = localStorage.getItem('authToken');
+        let clientData = null;
+        let trackingCategories = [];
+        let weeklyGoals = [];
+        let currentWeekOffset = 0;
+        let selectedDate = new Date();
+
+        // Translation helper functions
+        function translateCategoryName(categoryName) {
+            const key = 'category.' + categoryName.toLowerCase().replace(/\s+/g, '_');
+            const translation = i18n.t(key);
+            return translation !== key ? translation : categoryName;
+        }
+
+        function translateCategoryDescription(categoryName, description) {
+            const key = 'category.' + categoryName.toLowerCase().replace(/\s+/g, '_') + '_desc';
+            const translation = i18n.t(key);
+            return translation !== key ? translation : description;
+        }
+        
+        // Check authentication
+        if (!authToken) {
+            window.location.href = '/login.html';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboard();
+            setCurrentWeek();
+            setToday();
+        });
+
+        // Load dashboard data
+        async function loadDashboard() {
+            try {
+                const response = await fetch('/api/client/dashboard', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Accept-Language': i18n.currentLang
+                    }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        logout();
+                        return;
+                    }
+                    throw new Error('Failed to load dashboard');
+                }
+
+                const data = await response.json();
+                clientData = data.client;
+                trackingCategories = data.tracking_categories;
+                weeklyGoals = data.weekly_goals;
+
+                updateUI();
+                loadWeekView();
+            } catch (error) {
+                showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
+            }
+        }
+
+        // Update UI with data
+        function updateUI() {
+            // Update client info
+            document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${clientData.serial}`;
+
+            // Update welcome message
+            const hour = new Date().getHours();
+            let greeting = i18n.t('dashboard.welcome');
+            let encouragement = '';
+            
+            if (hour < 12) {
+                greeting = i18n.t('dashboard.good_morning');
+                encouragement = i18n.t('client.morning_message', 'Start your day with a positive mindset!');
+            } else if (hour < 18) {
+                greeting = i18n.t('dashboard.good_afternoon');
+                encouragement = i18n.t('client.afternoon_message', 'Keep up the great work today!');
+            } else {
+                greeting = i18n.t('dashboard.good_evening');
+                encouragement = i18n.t('client.evening_message', 'Time to reflect on your day and rest well.');
+            }
+            
+            document.getElementById('welcomeMessage').textContent = `${greeting}!`;
+            document.getElementById('encouragementMessage').textContent = encouragement;
+
+            // Update overview goals list
+            updateOverviewGoals();
+
+            // Setup ALL categories dynamically
+            setupAllCategories();
+        }
+
+        // Show tab
+        function showTab(tabName) {
+            // Update nav tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+            
+            // Load tab-specific content
+            if (tabName === 'progress') {
+                loadProgress();
+            } else if (tabName === 'goals') {
+                loadWeeklyGoals();
+            }
+        }
+
+        // Setup all categories dynamically
+        function setupAllCategories() {
+            const categoriesDiv = document.getElementById('dynamicCategories');
+            
+            if (!trackingCategories || trackingCategories.length === 0) {
+                categoriesDiv.innerHTML = '<p>No tracking categories available.</p>';
+                return;
+            }
+            
+            // Create HTML for all categories
+            categoriesDiv.innerHTML = trackingCategories.map(cat => {
+                // Use the translated name that comes from the backend
+                const translatedName = cat.name; // Backend already translated it
+                const translatedDesc = cat.description || '';
+                
+                // Choose emoji based on original category name
+                let emoji = '📊';
+                const originalName = cat.original_name || cat.name;
+                if (originalName.toLowerCase().includes('emotion')) emoji = '😊';
+                else if (originalName.toLowerCase().includes('medication')) emoji = '💊';
+                else if (originalName.toLowerCase().includes('activity') || originalName.toLowerCase().includes('physical')) emoji = '🏃';
+                else if (originalName.toLowerCase().includes('energy')) emoji = '⚡';
+                else if (originalName.toLowerCase().includes('social')) emoji = '👥';
+                else if (originalName.toLowerCase().includes('sleep')) emoji = '😴';
+                else if (originalName.toLowerCase().includes('anxiety')) emoji = '😰';
+                else if (originalName.toLowerCase().includes('motivation')) emoji = '🎯';
+                
+                // Get placeholder text
+                const placeholderText = i18n.t('client.notes_placeholder', { category: translatedName });
+                
+                // Special handling for medication category
+                if (originalName.toLowerCase().includes('medication')) {
+                    return `
+                        <div class="form-section" data-category-id="${cat.id}" data-category-name="${originalName}">
+                            <h3><span class="rating-emoji">${emoji}</span> <span>${translatedName}</span></h3>
+                            <p style="color: #666; font-size: 0.9rem;">${translatedDesc}</p>
+                            <div class="rating-scale">
+                                <button type="button" class="rating-button" data-category="${cat.id}" data-value="0" onclick="selectRating(this)">
+                                    <span data-i18n="checkin.med_na">N/A</span>
+                                </button>
+                                <button type="button" class="rating-button" data-category="${cat.id}" data-value="1" onclick="selectRating(this)">
+                                    <span data-i18n="checkin.med_no">No</span>
+                                </button>
+                                <button type="button" class="rating-button" data-category="${cat.id}" data-value="3" onclick="selectRating(this)">
+                                    <span data-i18n="checkin.med_partial">Partial</span>
+                                </button>
+                                <button type="button" class="rating-button" data-category="${cat.id}" data-value="5" onclick="selectRating(this)">
+                                    <span data-i18n="checkin.med_yes">Yes</span>
+                                </button>
+                            </div>
+                            <textarea class="notes-textarea" 
+                                      id="category-${cat.id}-notes" 
+                                      placeholder="${placeholderText}"></textarea>
+                        </div>
+                    `;
+                } else {
+                    // Regular 1-5 scale for other categories
+                    return `
+                        <div class="form-section" data-category-id="${cat.id}" data-category-name="${originalName}">
+                            <h3><span class="rating-emoji">${emoji}</span> <span>${translatedName}</span></h3>
+                            <p style="color: #666; font-size: 0.9rem;">${translatedDesc}</p>
+                            <div class="rating-scale">
+                                ${[1,2,3,4,5].map(val => `
+                                    <button type="button" 
+                                            class="rating-button" 
+                                            data-category="${cat.id}" 
+                                            data-value="${val}"
+                                            onclick="selectRating(this)">
+                                        <span class="rating-emoji">${getEmojiForValue(originalName, val)}</span>
+                                        <span>${val}</span>
+                                    </button>
+                                `).join('')}
+                            </div>
+                            <textarea class="notes-textarea" 
+                                      id="category-${cat.id}-notes" 
+                                      placeholder="${placeholderText}"></textarea>
+                        </div>
+                    `;
+                }
+            }).join('');
+            
+            // Re-apply translations for dynamically created content
+            if (window.i18n) {
+                i18n.translatePage();
+            }
+        }
+
+        // Helper function to get emoji for rating values
+        function getEmojiForValue(categoryName, value) {
+            if (categoryName.toLowerCase().includes('emotion')) {
+                const emojis = ['😢', '😟', '😐', '🙂', '😄'];
+                return emojis[value - 1] || '';
+            } else if (categoryName.toLowerCase().includes('energy')) {
+                const emojis = ['🔋', '🔋', '⚡', '⚡', '⚡'];
+                return emojis[value - 1] || '';
+            } else if (categoryName.toLowerCase().includes('activity')) {
+                const emojis = ['🛌', '🚶', '🚴', '🏃', '🏋️'];
+                return emojis[value - 1] || '';
+            }
+            return '';
+        }
+
+        // Calendar Week View Functions
+        function loadWeekView() {
+            const weekGrid = document.getElementById('weekGrid');
+            weekGrid.innerHTML = '';
+            
+            const startOfWeek = getStartOfWeek(currentWeekOffset);
+            
+            // Update week label
+            const weekLabel = document.getElementById('currentWeekLabel');
+            const weekEnd = new Date(startOfWeek);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            
+            if (currentWeekOffset === 0) {
+                weekLabel.textContent = i18n.t('dashboard.this_week');
+            } else {
+                weekLabel.textContent = `${startOfWeek.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`;
+            }
+            
+            // Create day cells
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(startOfWeek);
+                date.setDate(date.getDate() + i);
+                
+                const dayCell = document.createElement('div');
+                dayCell.className = 'day-cell';
+                dayCell.onclick = () => selectDate(date);
+                
+                // Check if this date has a check-in
+                const isToday = date.toDateString() === new Date().toDateString();
+                const isPast = date < new Date() && !isToday;
+                
+                dayCell.innerHTML = `
+                    <div class="day-name">${i18n.getDayName(date.getDay(), true)}</div>
+                    <div class="day-date">${date.getDate()}</div>
+                    <div class="status-icon">${isToday ? '📍' : ''}</div>
+                `;
+                
+                if (isToday) {
+                    dayCell.classList.add('selected');
+                }
+                
+                weekGrid.appendChild(dayCell);
+            }
+            
+            // Load check-in status for the week
+            loadWeekCheckinStatus(startOfWeek);
+        }
+
+        async function loadWeekCheckinStatus(weekStart) {
+            try {
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekEnd.getDate() + 6);
+                
+                const dayCells = document.querySelectorAll('.day-cell');
+                dayCells.forEach((cell, index) => {
+                    const cellDate = new Date(weekStart);
+                    cellDate.setDate(cellDate.getDate() + index);
+                    
+                    // Mark completed days (would come from API)
+                    if (cellDate.toDateString() === new Date().toDateString() && clientData && clientData.today && clientData.today.has_checkin) {
+                        cell.classList.add('completed');
+                        cell.querySelector('.status-icon').textContent = '✅';
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading week check-in status:', error);
+            }
+        }
+
+        function getStartOfWeek(weekOffset = 0) {
+            const date = new Date();
+            const day = date.getDay();
+            const diff = date.getDate() - day + (weekOffset * 7);
+            const start = new Date(date.setDate(diff));
+            start.setHours(0, 0, 0, 0);
+            return start;
+        }
+
+        function changeWeek(direction) {
+            currentWeekOffset += direction;
+            loadWeekView();
+        }
+
+        function selectDate(date) {
+            selectedDate = date;
+            document.getElementById('checkinDate').value = date.toISOString().split('T')[0];
+            showTab('checkin');
+            checkDateStatus(date);
+        }
+
+        // Check-in Functions
+        function setToday() {
+            const today = new Date();
+            document.getElementById('checkinDate').value = today.toISOString().split('T')[0];
+            checkDateStatus(today);
+        }
+
+        function checkDateStatus(date) {
+            const statusSpan = document.getElementById('checkinDateStatus');
+            const dateStr = date.toDateString();
+            const todayStr = new Date().toDateString();
+            
+            if (dateStr === todayStr) {
+                statusSpan.textContent = i18n.t('client.today_marker');
+                statusSpan.style.color = '#667eea';
+            } else if (date < new Date()) {
+                statusSpan.textContent = i18n.t('client.past_date');
+                statusSpan.style.color = '#999';
+            } else {
+                statusSpan.textContent = i18n.t('client.future_date');
+                statusSpan.style.color = '#f44336';
+            }
+        }
+
+        function selectRating(button) {
+            const category = button.dataset.category;
+            
+            // Remove selected from other buttons in same category
+            document.querySelectorAll(`.rating-button[data-category="${category}"]`).forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // Add selected to clicked button
+            button.classList.add('selected');
+        }
+
+        async function submitCheckin() {
+            try {
+                const checkinDate = document.getElementById('checkinDate').value;
+                
+                if (!checkinDate) {
+                    showMessage(i18n.t('client.select_date'), 'error');
+                    return;
+                }
+                
+                // Check if future date
+                if (new Date(checkinDate) > new Date()) {
+                    showMessage(i18n.t('client.checkin_error'), 'error');
+                    return;
+                }
+                
+                // Gather all category responses
+                const categoryResponses = {};
+                const categoryNotes = {};
+                
+                // Process each category
+                trackingCategories.forEach(cat => {
+                    const selected = document.querySelector(`.rating-button[data-category="${cat.id}"].selected`);
+                    if (selected) {
+                        categoryResponses[cat.id] = parseInt(selected.dataset.value);
+                    }
+                    
+                    // Get notes
+                    const notesElement = document.getElementById(`category-${cat.id}-notes`);
+                    if (notesElement && notesElement.value) {
+                        categoryNotes[cat.id] = notesElement.value;
+                    }
+                });
+
+                // Check if at least some categories were filled
+                if (Object.keys(categoryResponses).length === 0) {
+                    showMessage(i18n.t('client.complete_ratings'), 'error');
+                    return;
+                }
+
+                // Gather goal completions for the selected date
+                const goalCompletions = {};
+                weeklyGoals.forEach(goal => {
+                    const goalWeekStart = new Date(goal.week_start);
+                    const goalWeekEnd = new Date(goalWeekStart);
+                    goalWeekEnd.setDate(goalWeekEnd.getDate() + 6);
+                    
+                    const selectedDateObj = new Date(checkinDate);
+                    if (selectedDateObj >= goalWeekStart && selectedDateObj <= goalWeekEnd) {
+                        const checkbox = document.querySelector(`#goal-${goal.id}`);
+                        if (checkbox) {
+                            goalCompletions[goal.id] = checkbox.checked;
+                        }
+                    }
+                });
+
+                // Prepare the check-in data
+                const checkinData = {
+                    date: checkinDate,
+                    category_responses: categoryResponses,
+                    category_notes: categoryNotes,
+                    goal_completions: goalCompletions
+                };
+
+                const response = await fetch('/api/client/checkin', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept-Language': i18n.currentLang
+                    },
+                    body: JSON.stringify(checkinData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to submit check-in');
+                }
+
+                showMessage(i18n.t('client.checkin_success'), 'success');
+                clearCheckinForm();
+                
+                // Reload dashboard to update status
+                loadDashboard();
+                loadWeekView();
+            } catch (error) {
+                showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
+            }
+        }
+
+        function clearCheckinForm() {
+            document.querySelectorAll('.rating-button').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            document.querySelectorAll('.notes-textarea').forEach(textarea => {
+                textarea.value = '';
+            });
+        }
+
+        // Goals Functions
+        async function loadWeeklyGoals() {
+            const weekInput = document.getElementById('goalsWeek').value;
+            
+            if (!weekInput) {
+                setCurrentWeek();
+                return;
+            }
+            
+            // Parse week
+            const [year, weekNum] = weekInput.split('-W');
+            const weekStart = getWeekStart(parseInt(year), parseInt(weekNum));
+            
+            // Update label
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            document.getElementById('goalsWeekLabel').textContent = 
+                `${i18n.t('goals.text')} ${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`;
+            
+            // For now, show the goals from dashboard data if they match the week
+            const goalsList = document.getElementById('goalsList');
+            
+            if (weeklyGoals.length === 0) {
+                goalsList.innerHTML = `<li style="color: #999;">${i18n.t('client.no_goals_week')}</li>`;
+                return;
+            }
+            
+            goalsList.innerHTML = weeklyGoals.map(goal => {
+                return `
+                    <li class="goal-item">
+                        <input type="checkbox" 
+                               id="goal-${goal.id}"
+                               class="goal-checkbox">
+                        <span class="goal-text">${goal.text}</span>
+                    </li>
+                `;
+            }).join('');
+        }
+
+        function updateOverviewGoals() {
+            const goalsList = document.getElementById('overviewGoalsList');
+            
+            if (weeklyGoals.length === 0) {
+                goalsList.innerHTML = `<li style="color: #999;">${i18n.t('client.no_goals_week')}</li>`;
+                return;
+            }
+            
+            goalsList.innerHTML = weeklyGoals.map(goal => {
+                const isCompleted = goal.today_completed === true;
+                return `
+                    <li class="goal-item ${isCompleted ? 'completed' : ''}">
+                        <span class="goal-text">${goal.text}</span>
+                    </li>
+                `;
+            }).join('');
+        }
+
+        // Progress Functions
+        async function loadProgress() {
+            try {
+                const days = document.getElementById('progressRange').value;
+                const progressContent = document.getElementById('progressContent');
+                
+                progressContent.innerHTML = `<div class="loading"><div class="spinner"></div><p>${i18n.t('client.loading_progress')}</p></div>`;
+                
+                const response = await fetch('/api/client/progress', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Accept-Language': i18n.currentLang
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load progress');
+                }
+
+                const data = await response.json();
+                
+                // Display progress (simplified version)
+                progressContent.innerHTML = `
+                    <div class="card">
+                        <h3>${i18n.t('checkin.title')}</h3>
+                        <p>${i18n.t('client.total_checkins')} ${data.progress.checkins.length}</p>
+                        <p>${i18n.t('client.avg_emotional')} ${calculateAverage(data.progress.checkins, 'emotional')}/5</p>
+                        <p>${i18n.t('client.medication_adherence')} ${calculateAdherence(data.progress.checkins)}%</p>
+                        <p>${i18n.t('client.avg_activity')} ${calculateAverage(data.progress.checkins, 'activity')}/5</p>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('progressContent').innerHTML = 
+                    `<p style="color: #f44336;">${i18n.t('client.error_progress')}</p>`;
+            }
+        }
+
+        function calculateAverage(checkins, field) {
+            if (checkins.length === 0) return 0;
+            const sum = checkins.reduce((acc, checkin) => acc + (checkin[field] || 0), 0);
+            return (sum / checkins.length).toFixed(1);
+        }
+
+        function calculateAdherence(checkins) {
+            if (checkins.length === 0) return 0;
+            const adherent = checkins.filter(c => c.medication === 5).length;
+            return Math.round((adherent / checkins.length) * 100);
+        }
+
+        // Report Functions
+        async function generateReport() {
+            const week = document.getElementById('reportWeek').value;
+            
+            if (!week) {
+                showMessage(i18n.t('client.select_client_week'), 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/client/generate-report/${week}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Accept-Language': i18n.currentLang
+                    }
+                });
+                
+                if (response.ok) {
+                    // Get filename from response headers
+                    const contentDisposition = response.headers.get('content-disposition');
+                    const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
+                    const filename = filenameMatch ? filenameMatch[1] : `my_therapy_report_${week}.xlsx`;
+                    
+                    // Download file
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    
+                    showReportStatus('success', i18n.t('client.report_generated'));
+                } else {
+                    const error = await response.json();
+                    showMessage(error.error || i18n.t('msg.error'), 'error');
+                }
+            } catch (error) {
+                showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
+            }
+        }
+
+        async function prepareEmailReport() {
+            const week = document.getElementById('reportWeek').value;
+            
+            if (!week) {
+                showMessage(i18n.t('client.select_client_week'), 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/client/email-report', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept-Language': i18n.currentLang
+                    },
+                    body: JSON.stringify({ week: week })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showReportStatus('info', `
+                        <h4>${i18n.t('client.email_preview')}</h4>
+                        <p><strong>${i18n.t('therapist.to')}</strong> ${result.recipient}</p>
+                        <p><strong>${i18n.t('therapist.subject')}</strong> ${result.subject}</p>
+                        <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                            <pre style="white-space: pre-wrap; font-family: inherit;">${result.content}</pre>
+                        </div>
+                        <p style="margin-top: 1rem; color: #666;">
+                            <em>${result.note || i18n.t('client.copy_email')}</em>
+                        </p>
+                    `);
+                } else {
+                    showMessage(result.error || i18n.t('msg.error'), 'error');
+                }
+            } catch (error) {
+                showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
+            }
+        }
+
+        function showReportStatus(type, content) {
+            const statusDiv = document.getElementById('reportStatus');
+            const statusContent = document.getElementById('reportStatusContent');
+            
+            statusDiv.style.display = 'block';
+            statusContent.innerHTML = content;
+            
+            if (type === 'success') {
+                statusContent.style.color = '#155724';
+            } else if (type === 'error') {
+                statusContent.style.color = '#721c24';
+            } else {
+                statusContent.style.color = '#333';
+            }
+        }
+
+        // Utility Functions
+        function setCurrentWeek() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const week = getWeekNumber(now);
+            document.getElementById('reportWeek').value = `${year}-W${week.toString().padStart(2, '0')}`;
+            document.getElementById('goalsWeek').value = `${year}-W${week.toString().padStart(2, '0')}`;
+        }
+
+        function getWeekNumber(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+
+        function getWeekStart(year, weekNum) {
+            const jan1 = new Date(year, 0, 1);
+            const days = (weekNum - 1) * 7;
+            const weekStart = new Date(jan1.setDate(jan1.getDate() + days));
+            const dayOfWeek = weekStart.getDay();
+            if (dayOfWeek !== 0) {
+                weekStart.setDate(weekStart.getDate() - dayOfWeek);
+            }
+            return weekStart;
+        }
+
+        function showMessage(text, type = 'success') {
+            const container = document.getElementById('messageContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = text;
+            
+            container.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userRole');
+            window.location.href = '/login.html';
+        }
+
+        // Set date input event listener
+        document.getElementById('checkinDate').addEventListener('change', function() {
+            checkDateStatus(new Date(this.value));
+        });
+
+        // Password change function
+        async function changePassword(event) {
+            event.preventDefault();
+            
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Validate passwords match
+            if (newPassword !== confirmPassword) {
+                showMessage(i18n.t('client.passwords_dont_match'), 'error');
+                return;
+            }
+            
+            // Validate password length
+            if (newPassword.length < 8) {
+                showMessage(i18n.t('client.password_too_short'), 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/client/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept-Language': i18n.currentLang
+                    },
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage(i18n.t('client.password_changed'), 'success');
+                    // Clear form
+                    document.getElementById('passwordChangeForm').reset();
+                } else {
+                    if (result.error === 'Current password is incorrect') {
+                        showMessage(i18n.t('client.incorrect_password'), 'error');
+                    } else {
+                        showMessage(result.error || i18n.t('msg.error'), 'error');
+                    }
+                }
+            } catch (error) {
+                showMessage(i18n.t('client.error_changing_password') + ' ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
