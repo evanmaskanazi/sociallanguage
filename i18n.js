@@ -882,10 +882,7 @@ translations: {
         'checkin.med_partial': 'Частично',
         'checkin.med_na': 'Не применимо',
 
-        'email.dear_therapist': 'المعالج العزيز',
-        'email.weekly_report_intro': 'هذا هو تقرير التقدم الأسبوعي الخاص بي لـ',
-        'email.report_generated_on': 'تم إنشاء التقرير في',
-        'email.best_regards': 'مع أطيب التحيات',
+        
 
         // Goals
         'goals.weekly': 'Недельные цели',
@@ -1015,6 +1012,10 @@ translations: {
             'reports.completed': 'مكتمل',
             'reports.weekly_goals': 'الأهداف الأسبوعية',
             'reports.weekly_report_title': 'التقرير العلاجي الأسبوعي',
+            'email.dear_therapist': 'المعالج العزيز',
+            'email.weekly_report_intro': 'هذا هو تقرير التقدم الأسبوعي الخاص بي لـ',
+            'email.report_generated_on': 'تم إنشاء التقرير في',
+            'email.best_regards': 'مع أطيب التحيات',
             // ... (rest of Arabic translations)
         }
     },
