@@ -628,6 +628,72 @@ def translate_day_name(day_index, lang='en'):
     return days[day_index] if 0 <= day_index < 7 else ''
 
 
+def ensure_default_categories():
+    """Ensure all default tracking categories exist in the database"""
+    default_categories = [
+        ('Emotion Level', 'Overall emotional state', True),
+        ('Energy', 'Physical and mental energy levels', True),
+        ('Social Activity', 'Engagement in social interactions', True),
+        ('Sleep Quality', 'Quality of sleep', False),
+        ('Anxiety Level', 'Level of anxiety experienced', False),
+        ('Motivation', 'Level of motivation and drive', False),
+        ('Medication', 'Medication adherence', True),
+        ('Physical Activity', 'Physical activity level', True)
+    ]
+
+    categories_added = 0
+    for name, description, is_default in default_categories:
+        # Check if category exists
+        category = TrackingCategory.query.filter_by(name=name).first()
+        if not category:
+            category = TrackingCategory(
+                name=name,
+                description=description,
+                is_default=is_default
+            )
+            db.session.add(category)
+            categories_added += 1
+            print(f"Added missing category: {name}")
+
+    if categories_added > 0:
+        db.session.commit()
+        print(f"Added {categories_added} missing categories")
+
+    return TrackingCategory.query.all()
+
+
+def fix_existing_clients():
+    """Automatically fix all existing clients to have all categories"""
+    try:
+        all_categories = ensure_default_categories()
+        clients = Client.query.all()
+        fixed_count = 0
+
+        for client in clients:
+            # Get existing category IDs for this client
+            existing_category_ids = set()
+            for plan in client.tracking_plans.all():
+                existing_category_ids.add(plan.category_id)
+
+            # Add missing categories
+            for category in all_categories:
+                if category.id not in existing_category_ids:
+                    plan = ClientTrackingPlan(
+                        client_id=client.id,
+                        category_id=category.id,
+                        is_active=True
+                    )
+                    db.session.add(plan)
+                    fixed_count += 1
+                    print(f"Added {category.name} to client {client.client_serial}")
+
+        if fixed_count > 0:
+            db.session.commit()
+            print(f"Fixed {fixed_count} missing category assignments")
+
+    except Exception as e:
+        print(f"Error fixing client categories: {e}")
+        db.session.rollback()
 # ============= HTML PAGE ROUTES =============
 
 @app.route('/')
@@ -683,7 +749,7 @@ def therapist_dashboard_page():
 def client_dashboard_page():
     """Serve the client dashboard HTML file"""
     try:
-        file_path = os.path.join(BASE_DIR, 'client_dashboard.html')
+        file_path = os.path.join(BASE_DIR, 'client_dashboardtranslate.html')
         if os.path.exists(file_path):
             return send_file(file_path)
         else:
@@ -2144,29 +2210,15 @@ def initialize_database():
     try:
         db.create_all()
 
-        # Add default tracking categories if not exist
-        if TrackingCategory.query.count() == 0:
-            default_categories = [
-                ('Emotion Level', 'Overall emotional state', True),
-                ('Energy', 'Physical and mental energy levels', True),
-                ('Social Activity', 'Engagement in social interactions', True),
-                ('Sleep Quality', 'Quality of sleep', False),
-                ('Anxiety Level', 'Level of anxiety experienced', False),
-                ('Motivation', 'Level of motivation and drive', False),
-                ('Medication', 'Medication adherence', True),
-                ('Physical Activity', 'Physical activity level', True)
-            ]
+        # Always ensure all default categories exist
+        ensure_default_categories()
 
-            for name, description, is_default in default_categories:
-                category = TrackingCategory(
-                    name=name,
-                    description=description,
-                    is_default=is_default
-                )
-                db.session.add(category)
+        # Automatically fix any existing clients
+        fix_existing_clients()
 
-            db.session.commit()
-            print("Database initialized with default tracking categories")
+        print("Database initialized with all default tracking categories")
+        print("All existing clients have been updated with missing categories")
+
     except Exception as e:
         print(f"Database initialization error: {e}")
         _initialized = False
@@ -2175,6 +2227,17 @@ def initialize_database():
 # Initialize on first request
 @app.before_request
 def before_request():
+    """Run before each request"""
+    # Only run initialization if tables exist
+    if db.engine.has_table('tracking_categories'):
+        with app.app_context():
+            # Check if we have all 8 categories
+            category_count = TrackingCategory.query.count()
+            if category_count < 8:
+                print(f"Found only {category_count} categories, ensuring all defaults exist...")
+                ensure_default_categories()
+                fix_existing_clients()
+
     initialize_database()
 
 
@@ -2196,12 +2259,10 @@ if __name__ == '__main__':
     app.run(host='0.0.0.0', port=port, debug=not os.environ.get('PRODUCTION'))
 
 
-
-
 @app.route('/api/therapist/create-client', methods=['POST'])
 @require_auth(['therapist'])
 def create_client():
-    """Create new client"""
+    """Create new client with ALL categories guaranteed"""
     try:
         therapist = request.current_user.therapist
         data = request.json
@@ -2232,21 +2293,38 @@ def create_client():
         db.session.add(client)
         db.session.flush()
 
-        # Always add ALL tracking categories
-        all_categories = TrackingCategory.query.all()
+        # ALWAYS ensure we have all 8 categories before adding them
+        all_categories = ensure_default_categories()
+
+        # Verify we have exactly 8 categories
+        if len(all_categories) != 8:
+            print(f"WARNING: Expected 8 categories but found {len(all_categories)}")
+            # Try to fix it
+            ensure_default_categories()
+            all_categories = TrackingCategory.query.all()
+
+        # Add ALL tracking categories to this client
+        categories_added = 0
         for category in all_categories:
             plan = ClientTrackingPlan(
                 client_id=client.id,
                 category_id=category.id,
-                is_active=True  # All categories active by default
+                is_active=True
             )
             db.session.add(plan)
+            categories_added += 1
+
+        print(f"Added {categories_added} categories to client {client.client_serial}")
+
+        # Verify the count
+        if categories_added != 8:
+            print(f"WARNING: Added {categories_added} categories instead of 8!")
 
         # Add initial goals if provided
         goals = data.get('initial_goals', [])
         week_start = date.today() - timedelta(days=date.today().weekday())
         for goal_text in goals:
-            if goal_text.strip():  # Only add non-empty goals
+            if goal_text.strip():
                 goal = WeeklyGoal(
                     client_id=client.id,
                     therapist_id=therapist.id,
@@ -2266,18 +2344,25 @@ def create_client():
 
         db.session.commit()
 
+        # Final verification
+        client_categories = ClientTrackingPlan.query.filter_by(client_id=client.id).count()
+
         return jsonify({
             'success': True,
             'client': {
                 'id': client.id,
                 'serial': client.client_serial,
                 'email': email,
-                'temporary_password': password
+                'temporary_password': password,
+                'categories_assigned': client_categories,
+                'expected_categories': 8,
+                'all_categories_assigned': client_categories == 8
             }
         })
 
     except Exception as e:
         db.session.rollback()
+        print(f"Error creating client: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 
