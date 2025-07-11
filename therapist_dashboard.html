@@ -1198,6 +1198,13 @@
 
         // Global variables
         let authToken = localStorage.getItem('authToken');
+        console.log('Auth token from localStorage:', authToken ? 'exists' : 'missing');
+
+// Check authentication
+        if (!authToken) {
+          console.log('No auth token, redirecting to login');
+          window.location.href = '/login.html';
+                }
         let therapistData = null;
         let clientsList = [];
         let trackingCategories = [];
@@ -1222,15 +1229,23 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded fired');
+    console.log('window.i18n exists:', !!window.i18n);
+    console.log('window.i18n.currentLang:', window.i18n?.currentLang);
+    console.log('authToken exists:', !!authToken);
+
     // Ensure i18n is ready
     if (window.i18n && window.i18n.currentLang) {
+        console.log('i18n is ready, loading dashboard components...');
         loadDashboard();
         loadTrackingCategories();
         setCurrentWeek();
         updatePlaceholders();
     } else {
+        console.log('i18n not ready, waiting 100ms...');
         // Wait a bit for i18n to initialize
         setTimeout(() => {
+            console.log('After timeout - window.i18n.currentLang:', window.i18n?.currentLang);
             loadDashboard();
             loadTrackingCategories();
             setCurrentWeek();
@@ -1256,6 +1271,8 @@
 
         // Load dashboard data
         async function loadDashboard() {
+        console.log('loadDashboard() called');
+        console.log('Making API call to /api/therapist/dashboard');
             try {
                 const response = await fetch('/api/therapist/dashboard', {
                     headers: {
@@ -1303,6 +1320,9 @@
         // Load tracking categories
 
 async function loadTrackingCategories() {
+    console.log('loadTrackingCategories() called');
+    console.log('Current language for categories:', i18n.currentLang);
+    console.log('Making API call to /api/categories/translated');
     try {
         const response = await fetch('/api/categories/translated', {
             headers: {
