@@ -2410,8 +2410,8 @@ def client_dashboard():
             tracking_categories.append({
                 'id': plan.category_id,
                 'name': translated_name,
-                'original_name': plan.category.name,
-                'description': plan.category.description,  # Could also translate this
+                'original_name': plan.category.name,  # Always the English name from DB
+                'description': translate_category_name(plan.category.name + '_desc', lang),  # Translate description too
                 'today_value': today_response.value if today_response else None
             })
 
