@@ -616,6 +616,7 @@ def translate_category_name(name, lang='en'):
     print(f"Translating '{name}' to '{lang}': '{result}'")
     return result
 
+
 def translate_report_term(term, lang='en'):
     """Translate report term to specified language"""
     return REPORT_TRANSLATIONS.get(lang, {}).get(term, term)
@@ -1153,27 +1154,32 @@ def get_client_details(client_id):
                 'activity': checkin.activity_value
             })
 
-        # Get category responses
-        category_data = {}
-        for plan in client.tracking_plans.filter_by(is_active=True):
-            responses = CategoryResponse.query.filter(
-                CategoryResponse.client_id == client.id,
-                CategoryResponse.category_id == plan.category_id,
-                CategoryResponse.response_date.between(start_date, end_date)
-            ).order_by(CategoryResponse.response_date).all()
-
-            category_data[plan.category.name] = [
-                {
-                    'date': resp.response_date.isoformat(),
-                    'value': resp.value
-                } for resp in responses
-            ]
+        # Get therapist notes/missions
+        notes = []
+        for note in TherapistNote.query.filter_by(
+                client_id=client_id,
+                therapist_id=therapist.id
+        ).order_by(TherapistNote.created_at.desc()).limit(10):
+            notes.append({
+                'id': note.id,
+                'type': note.note_type,
+                'content': note.content,
+                'is_mission': note.is_mission,
+                'completed': note.mission_completed,
+                'created_at': note.created_at.isoformat()
+            })
 
         return jsonify({
             'success': True,
-            'progress': {
-                'checkins': checkin_data,
-                'categories': category_data
+            'client': {
+                'id': client.id,
+                'serial': client.client_serial,
+                'start_date': client.start_date.isoformat(),
+                'is_active': client.is_active,
+                'tracking_plans': tracking_plans,
+                'active_goals': active_goals,
+                'recent_checkins': recent_checkins,
+                'notes': notes
             }
         })
 
@@ -1317,17 +1323,17 @@ def get_translated_categories():
     try:
         lang = get_language_from_header()
         categories = TrackingCategory.query.all()
-        
+
         category_data = []
         for category in categories:
             translated_name = translate_category_name(category.name, lang)
             # Also translate the description
             desc_key = category.name + '_desc'
             translated_desc = CATEGORY_TRANSLATIONS.get(lang, {}).get(
-                desc_key, 
+                desc_key,
                 category.description
             )
-            
+
             category_data.append({
                 'id': category.id,
                 'name': translated_name,
@@ -1337,13 +1343,13 @@ def get_translated_categories():
                 'scale_min': category.scale_min,
                 'scale_max': category.scale_max
             })
-        
+
         return jsonify({
             'success': True,
             'categories': category_data,
             'language': lang
         })
-    
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -2836,7 +2842,6 @@ if not os.environ.get('PRODUCTION'):
     with app.app_context():
         initialize_database()
 
-
 # ============= MAIN ENTRY POINT =============
 
 if __name__ == '__main__':
@@ -2847,43 +2852,8 @@ if __name__ == '__main__':
 
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=not os.environ.get('PRODUCTION'))
-                
-                'emotional': checkin.emotional_value,
-                'medication': checkin.medication_value,
-                'activity': checkin.activity_value
-            })
 
-        # Get therapist notes/missions
-        notes = []
-        for note in TherapistNote.query.filter_by(
-                client_id=client_id,
-                therapist_id=therapist.id
-        ).order_by(TherapistNote.created_at.desc()).limit(10):
-            notes.append({
-                'id': note.id,
-                'type': note.note_type,
-                'content': note.content,
-                'is_mission': note.is_mission,
-                'completed': note.mission_completed,
-                'created_at': note.created_at.isoformat()
-            })
 
-        return jsonify({
-            'success': True,
-            'client': {
-                'id': client.id,
-                'serial': client.client_serial,
-                'start_date': client.start_date.isoformat(),
-                'is_active': client.is_active,
-                'tracking_plans': tracking_plans,
-                'active_goals': active_goals,
-                'recent_checkins': recent_checkins,
-                'notes': notes
-            }
-        })
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/therapist/create-client', methods=['POST'])
@@ -3433,17 +3403,17 @@ def get_translated_categories():
     try:
         lang = get_language_from_header()
         categories = TrackingCategory.query.all()
-        
+
         category_data = []
         for category in categories:
             translated_name = translate_category_name(category.name, lang)
             # Also translate the description
             desc_key = category.name + '_desc'
             translated_desc = CATEGORY_TRANSLATIONS.get(lang, {}).get(
-                desc_key, 
+                desc_key,
                 category.description
             )
-            
+
             category_data.append({
                 'id': category.id,
                 'name': translated_name,
@@ -3453,13 +3423,13 @@ def get_translated_categories():
                 'scale_min': category.scale_min,
                 'scale_max': category.scale_max
             })
-        
+
         return jsonify({
             'success': True,
             'categories': category_data,
             'language': lang
         })
-    
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -3880,34 +3850,35 @@ def debug_categories():
     try:
         categories = TrackingCategory.query.all()
         lang = get_language_from_header()
-        
+
         results = []
         debug_translations = []
-        
+
         for cat in categories:
             translation_exists = cat.name in CATEGORY_TRANSLATIONS.get(lang, {})
-            
+
             # Capture the translation process
             original_name = cat.name
             translated_name = CATEGORY_TRANSLATIONS.get(lang, {}).get(cat.name, cat.name)
-            
+
             debug_translations.append(f"'{original_name}' -> '{translated_name}'")
-            
+
             results.append({
                 'db_name': cat.name,
                 'translation_exists': translation_exists,
                 'translated_to': translated_name,
                 'is_same': cat.name == translated_name
             })
-        
+
         return jsonify({
             'language': lang,
             'categories': results,
             'translation_process': debug_translations
         })
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/debug/categories', methods=['GET'])
 @require_auth(['therapist'])
@@ -3915,23 +3886,25 @@ def debug_categories():
     """Debug endpoint to check category translations"""
     categories = TrackingCategory.query.all()
     lang = get_language_from_header()
-    
+
     results = []
     for cat in categories:
         translation_exists = cat.name in CATEGORY_TRANSLATIONS.get(lang, {})
         translated_name = translate_category_name(cat.name, lang)
-        
+
         results.append({
             'db_name': cat.name,
             'translation_exists': translation_exists,
             'translated_to': translated_name,
             'is_same': cat.name == translated_name
         })
-    
+
     return jsonify({
         'language': lang,
         'categories': results
     })
+
+
 # ============= CLIENT REPORT ENDPOINTS =============
 
 @app.route('/api/client/generate-report/<week>', methods=['GET'])
@@ -4434,7 +4407,6 @@ def before_request():
 if not os.environ.get('PRODUCTION'):
     with app.app_context():
         initialize_database()
-
 
 # ============= MAIN ENTRY POINT =============
 
