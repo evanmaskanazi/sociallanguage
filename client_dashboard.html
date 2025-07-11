@@ -1144,7 +1144,11 @@
         // Update UI with data
         function updateUI() {
             // Update client info
+            console.log('updateUI called');
+            console.log('clientData:', clientData);
+           console.log('clientSerial element:', document.getElementById('clientSerial'));
             document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${clientData.serial}`;
+            //document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${clientData.serial || clientData.client_serial || 'Unknown'}`;
 
             // Update welcome message
             const hour = new Date().getHours();
@@ -1170,6 +1174,16 @@
 
             // Setup ALL categories dynamically
             setupAllCategories();
+            const quickStats = document.getElementById('quickStats');
+            if (quickStats) {
+                const weekCheckins = weeklyGoals.filter(g => g.today_completed !== null).length;
+                const completedGoals = weeklyGoals.filter(g => g.today_completed === true).length;
+
+                quickStats.innerHTML = `
+                <p>${i18n.t('dashboard.this_week')}: ${weekCheckins}/7 ${i18n.t('days')}</p>
+                <p>${i18n.t('goals.completed')}: ${completedGoals}/${weeklyGoals.length}</p>
+                    `;
+                    }
         }
 
         // Show tab
@@ -1344,14 +1358,15 @@
                 dayCell.className = 'day-cell';
                 dayCell.onclick = () => selectDate(date);
 
-                // Check if this date has a check-in
+// Check if this date has a check-in
                 const isToday = date.toDateString() === new Date().toDateString();
                 const isPast = date < new Date() && !isToday;
 
+// Use i directly since we're iterating 0-6 for Mon-Sun
                 dayCell.innerHTML = `
-                    <div class="day-name">${i18n.getDayName(date.getDay(), true)}</div>
-                    <div class="day-date">${date.getDate()}</div>
-                    <div class="status-icon">${isToday ? '📍' : ''}</div>
+                <div class="day-name">${i18n.getDayName((i + 1) % 7, true)}</div>
+                <div class="day-date">${date.getDate()}</div>
+                 <div class="status-icon">${isToday ? '📍' : ''}</div>
                 `;
 
                 if (isToday) {

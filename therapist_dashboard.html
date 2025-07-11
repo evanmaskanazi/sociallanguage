@@ -1932,7 +1932,7 @@ async function loadTrackingCategories() {
                     statusDiv.style.display = 'block';
 
                     // Use email_content field (that's what the backend returns)
-                    const emailContent = result.email_content || result.content || 'No content available';
+                    const emailContent = result.email_content || '';
                     const recipient = result.recipient || 'Not specified';
                     const subject = result.subject || 'Weekly Therapy Report';
 
