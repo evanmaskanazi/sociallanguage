@@ -2228,15 +2228,24 @@ def initialize_database():
 @app.before_request
 def before_request():
     """Run before each request"""
-    # Only run initialization if tables exist
-    if db.engine.has_table('tracking_categories'):
-        with app.app_context():
-            # Check if we have all 8 categories
-            category_count = TrackingCategory.query.count()
-            if category_count < 8:
-                print(f"Found only {category_count} categories, ensuring all defaults exist...")
-                ensure_default_categories()
-                fix_existing_clients()
+    try:
+        # Use inspector to check if table exists
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+
+        # Only run initialization if tables exist
+        if 'tracking_categories' in inspector.get_table_names():
+            with app.app_context():
+                # Check if we have all 8 categories
+                category_count = TrackingCategory.query.count()
+                if category_count < 8:
+                    print(f"Found only {category_count} categories, ensuring all defaults exist...")
+                    ensure_default_categories()
+                    fix_existing_clients()
+    except Exception as e:
+        # Don't crash the app if there's an issue with the check
+        print(f"Error in before_request: {e}")
+        pass
 
     initialize_database()
 
@@ -3580,10 +3589,6 @@ def initialize_database():
         _initialized = False
 
 
-# Initialize on first request
-@app.before_request
-def before_request():
-    initialize_database()
 
 
 # Don't initialize on import for production
