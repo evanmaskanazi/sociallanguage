@@ -1144,11 +1144,14 @@
         // Update UI with data
         function updateUI() {
             // Update client info
-            console.log('updateUI called');
+            //console.log('updateUI called');
+            //console.log('clientData:', clientData);
+           //console.log('clientSerial element:', document.getElementById('clientSerial'));
             console.log('clientData:', clientData);
-           console.log('clientSerial element:', document.getElementById('clientSerial'));
-            document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${clientData.serial}`;
-            //document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${clientData.serial || clientData.client_serial || 'Unknown'}`;
+            console.log('clientData.serial:', clientData.serial);
+            console.log('clientData.client_serial:', clientData.client_serial);
+            //document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${clientData.serial}`;
+            document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${clientData.serial || clientData.client_serial || 'Unknown'}`;
 
             // Update welcome message
             const hour = new Date().getHours();
@@ -1357,6 +1360,8 @@
                 const dayCell = document.createElement('div');
                 dayCell.className = 'day-cell';
                 dayCell.onclick = () => selectDate(date);
+
+                console.log(`Day ${i}: getDay()=${date.getDay()}, translation=${i18n.getDayName(date.getDay(), true)}`);
 
 // Check if this date has a check-in
                 const isToday = date.toDateString() === new Date().toDateString();
