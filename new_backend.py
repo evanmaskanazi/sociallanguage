@@ -612,7 +612,7 @@ def get_language_from_header():
 
 def translate_category_name(name, lang='en'):
     """Translate category name to specified language"""
-    return CATEGORY_TRANSLATIONS.get(lang, {}).get(name, name)
+    result = CATEGORY_TRANSLATIONS.get(lang, {}).get(name, name)
     print(f"Translating '{name}' to '{lang}': '{result}'")
     return result
 
@@ -1190,136 +1190,19 @@ def get_client_details(client_id):
 
 
 
-@app.route('/api/client/missions', methods=['GET'])
-@require_auth(['client'])
-def get_client_missions():
-    """Get client's missions from therapist"""
-    try:
-        client = request.current_user.client
-
-        missions = TherapistNote.query.filter_by(
-            client_id=client.id,
-            is_mission=True
-        ).order_by(TherapistNote.created_at.desc()).all()
-
-        mission_data = []
-        for mission in missions:
-            mission_data.append({
-                'id': mission.id,
-                'content': mission.content,
-                'completed': mission.mission_completed,
-                'created_at': mission.created_at.isoformat(),
-                'completed_at': mission.completed_at.isoformat() if mission.completed_at else None
-            })
-
-        return jsonify({
-            'success': True,
-            'missions': mission_data
-        })
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/client/complete-mission/<int:mission_id>', methods=['POST'])
-@require_auth(['client'])
-def complete_mission(mission_id):
-    """Mark mission as completed"""
-    try:
-        client = request.current_user.client
 
-        mission = TherapistNote.query.filter_by(
-            id=mission_id,
-            client_id=client.id,
-            is_mission=True
-        ).first()
 
-        if not mission:
-            return jsonify({'error': 'Mission not found'}), 404
-
-        mission.mission_completed = True
-        mission.completed_at = datetime.utcnow()
-        db.session.commit()
-
-        return jsonify({
-            'success': True,
-            'message': 'Mission completed!'
-        })
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
 
 
 # ============= TRACKING CATEGORY MANAGEMENT =============
 
-@app.route('/api/categories', methods=['GET'])
-@require_auth(['therapist', 'client'])
-def get_tracking_categories():
-    """Get all tracking categories with translations"""
-    try:
-        lang = get_language_from_header()
-        categories = TrackingCategory.query.all()
 
-        category_data = []
-        for category in categories:
-            translated_name = translate_category_name(category.name, lang)
-            category_data.append({
-                'id': category.id,
-                'name': translated_name,
-                'original_name': category.name,  # Keep original for reference
-                'description': category.description,
-                'is_default': category.is_default,
-                'scale_min': category.scale_min,
-                'scale_max': category.scale_max
-            })
-
-        return jsonify({
-            'success': True,
-            'categories': category_data
-        })
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 
 # NEW ENDPOINT - Added after /api/categories
-@app.route('/api/categories/translated', methods=['GET'])
-@require_auth(['therapist', 'client'])
-def get_translated_categories():
-    """Get all tracking categories with translations for current language"""
-    try:
-        lang = get_language_from_header()
-        categories = TrackingCategory.query.all()
 
-        category_data = []
-        for category in categories:
-            translated_name = translate_category_name(category.name, lang)
-            # Also translate the description
-            desc_key = category.name + '_desc'
-            translated_desc = CATEGORY_TRANSLATIONS.get(lang, {}).get(
-                desc_key,
-                category.description
-            )
-
-            category_data.append({
-                'id': category.id,
-                'name': translated_name,
-                'original_name': category.name,
-                'description': translated_desc,
-                'is_default': category.is_default,
-                'scale_min': category.scale_min,
-                'scale_max': category.scale_max
-            })
-
-        return jsonify({
-            'success': True,
-            'categories': category_data,
-            'language': lang
-        })
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/therapist/update-tracking-plan', methods=['POST'])
@@ -3811,41 +3694,7 @@ def export_client_data(client_id):
 
 # ============= ADMIN ENDPOINTS (if needed) =============
 
-@app.route('/api/debug/categories', methods=['GET'])
-@require_auth(['therapist'])
-def debug_categories():
-    """Debug endpoint to check category translations"""
-    try:
-        categories = TrackingCategory.query.all()
-        lang = get_language_from_header()
 
-        results = []
-        debug_translations = []
-
-        for cat in categories:
-            translation_exists = cat.name in CATEGORY_TRANSLATIONS.get(lang, {})
-
-            # Capture the translation process
-            original_name = cat.name
-            translated_name = CATEGORY_TRANSLATIONS.get(lang, {}).get(cat.name, cat.name)
-
-            debug_translations.append(f"'{original_name}' -> '{translated_name}'")
-
-            results.append({
-                'db_name': cat.name,
-                'translation_exists': translation_exists,
-                'translated_to': translated_name,
-                'is_same': cat.name == translated_name
-            })
-
-        return jsonify({
-            'language': lang,
-            'categories': results,
-            'translation_process': debug_translations
-        })
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/debug/categories', methods=['GET'])
