@@ -1277,7 +1277,26 @@
                   updateReportClientSelect();
               }
             });
+            // Store current language
+let currentLang = i18n.currentLang;
 
+// Check for language changes periodically
+setInterval(function() {
+    if (i18n.currentLang !== currentLang) {
+        console.log('Language changed from', currentLang, 'to', i18n.currentLang);
+        currentLang = i18n.currentLang;
+
+        // Reload all data with new language
+        loadDashboard();
+        loadTrackingCategories();
+        loadClients();
+        updatePlaceholders();
+
+        if (document.getElementById('reports').classList.contains('active')) {
+            updateReportClientSelect();
+        }
+    }
+}, 500);
 
 
         // Load dashboard data
