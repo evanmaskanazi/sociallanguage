@@ -1261,11 +1261,22 @@
             document.querySelector('#initialGoalsContainer input').placeholder = i18n.t('therapist.goal_placeholder');
         }
 
-        window.addEventListener('languageChanged', function() {
-        console.log('Language changed, reloading categories and clients');
-        loadTrackingCategories();
-        loadClients(); // This will reload the client list with new translations
-                });
+               window.addEventListener('languageChanged', function() {
+             console.log('Language changed to:', i18n.currentLang);
+
+    // Reload all data with new language
+              loadDashboard();
+              loadTrackingCategories();
+              loadClients();
+
+    // Update any other UI elements
+               updatePlaceholders();
+
+    // Update report client select if on reports tab
+                if (document.getElementById('reports').classList.contains('active')) {
+                  updateReportClientSelect();
+              }
+            });
 
 
 
