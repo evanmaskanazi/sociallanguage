@@ -601,6 +601,7 @@ def send_email(to_email, subject, body, html_body=None):
 def get_language_from_header():
     """Get preferred language from Accept-Language header"""
     accept_language = request.headers.get('Accept-Language', 'en')
+    print(f"Accept-Language header: {accept_language}")
     # Simple parsing - just get the first language code
     lang = accept_language.split(',')[0].split('-')[0].lower()
 
@@ -1105,6 +1106,7 @@ def get_therapist_clients():
     try:
         therapist = request.current_user.therapist
         lang = get_language_from_header()
+        print(f"Language detected: {lang}")
 
         # Get filter parameters
         status = request.args.get('status', 'all')
@@ -1142,6 +1144,7 @@ def get_therapist_clients():
             tracking_categories = []
             for plan in client.tracking_plans.filter_by(is_active=True):
                 translated_name = translate_category_name(plan.category.name, lang)
+                print(f"Translating '{plan.category.name}' to lang '{lang}': '{translated_name}'")
                 tracking_categories.append(translated_name)
 
             client_data.append({

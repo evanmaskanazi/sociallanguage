@@ -934,7 +934,9 @@
                 'therapist.error_loading_details': 'Error loading client details:',
                 'therapist.error_generating': 'Error generating report:',
                 'therapist.error_preparing': 'Error preparing email report:',
-                'therapist.all_categories_note': 'Note: All categories are selected by default. Uncheck any you don\'t want the client to track.'
+                'therapist.all_categories_note': 'Note: All categories are selected by default. Uncheck any you don\'t want the client to track.',
+                'therapist.view_client': 'View',
+                'therapist.add_goal': 'Add Goal'
             });
 
             // Hebrew
@@ -1016,7 +1018,9 @@
                 'therapist.error_loading_details': 'שגיאה בטעינת פרטי מטופל:',
                 'therapist.error_generating': 'שגיאה ביצירת דוח:',
                 'therapist.error_preparing': 'שגיאה בהכנת דוח דוא״ל:',
-                'therapist.all_categories_note': 'הערה: כל הקטגוריות נבחרות כברירת מחדל. בטל סימון של כל קטגוריה שאינך רוצה שהמטופל יעקוב אחריה.'
+                'therapist.all_categories_note': 'הערה: כל הקטגוריות נבחרות כברירת מחדל. בטל סימון של כל קטגוריה שאינך רוצה שהמטופל יעקוב אחריה.',
+                'therapist.view_client': 'צפה',
+                'therapist.add_goal': 'הוסף יעד'
             });
 
             // Russian
@@ -1098,7 +1102,10 @@
                 'therapist.error_loading_details': 'Ошибка загрузки деталей клиента:',
                 'therapist.error_generating': 'Ошибка создания отчета:',
                 'therapist.error_preparing': 'Ошибка подготовки email отчета:',
-                'therapist.all_categories_note': 'Примечание: Все категории выбраны по умолчанию. Снимите флажки с тех, которые клиент не должен отслеживать.'
+                'therapist.all_categories_note': 'Примечание: Все категории выбраны по умолчанию. Снимите флажки с тех, которые клиент не должен отслеживать.',
+                'therapist.view_client': 'Просмотр',
+                'therapist.add_goal': 'Добавить цель'
+
             });
 
             // Arabic
@@ -1180,7 +1187,9 @@
                 'therapist.error_loading_details': 'خطأ في تحميل تفاصيل العميل:',
                 'therapist.error_generating': 'خطأ في إنشاء التقرير:',
                 'therapist.error_preparing': 'خطأ في إعداد تقرير البريد الإلكتروني:',
-                'therapist.all_categories_note': 'ملاحظة: جميع الفئات محددة بشكل افتراضي. قم بإلغاء تحديد أي فئة لا تريد أن يتتبعها العميل.'
+                'therapist.all_categories_note': 'ملاحظة: جميع الفئات محددة بشكل افتراضي. قم بإلغاء تحديد أي فئة لا تريد أن يتتبعها العميل.',
+                'therapist.view_client': 'عرض',
+                'therapist.add_goal': 'إضافة هدف'
             });
 
             // Re-translate page
@@ -1213,13 +1222,22 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+    // Ensure i18n is ready
+    if (window.i18n && window.i18n.currentLang) {
+        loadDashboard();
+        loadTrackingCategories();
+        setCurrentWeek();
+        updatePlaceholders();
+    } else {
+        // Wait a bit for i18n to initialize
+        setTimeout(() => {
             loadDashboard();
             loadTrackingCategories();
             setCurrentWeek();
-
-            // Update placeholders
             updatePlaceholders();
-        });
+        }, 100);
+    }
+});
 
         // Update placeholders
         function updatePlaceholders() {
@@ -1227,6 +1245,14 @@
             document.getElementById('tempPassword').placeholder = i18n.t('therapist.auto_generate_note');
             document.querySelector('#initialGoalsContainer input').placeholder = i18n.t('therapist.goal_placeholder');
         }
+
+        window.addEventListener('languageChanged', function() {
+        console.log('Language changed, reloading categories and clients');
+        loadTrackingCategories();
+        loadClients(); // This will reload the client list with new translations
+                });
+
+
 
         // Load dashboard data
         async function loadDashboard() {
@@ -1284,6 +1310,7 @@ async function loadTrackingCategories() {
                 'Accept-Language': i18n.currentLang
             }
         });
+        console.log('Response status:', response.status);
 
         if (response.ok) {
             const data = await response.json();
@@ -1450,8 +1477,8 @@ async function loadTrackingCategories() {
                         <td>${trackingDisplay}</td>
                         <td>
                             <div class="action-buttons">
-                                <button class="btn btn-primary btn-small" onclick="viewClientDetails(${client.id})">${i18n.t('client.view')}</button>
-                                <button class="btn btn-secondary btn-small" onclick="addGoal(${client.id})">${i18n.t('client.add_goal')}</button>
+                                <button class="btn btn-primary btn-small" onclick="viewClientDetails(${client.id})">${i18n.t('therapist.view_client')}</button>
+                                <button class="btn btn-secondary btn-small" onclick="addGoal(${client.id})">${i18n.t('therapist.add_goal')}</button>
                             </div>
                         </td>
                     </tr>
