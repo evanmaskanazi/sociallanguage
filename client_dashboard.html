@@ -1203,12 +1203,26 @@
         return;
     }
 
+    // Debug: Check if i18n is available
+    console.log('i18n available?', window.i18n ? 'Yes' : 'No');
+    console.log('Current language:', window.i18n ? window.i18n.currentLang : 'N/A');
+
     // Create HTML for all categories
     categoriesDiv.innerHTML = trackingCategories.map(cat => {
         // Translate both name and description on the frontend
         const originalName = cat.original_name || cat.name;
         const translatedName = translateCategoryName(originalName);
         const translatedDesc = translateCategoryDescription(originalName, cat.description);
+
+        // Debug: Log medication category details
+        if (originalName.toLowerCase().includes('medication')) {
+            console.log('Medication category found:', {
+                originalName,
+                translatedName,
+                medicationQuestion: i18n.t('checkin.medication'),
+                hasI18n: !!window.i18n
+            });
+        }
 
         // Choose emoji based on original category name
         let emoji = '📊';
@@ -1226,22 +1240,27 @@
 
         // Special handling for medication category
         if (originalName.toLowerCase().includes('medication')) {
+            // Get the medication question directly
+            const medicationQuestion = window.i18n && window.i18n.t ?
+                window.i18n.t('checkin.medication') :
+                'Did you take your medication as prescribed?';
+
             return `
                 <div class="form-section" data-category-id="${cat.id}" data-category-name="${originalName}">
                     <h3><span class="rating-emoji">${emoji}</span> <span data-i18n="category.medication">${translatedName}</span></h3>
-                    <p style="color: #666; font-size: 0.9rem;" data-i18n="checkin.medication">${i18n.t('checkin.medication')}</p>
+                    <p style="color: #666; font-size: 0.9rem;" data-i18n="checkin.medication">${medicationQuestion}</p>
                     <div class="rating-scale">
                         <button type="button" class="rating-button" data-category="${cat.id}" data-value="0" onclick="selectRating(this)">
-                            <span data-i18n="checkin.med_na">N/A</span>
+                            <span data-i18n="checkin.med_na">${window.i18n ? window.i18n.t('checkin.med_na') : 'N/A'}</span>
                         </button>
                         <button type="button" class="rating-button" data-category="${cat.id}" data-value="1" onclick="selectRating(this)">
-                            <span data-i18n="checkin.med_no">No</span>
+                            <span data-i18n="checkin.med_no">${window.i18n ? window.i18n.t('checkin.med_no') : 'No'}</span>
                         </button>
                         <button type="button" class="rating-button" data-category="${cat.id}" data-value="3" onclick="selectRating(this)">
-                            <span data-i18n="checkin.med_partial">Partial</span>
+                            <span data-i18n="checkin.med_partial">${window.i18n ? window.i18n.t('checkin.med_partial') : 'Partial'}</span>
                         </button>
                         <button type="button" class="rating-button" data-category="${cat.id}" data-value="5" onclick="selectRating(this)">
-                            <span data-i18n="checkin.med_yes">Yes</span>
+                            <span data-i18n="checkin.med_yes">${window.i18n ? window.i18n.t('checkin.med_yes') : 'Yes'}</span>
                         </button>
                     </div>
                     <textarea class="notes-textarea"
