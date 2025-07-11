@@ -1085,6 +1085,7 @@ translations: {
             if (switcher) {
                 switcher.value = lang;
             }
+            window.dispatchEvent(new Event('languageChanged'));
         }
     },
 
