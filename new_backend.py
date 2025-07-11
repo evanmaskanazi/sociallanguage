@@ -2113,19 +2113,8 @@ def handle_exception(error):
 
 # ============= STATIC FILE SERVING =============
 
-@app.route('/reset-password.html')
-def reset_password_page():
-    """Serve the password reset page"""
-    try:
-        file_path = os.path.join(BASE_DIR, 'reset-password.html')
-        if os.path.exists(file_path):
-            return send_file(file_path)
-        else:
-            app.logger.error(f"reset-password.html not found at {file_path}")
-            return "reset-password.html not found", 404
-    except Exception as e:
-        app.logger.error(f"Error serving reset-password.html: {e}")
-        return f"Error: {str(e)}", 500
+
+
 
 
 @app.route('/favicon.svg')
@@ -3415,15 +3404,7 @@ def get_client_week_goals(week):
 # It's the UPDATED version starting at line 2773
 
 
-# ============= HEALTH CHECK =============
 
-@app.route('/api/health', methods=['GET'])
-def health_check():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'healthy',
-        'timestamp': datetime.utcnow().isoformat()
-    })
 
 
 # ============= ERROR HANDLERS =============
