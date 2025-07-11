@@ -1109,6 +1109,17 @@
             loadDashboard();
             setCurrentWeek();
             setToday();
+            window.addEventListener('languageChanged', function() {
+             console.log('Language changed in client dashboard');
+
+    // Reload the week view to update day names
+            loadWeekView();
+
+    // Re-setup categories with new translations
+            setupAllCategories();
+
+    // Update any other dynamic content
+             updateUI();
         });
 
         // Load dashboard data
@@ -1354,33 +1365,30 @@
 
             // Create day cells
             for (let i = 0; i < 7; i++) {
-                const date = new Date(startOfWeek);
-                date.setDate(date.getDate() + i);
+    const date = new Date(startOfWeek);
+    date.setDate(date.getDate() + i);
 
-                const dayCell = document.createElement('div');
-                dayCell.className = 'day-cell';
-                dayCell.onclick = () => selectDate(date);
+    const dayCell = document.createElement('div');
+    dayCell.className = 'day-cell';
+    dayCell.onclick = () => selectDate(date);
 
-                console.log(`Day ${i}: getDay()=${date.getDay()}, translation=${i18n.getDayName(date.getDay(), true)}`);
+    // Check if this date has a check-in
+    const isToday = date.toDateString() === new Date().toDateString();
+    const isPast = date < new Date() && !isToday;
 
-// Check if this date has a check-in
-                const isToday = date.toDateString() === new Date().toDateString();
-                const isPast = date < new Date() && !isToday;
+    // Use the actual day of week from the date object
+    dayCell.innerHTML = `
+        <div class="day-name">${i18n.getDayName(date.getDay(), true)}</div>
+        <div class="day-date">${date.getDate()}</div>
+        <div class="status-icon">${isToday ? '📍' : ''}</div>
+    `;
 
-// Use i directly since we're iterating 0-6 for Mon-Sun
-                dayCell.innerHTML = `
-                <div class="day-name">${i18n.getDayName((i + 1) % 7, true)}</div>
-                <div class="day-date">${date.getDate()}</div>
-                 <div class="status-icon">${isToday ? '📍' : ''}</div>
-                `;
+    if (isToday) {
+        dayCell.classList.add('selected');
+    }
 
-                if (isToday) {
-                    dayCell.classList.add('selected');
-                }
-
-                weekGrid.appendChild(dayCell);
-            }
-
+    weekGrid.appendChild(dayCell);
+}
             // Load check-in status for the week
             loadWeekCheckinStatus(startOfWeek);
         }
