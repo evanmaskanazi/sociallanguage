@@ -1218,78 +1218,10 @@ def get_client_details(client_id):
 
 # ============= PROFILE MANAGEMENT =============
 
-@app.route('/api/user/profile', methods=['GET'])
-@require_auth(['therapist', 'client'])
-def get_user_profile():
-    """Get user profile information"""
-    try:
-        user = request.current_user
-
-        profile_data = {
-            'email': user.email,
-            'role': user.role,
-            'created_at': user.created_at.isoformat(),
-            'last_login': user.last_login.isoformat() if user.last_login else None
-        }
-
-        if user.role == 'therapist' and user.therapist:
-            profile_data['therapist'] = {
-                'name': user.therapist.name,
-                'license_number': user.therapist.license_number,
-                'organization': user.therapist.organization,
-                'specializations': user.therapist.specializations or []
-            }
-        elif user.role == 'client' and user.client:
-            profile_data['client'] = {
-                'serial': user.client.client_serial,
-                'start_date': user.client.start_date.isoformat(),
-                'therapist_name': user.client.therapist.name if user.client.therapist else None
-            }
-
-        return jsonify({
-            'success': True,
-            'profile': profile_data
-        })
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/user/update-profile', methods=['POST'])
-@require_auth(['therapist', 'client'])
-def update_user_profile():
-    """Update user profile"""
-    try:
-        user = request.current_user
-        data = request.json
 
-        # Update email if provided
-        new_email = data.get('email')
-        if new_email and new_email != user.email:
-            # Check if email already exists
-            if User.query.filter_by(email=new_email).first():
-                return jsonify({'error': 'Email already in use'}), 400
-            user.email = new_email
 
-        # Update role-specific data
-        if user.role == 'therapist' and user.therapist:
-            if 'name' in data:
-                user.therapist.name = data['name']
-            if 'organization' in data:
-                user.therapist.organization = data['organization']
-            if 'specializations' in data:
-                user.therapist.specializations = data['specializations']
-
-        db.session.commit()
-
-        return jsonify({
-            'success': True,
-            'message': 'Profile updated successfully'
-        })
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
 
 
 # ============= ANALYTICS ENDPOINTS =============
@@ -2515,7 +2447,7 @@ def reset_password_page():
         return f"Error: {str(e)}", 500
 
 
-@app.route('/favicon.ico')
+@app.route('/favicon.svg')
 def favicon():
     """Serve favicon"""
     favicon_path = os.path.join(BASE_DIR, 'favicon.svg')
@@ -3955,14 +3887,7 @@ def reset_password_page():
         return f"Error: {str(e)}", 500
 
 
-@app.route('/favicon.ico')
-def favicon():
-    """Serve favicon"""
-    favicon_path = os.path.join(BASE_DIR, 'favicon.svg')
-    if os.path.exists(favicon_path):
-        return send_file(favicon_path, mimetype='image/svg+xml')
-    else:
-        return '', 204
+
 
 
 # ============= INITIALIZATION =============
