@@ -1187,39 +1187,7 @@ def get_client_details(client_id):
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/client/change-password', methods=['POST'])
-@require_auth(['client'])
-def change_client_password():
-    """Allow client to change their own password"""
-    try:
-        data = request.json
-        current_password = data.get('current_password')
-        new_password = data.get('new_password')
 
-        # Validate input
-        if not all([current_password, new_password]):
-            return jsonify({'error': 'Current password and new password are required'}), 400
-
-        if len(new_password) < 8:
-            return jsonify({'error': 'New password must be at least 8 characters long'}), 400
-
-        # Verify current password
-        user = request.current_user
-        if not bcrypt.check_password_hash(user.password_hash, current_password):
-            return jsonify({'error': 'Current password is incorrect'}), 401
-
-        # Update password
-        user.password_hash = bcrypt.generate_password_hash(new_password).decode('utf-8')
-        db.session.commit()
-
-        return jsonify({
-            'success': True,
-            'message': 'Password changed successfully'
-        })
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/client/missions', methods=['GET'])
