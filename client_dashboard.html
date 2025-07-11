@@ -1111,13 +1111,13 @@
             setToday();
             window.addEventListener('languageChanged', function() {
              console.log('Language changed in client dashboard');
-             ['en', 'he', 'ru', 'ar'].forEach(lang => {
-            i18n.setLanguage(lang);
-            console.log(`\n--- ${lang} ---`);
-            for(let i = 0; i < 7; i++) {
-                console.log(`Day ${i}: ${i18n.getDayName(i, true)}`);
-            }
-        });
+          //   ['en', 'he', 'ru', 'ar'].forEach(lang => {
+           // i18n.setLanguage(lang);
+            //console.log(`\n--- ${lang} ---`);
+            //for(let i = 0; i < 7; i++) {
+             //   console.log(`Day ${i}: ${i18n.getDayName(i, true)}`);
+           // }
+       // });
 
     // Reload the week view to update day names
             loadWeekView();
