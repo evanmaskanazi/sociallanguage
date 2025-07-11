@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Therapy Journey - Client Dashboard</title>
-    
+
     <!-- Add i18n script -->
     <script src="i18n.js"></script>
-    
+
     <style>
         * {
             margin: 0;
@@ -627,7 +627,7 @@
         <!-- Check-in Tab -->
         <div id="checkin" class="tab-content">
             <h2 data-i18n="checkin.title">Daily Check-in</h2>
-            
+
             <!-- Date Selection -->
             <div class="date-selection">
                 <label for="checkinDate"><strong data-i18n="client.select_date">Select Date:</strong></label>
@@ -655,7 +655,7 @@
         <!-- Goals Tab -->
         <div id="goals" class="tab-content">
             <h2 data-i18n="goals.weekly">Weekly Goals</h2>
-            
+
             <div class="date-selection">
                 <label for="goalsWeek"><strong data-i18n="client.select_week">Select Week:</strong></label>
                 <input type="week" id="goalsWeek" class="date-input">
@@ -673,7 +673,7 @@
         <!-- Progress Tab -->
         <div id="progress" class="tab-content">
             <h2 data-i18n="client.your_progress">Your Progress</h2>
-            
+
             <div class="date-selection">
                 <label><strong data-i18n="client.view_progress">View Progress:</strong></label>
                 <select id="progressRange" class="form-input" style="width: auto;">
@@ -695,21 +695,21 @@
         <!-- Reports Tab -->
         <div id="reports" class="tab-content">
             <h2 data-i18n="reports.generate">Generate Reports</h2>
-            
+
             <div class="card">
                 <h3 data-i18n="reports.weekly">Weekly Report</h3>
                 <p style="color: #666; margin-bottom: 1rem;" data-i18n="client.report_desc">Generate a comprehensive report of your check-ins for any week.</p>
-                
+
                 <div class="form-group">
                     <label for="reportWeek" data-i18n="reports.select_week">Select Week:</label>
                     <input type="week" id="reportWeek" class="form-input">
                 </div>
-                
+
                 <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
                     <button class="btn btn-primary" onclick="generateReport()" data-i18n="client.generate_excel">Generate Excel Report</button>
                     <button class="btn btn-secondary" onclick="prepareEmailReport()" data-i18n="client.prepare_email">Prepare Email Report</button>
                 </div>
-                
+
                 <div id="reportStatus" style="margin-top: 2rem; display: none;">
                     <h4 data-i18n="client.report_status">Report Status</h4>
                     <div id="reportStatusContent"></div>
@@ -720,27 +720,27 @@
         <!-- Settings Tab -->
         <div id="settings" class="tab-content">
             <h2 data-i18n="client.account_settings">Account Settings</h2>
-            
+
             <div class="card">
                 <h3 data-i18n="client.change_password">Change Password</h3>
                 <p style="color: #666; margin-bottom: 1rem;" data-i18n="client.password_requirements">Password must be at least 8 characters long.</p>
-                
+
                 <form id="passwordChangeForm" onsubmit="changePassword(event)">
                     <div class="form-group">
                         <label for="currentPassword" data-i18n="client.current_password">Current Password</label>
                         <input type="password" id="currentPassword" class="form-input" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="newPassword" data-i18n="client.new_password">New Password</label>
                         <input type="password" id="newPassword" class="form-input" required minlength="8">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="confirmPassword" data-i18n="client.confirm_new_password">Confirm New Password</label>
                         <input type="password" id="confirmPassword" class="form-input" required minlength="8">
                     </div>
-                    
+
                     <button type="submit" class="btn btn-primary" data-i18n="client.update_password">Update Password</button>
                 </form>
             </div>
@@ -769,7 +769,7 @@
                 'category.medication_desc': 'Medication adherence',
                 'category.physical_activity': 'Physical Activity',
                 'category.physical_activity_desc': 'Physical activity level',
-                
+
                 'nav.settings': 'Settings',
                 'client.account_settings': 'Account Settings',
                 'client.change_password': 'Change Password',
@@ -850,7 +850,7 @@
                 'category.medication_desc': 'היענות לנטילת תרופות',
                 'category.physical_activity': 'פעילות גופנית',
                 'category.physical_activity_desc': 'רמת הפעילות הגופנית',
-                
+
                 'nav.settings': 'הגדרות',
                 'client.account_settings': 'הגדרות חשבון',
                 'client.change_password': 'שינוי סיסמה',
@@ -931,7 +931,7 @@
                 'category.medication_desc': 'Приверженность лечению',
                 'category.physical_activity': 'Физическая активность',
                 'category.physical_activity_desc': 'Уровень физической активности',
-                
+
                 'nav.settings': 'Настройки',
                 'client.account_settings': 'Настройки аккаунта',
                 'client.change_password': 'Изменить пароль',
@@ -1012,7 +1012,7 @@
                 'category.medication_desc': 'الالتزام بالأدوية',
                 'category.physical_activity': 'النشاط البدني',
                 'category.physical_activity_desc': 'مستوى النشاط البدني',
-                
+
                 'nav.settings': 'الإعدادات',
                 'client.account_settings': 'إعدادات الحساب',
                 'client.change_password': 'تغيير كلمة المرور',
@@ -1098,7 +1098,7 @@
             const translation = i18n.t(key);
             return translation !== key ? translation : description;
         }
-        
+
         // Check authentication
         if (!authToken) {
             window.location.href = '/login.html';
@@ -1150,7 +1150,7 @@
             const hour = new Date().getHours();
             let greeting = i18n.t('dashboard.welcome');
             let encouragement = '';
-            
+
             if (hour < 12) {
                 greeting = i18n.t('dashboard.good_morning');
                 encouragement = i18n.t('client.morning_message', 'Start your day with a positive mindset!');
@@ -1161,7 +1161,7 @@
                 greeting = i18n.t('dashboard.good_evening');
                 encouragement = i18n.t('client.evening_message', 'Time to reflect on your day and rest well.');
             }
-            
+
             document.getElementById('welcomeMessage').textContent = `${greeting}!`;
             document.getElementById('encouragementMessage').textContent = encouragement;
 
@@ -1179,13 +1179,13 @@
                 tab.classList.remove('active');
             });
             event.target.classList.add('active');
-            
+
             // Update content
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
             document.getElementById(tabName).classList.add('active');
-            
+
             // Load tab-specific content
             if (tabName === 'progress') {
                 loadProgress();
@@ -1197,19 +1197,19 @@
         // Setup all categories dynamically
         function setupAllCategories() {
     const categoriesDiv = document.getElementById('dynamicCategories');
-    
+
     if (!trackingCategories || trackingCategories.length === 0) {
         categoriesDiv.innerHTML = '<p>No tracking categories available.</p>';
         return;
     }
-    
+
     // Create HTML for all categories
     categoriesDiv.innerHTML = trackingCategories.map(cat => {
         // Translate both name and description on the frontend
         const originalName = cat.original_name || cat.name;
         const translatedName = translateCategoryName(originalName);
         const translatedDesc = translateCategoryDescription(originalName, cat.description);
-        
+
         // Choose emoji based on original category name
         let emoji = '📊';
         if (originalName.toLowerCase().includes('emotion')) emoji = '😊';
@@ -1220,16 +1220,16 @@
         else if (originalName.toLowerCase().includes('sleep')) emoji = '😴';
         else if (originalName.toLowerCase().includes('anxiety')) emoji = '😰';
         else if (originalName.toLowerCase().includes('motivation')) emoji = '🎯';
-        
+
         // Get placeholder text
         const placeholderText = i18n.t('client.notes_placeholder', { category: translatedName });
-        
+
         // Special handling for medication category
         if (originalName.toLowerCase().includes('medication')) {
             return `
                 <div class="form-section" data-category-id="${cat.id}" data-category-name="${originalName}">
-                    <h3><span class="rating-emoji">${emoji}</span> <span>${translatedName}</span></h3>
-                    <p style="color: #666; font-size: 0.9rem;">${translatedDesc}</p>
+                    <h3><span class="rating-emoji">${emoji}</span> <span data-i18n="category.medication">${translatedName}</span></h3>
+                    <p style="color: #666; font-size: 0.9rem;" data-i18n="checkin.medication">${i18n.t('checkin.medication')}</p>
                     <div class="rating-scale">
                         <button type="button" class="rating-button" data-category="${cat.id}" data-value="0" onclick="selectRating(this)">
                             <span data-i18n="checkin.med_na">N/A</span>
@@ -1244,22 +1244,23 @@
                             <span data-i18n="checkin.med_yes">Yes</span>
                         </button>
                     </div>
-                    <textarea class="notes-textarea" 
-                              id="category-${cat.id}-notes" 
+                    <textarea class="notes-textarea"
+                              id="category-${cat.id}-notes"
                               placeholder="${placeholderText}"></textarea>
                 </div>
             `;
         } else {
             // Regular 1-5 scale for other categories
+            const categoryKey = originalName.toLowerCase().replace(/\s+/g, '_');
             return `
                 <div class="form-section" data-category-id="${cat.id}" data-category-name="${originalName}">
-                    <h3><span class="rating-emoji">${emoji}</span> <span>${translatedName}</span></h3>
-                    <p style="color: #666; font-size: 0.9rem;">${translatedDesc}</p>
+                    <h3><span class="rating-emoji">${emoji}</span> <span data-i18n="category.${categoryKey}">${translatedName}</span></h3>
+                    <p style="color: #666; font-size: 0.9rem;" data-i18n="category.${categoryKey}_desc">${translatedDesc}</p>
                     <div class="rating-scale">
                         ${[1,2,3,4,5].map(val => `
-                            <button type="button" 
-                                    class="rating-button" 
-                                    data-category="${cat.id}" 
+                            <button type="button"
+                                    class="rating-button"
+                                    data-category="${cat.id}"
                                     data-value="${val}"
                                     onclick="selectRating(this)">
                                 <span class="rating-emoji">${getEmojiForValue(originalName, val)}</span>
@@ -1267,14 +1268,15 @@
                             </button>
                         `).join('')}
                     </div>
-                    <textarea class="notes-textarea" 
-                              id="category-${cat.id}-notes" 
-                              placeholder="${placeholderText}"></textarea>
+                    <textarea class="notes-textarea"
+                              id="category-${cat.id}-notes"
+                              placeholder="${placeholderText}"
+                              data-i18n-placeholder="client.notes_placeholder"></textarea>
                 </div>
             `;
         }
     }).join('');
-    
+
     // Re-apply translations for dynamically created content
     if (window.i18n) {
         i18n.translatePage();
@@ -1300,46 +1302,46 @@
         function loadWeekView() {
             const weekGrid = document.getElementById('weekGrid');
             weekGrid.innerHTML = '';
-            
+
             const startOfWeek = getStartOfWeek(currentWeekOffset);
-            
+
             // Update week label
             const weekLabel = document.getElementById('currentWeekLabel');
             const weekEnd = new Date(startOfWeek);
             weekEnd.setDate(weekEnd.getDate() + 6);
-            
+
             if (currentWeekOffset === 0) {
                 weekLabel.textContent = i18n.t('dashboard.this_week');
             } else {
                 weekLabel.textContent = `${startOfWeek.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`;
             }
-            
+
             // Create day cells
             for (let i = 0; i < 7; i++) {
                 const date = new Date(startOfWeek);
                 date.setDate(date.getDate() + i);
-                
+
                 const dayCell = document.createElement('div');
                 dayCell.className = 'day-cell';
                 dayCell.onclick = () => selectDate(date);
-                
+
                 // Check if this date has a check-in
                 const isToday = date.toDateString() === new Date().toDateString();
                 const isPast = date < new Date() && !isToday;
-                
+
                 dayCell.innerHTML = `
                     <div class="day-name">${i18n.getDayName(date.getDay(), true)}</div>
                     <div class="day-date">${date.getDate()}</div>
                     <div class="status-icon">${isToday ? '📍' : ''}</div>
                 `;
-                
+
                 if (isToday) {
                     dayCell.classList.add('selected');
                 }
-                
+
                 weekGrid.appendChild(dayCell);
             }
-            
+
             // Load check-in status for the week
             loadWeekCheckinStatus(startOfWeek);
         }
@@ -1348,12 +1350,12 @@
             try {
                 const weekEnd = new Date(weekStart);
                 weekEnd.setDate(weekEnd.getDate() + 6);
-                
+
                 const dayCells = document.querySelectorAll('.day-cell');
                 dayCells.forEach((cell, index) => {
                     const cellDate = new Date(weekStart);
                     cellDate.setDate(cellDate.getDate() + index);
-                    
+
                     // Mark completed days (would come from API)
                     if (cellDate.toDateString() === new Date().toDateString() && clientData && clientData.today && clientData.today.has_checkin) {
                         cell.classList.add('completed');
@@ -1397,7 +1399,7 @@
             const statusSpan = document.getElementById('checkinDateStatus');
             const dateStr = date.toDateString();
             const todayStr = new Date().toDateString();
-            
+
             if (dateStr === todayStr) {
                 statusSpan.textContent = i18n.t('client.today_marker');
                 statusSpan.style.color = '#667eea';
@@ -1412,12 +1414,12 @@
 
         function selectRating(button) {
             const category = button.dataset.category;
-            
+
             // Remove selected from other buttons in same category
             document.querySelectorAll(`.rating-button[data-category="${category}"]`).forEach(btn => {
                 btn.classList.remove('selected');
             });
-            
+
             // Add selected to clicked button
             button.classList.add('selected');
         }
@@ -1425,29 +1427,29 @@
         async function submitCheckin() {
             try {
                 const checkinDate = document.getElementById('checkinDate').value;
-                
+
                 if (!checkinDate) {
                     showMessage(i18n.t('client.select_date'), 'error');
                     return;
                 }
-                
+
                 // Check if future date
                 if (new Date(checkinDate) > new Date()) {
                     showMessage(i18n.t('client.checkin_error'), 'error');
                     return;
                 }
-                
+
                 // Gather all category responses
                 const categoryResponses = {};
                 const categoryNotes = {};
-                
+
                 // Process each category
                 trackingCategories.forEach(cat => {
                     const selected = document.querySelector(`.rating-button[data-category="${cat.id}"].selected`);
                     if (selected) {
                         categoryResponses[cat.id] = parseInt(selected.dataset.value);
                     }
-                    
+
                     // Get notes
                     const notesElement = document.getElementById(`category-${cat.id}-notes`);
                     if (notesElement && notesElement.value) {
@@ -1467,7 +1469,7 @@
                     const goalWeekStart = new Date(goal.week_start);
                     const goalWeekEnd = new Date(goalWeekStart);
                     goalWeekEnd.setDate(goalWeekEnd.getDate() + 6);
-                    
+
                     const selectedDateObj = new Date(checkinDate);
                     if (selectedDateObj >= goalWeekStart && selectedDateObj <= goalWeekEnd) {
                         const checkbox = document.querySelector(`#goal-${goal.id}`);
@@ -1501,7 +1503,7 @@
 
                 showMessage(i18n.t('client.checkin_success'), 'success');
                 clearCheckinForm();
-                
+
                 // Reload dashboard to update status
                 loadDashboard();
                 loadWeekView();
@@ -1522,34 +1524,34 @@
         // Goals Functions
         async function loadWeeklyGoals() {
             const weekInput = document.getElementById('goalsWeek').value;
-            
+
             if (!weekInput) {
                 setCurrentWeek();
                 return;
             }
-            
+
             // Parse week
             const [year, weekNum] = weekInput.split('-W');
             const weekStart = getWeekStart(parseInt(year), parseInt(weekNum));
-            
+
             // Update label
             const weekEnd = new Date(weekStart);
             weekEnd.setDate(weekEnd.getDate() + 6);
-            document.getElementById('goalsWeekLabel').textContent = 
+            document.getElementById('goalsWeekLabel').textContent =
                 `${i18n.t('goals.text')} ${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`;
-            
+
             // For now, show the goals from dashboard data if they match the week
             const goalsList = document.getElementById('goalsList');
-            
+
             if (weeklyGoals.length === 0) {
                 goalsList.innerHTML = `<li style="color: #999;">${i18n.t('client.no_goals_week')}</li>`;
                 return;
             }
-            
+
             goalsList.innerHTML = weeklyGoals.map(goal => {
                 return `
                     <li class="goal-item">
-                        <input type="checkbox" 
+                        <input type="checkbox"
                                id="goal-${goal.id}"
                                class="goal-checkbox">
                         <span class="goal-text">${goal.text}</span>
@@ -1560,12 +1562,12 @@
 
         function updateOverviewGoals() {
             const goalsList = document.getElementById('overviewGoalsList');
-            
+
             if (weeklyGoals.length === 0) {
                 goalsList.innerHTML = `<li style="color: #999;">${i18n.t('client.no_goals_week')}</li>`;
                 return;
             }
-            
+
             goalsList.innerHTML = weeklyGoals.map(goal => {
                 const isCompleted = goal.today_completed === true;
                 return `
@@ -1581,9 +1583,9 @@
             try {
                 const days = document.getElementById('progressRange').value;
                 const progressContent = document.getElementById('progressContent');
-                
+
                 progressContent.innerHTML = `<div class="loading"><div class="spinner"></div><p>${i18n.t('client.loading_progress')}</p></div>`;
-                
+
                 const response = await fetch('/api/client/progress', {
                     headers: {
                         'Authorization': `Bearer ${authToken}`,
@@ -1596,7 +1598,7 @@
                 }
 
                 const data = await response.json();
-                
+
                 // Display progress (simplified version)
                 progressContent.innerHTML = `
                     <div class="card">
@@ -1608,7 +1610,7 @@
                     </div>
                 `;
             } catch (error) {
-                document.getElementById('progressContent').innerHTML = 
+                document.getElementById('progressContent').innerHTML =
                     `<p style="color: #f44336;">${i18n.t('client.error_progress')}</p>`;
             }
         }
@@ -1628,12 +1630,12 @@
         // Report Functions
         async function generateReport() {
             const week = document.getElementById('reportWeek').value;
-            
+
             if (!week) {
                 showMessage(i18n.t('client.select_client_week'), 'error');
                 return;
             }
-            
+
             try {
                 const response = await fetch(`/api/client/generate-report/${week}`, {
                     headers: {
@@ -1641,13 +1643,13 @@
                         'Accept-Language': i18n.currentLang
                     }
                 });
-                
+
                 if (response.ok) {
                     // Get filename from response headers
                     const contentDisposition = response.headers.get('content-disposition');
                     const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
                     const filename = filenameMatch ? filenameMatch[1] : `my_therapy_report_${week}.xlsx`;
-                    
+
                     // Download file
                     const blob = await response.blob();
                     const url = window.URL.createObjectURL(blob);
@@ -1658,7 +1660,7 @@
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
-                    
+
                     showReportStatus('success', i18n.t('client.report_generated'));
                 } else {
                     const error = await response.json();
@@ -1671,21 +1673,21 @@
 
         async function prepareEmailReport() {
     const week = document.getElementById('reportWeek').value;
-    
+
     if (!week) {
         showMessage(i18n.t('client.select_client_week'), 'error');
         return;
     }
-    
+
     try {
         // Parse week
         const [year, weekNum] = week.split('-W');
-        
+
         // Calculate week dates
         const weekStart = getWeekStart(parseInt(year), parseInt(weekNum));
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekEnd.getDate() + 6);
-        
+
         // Fetch week's check-in data
         const checkinsResponse = await fetch(`/api/client/week-checkins/${week}`, {
             headers: {
@@ -1693,13 +1695,13 @@
                 'Accept-Language': i18n.currentLang
             }
         });
-        
+
         if (!checkinsResponse.ok) {
             throw new Error('Failed to load week data');
         }
-        
+
         const checkinsData = await checkinsResponse.json();
-        
+
         // Fetch goals for the week
         const goalsResponse = await fetch(`/api/client/goals/${week}`, {
             headers: {
@@ -1707,41 +1709,41 @@
                 'Accept-Language': i18n.currentLang
             }
         });
-        
+
         const goalsData = goalsResponse.ok ? await goalsResponse.json() : { goals: [] };
-        
+
         // Build translated email content
         let emailContent = '';
-        
+
         // Add greeting
         emailContent += i18n.t('email.dear_therapist', 'Dear Therapist') + ',\n\n';
         emailContent += i18n.t('email.weekly_report_intro', 'Here is my weekly progress report for') + ' ';
         emailContent += `${weekStart.toLocaleDateString(i18n.currentLang, { month: 'long', day: 'numeric' })} - `;
         emailContent += `${weekEnd.toLocaleDateString(i18n.currentLang, { month: 'long', day: 'numeric', year: 'numeric' })}.\n\n`;
-        
+
         // Add client info
         emailContent += `${i18n.t('client.serial')}: ${clientData.serial}\n`;
         emailContent += `${i18n.t('reports.week')}: ${weekNum}, ${year}\n`;
-        
+
         // Count completed check-ins
         const completedCheckins = Object.keys(checkinsData.checkins || {}).length;
         emailContent += `${i18n.t('reports.checkin_completion')}: ${completedCheckins}/7\n\n`;
-        
+
         // Daily summary
         emailContent += i18n.t('reports.daily_checkins').toUpperCase() + ':\n\n';
-        
+
         for (let i = 0; i < 7; i++) {
             const currentDate = new Date(weekStart);
             currentDate.setDate(currentDate.getDate() + i);
             const dateStr = currentDate.toISOString().split('T')[0];
             const dayName = i18n.getDayName(currentDate.getDay());
-            
+
             emailContent += `${dayName} (${currentDate.toLocaleDateString(i18n.currentLang, { month: '2-digit', day: '2-digit' })}):\n`;
-            
+
             const checkin = checkinsData.checkins[dateStr];
             if (checkin) {
                 emailContent += `  ✓ ${i18n.t('reports.checkin_time')}: ${checkin.time}\n`;
-                
+
                 // Add category responses
                 for (const category of trackingCategories) {
                     const catName = translateCategoryName(category.original_name || category.name);
@@ -1754,7 +1756,7 @@
                     } else if (category.original_name && category.original_name.toLowerCase().includes('activity')) {
                         value = checkin.activity;
                     }
-                    
+
                     if (value !== null && value !== undefined) {
                         emailContent += `  - ${catName}: ${value}/5\n`;
                     }
@@ -1764,19 +1766,19 @@
             }
             emailContent += '\n';
         }
-        
+
         // Weekly summary
         if (completedCheckins > 0) {
             emailContent += i18n.t('reports.weekly_summary').toUpperCase() + ':\n';
-            
+
             // Calculate averages for each category
             const categoryAverages = {};
             let checkinCount = 0;
-            
+
             for (const dateStr in checkinsData.checkins) {
                 const checkin = checkinsData.checkins[dateStr];
                 checkinCount++;
-                
+
                 // Add to averages
                 if (checkin.emotional) {
                     categoryAverages['emotion_level'] = (categoryAverages['emotion_level'] || 0) + checkin.emotional;
@@ -1788,7 +1790,7 @@
                     categoryAverages['physical_activity'] = (categoryAverages['physical_activity'] || 0) + checkin.activity;
                 }
             }
-            
+
             // Display averages
             for (const category of trackingCategories) {
                 const key = category.original_name ? category.original_name.toLowerCase().replace(/\s+/g, '_') : '';
@@ -1798,10 +1800,10 @@
                     emailContent += `- ${catName}: ${avg}/5\n`;
                 }
             }
-            
+
             emailContent += `- ${i18n.t('reports.completion_rate')}: ${completedCheckins}/7 ${i18n.t('days')} (${Math.round((completedCheckins/7)*100)}%)\n`;
         }
-        
+
         // Add goals if any
         if (goalsData.goals && goalsData.goals.length > 0) {
             emailContent += `\n${i18n.t('reports.weekly_goals').toUpperCase()}:\n`;
@@ -1810,15 +1812,15 @@
                 emailContent += `- ${goal.text}: ${i18n.t('reports.completed')} ${completedDays}/7 ${i18n.t('days')}\n`;
             }
         }
-        
+
         // Add footer
         emailContent += `\n${i18n.t('email.report_generated_on', 'Report generated on')}: ${new Date().toLocaleString(i18n.currentLang)}\n\n`;
         emailContent += i18n.t('email.best_regards', 'Best regards') + ',\n';
         emailContent += `${i18n.t('client.serial')} ${clientData.serial}`;
-        
+
         // Get therapist email (fallback to example)
         const therapistEmail = 'therapist@example.com'; // You might want to get this from somewhere
-        
+
         // Show the translated email
         showReportStatus('info', `
             <h4>${i18n.t('client.email_preview')}</h4>
@@ -1831,7 +1833,7 @@
                 <em>${i18n.t('client.copy_email')}</em>
             </p>
         `);
-        
+
     } catch (error) {
         showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
     }
@@ -1839,10 +1841,10 @@
         function showReportStatus(type, content) {
             const statusDiv = document.getElementById('reportStatus');
             const statusContent = document.getElementById('reportStatusContent');
-            
+
             statusDiv.style.display = 'block';
             statusContent.innerHTML = content;
-            
+
             if (type === 'success') {
                 statusContent.style.color = '#155724';
             } else if (type === 'error') {
@@ -1885,9 +1887,9 @@
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${type}`;
             messageDiv.textContent = text;
-            
+
             container.appendChild(messageDiv);
-            
+
             setTimeout(() => {
                 messageDiv.remove();
             }, 5000);
@@ -1907,23 +1909,23 @@
         // Password change function
         async function changePassword(event) {
             event.preventDefault();
-            
+
             const currentPassword = document.getElementById('currentPassword').value;
             const newPassword = document.getElementById('newPassword').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
-            
+
             // Validate passwords match
             if (newPassword !== confirmPassword) {
                 showMessage(i18n.t('client.passwords_dont_match'), 'error');
                 return;
             }
-            
+
             // Validate password length
             if (newPassword.length < 8) {
                 showMessage(i18n.t('client.password_too_short'), 'error');
                 return;
             }
-            
+
             try {
                 const response = await fetch('/api/client/change-password', {
                     method: 'POST',
@@ -1937,9 +1939,9 @@
                         new_password: newPassword
                     })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (response.ok) {
                     showMessage(i18n.t('client.password_changed'), 'success');
                     // Clear form
