@@ -1205,126 +1205,15 @@ def get_client_details(client_id):
 
 
 
-@app.route('/api/therapist/update-tracking-plan', methods=['POST'])
-@require_auth(['therapist'])
-def update_client_tracking_plan():
-    """Update client's tracking plan"""
-    try:
-        therapist = request.current_user.therapist
-        data = request.json
 
-        client_id = data.get('client_id')
-        category_updates = data.get('categories', {})
-
-        # Verify client belongs to therapist
-        client = Client.query.filter_by(
-            id=client_id,
-            therapist_id=therapist.id
-        ).first()
-
-        if not client:
-            return jsonify({'error': 'Client not found'}), 404
-
-        # Update tracking plans
-        for category_id, is_active in category_updates.items():
-            plan = ClientTrackingPlan.query.filter_by(
-                client_id=client_id,
-                category_id=int(category_id)
-            ).first()
-
-            if plan:
-                plan.is_active = is_active
-            else:
-                # Create new plan if doesn't exist
-                plan = ClientTrackingPlan(
-                    client_id=client_id,
-                    category_id=int(category_id),
-                    is_active=is_active
-                )
-                db.session.add(plan)
-
-        db.session.commit()
-
-        return jsonify({
-            'success': True,
-            'message': 'Tracking plan updated successfully'
-        })
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
 
 
 # ============= REMINDER ENDPOINTS =============
 
-@app.route('/api/client/reminders', methods=['GET'])
-@require_auth(['client'])
-def get_reminders():
-    """Get client's reminders"""
-    try:
-        client = request.current_user.client
-
-        reminders = client.reminders.filter_by(is_active=True).all()
-
-        reminder_data = []
-        for reminder in reminders:
-            reminder_data.append({
-                'id': reminder.id,
-                'type': reminder.reminder_type,
-                'time': reminder.reminder_time.strftime('%H:%M'),
-                'last_sent': reminder.last_sent.isoformat() if reminder.last_sent else None
-            })
-
-        return jsonify({
-            'success': True,
-            'reminders': reminder_data
-        })
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/client/update-reminder', methods=['POST'])
-@require_auth(['client'])
-def update_reminder():
-    """Update or create reminder"""
-    try:
-        client = request.current_user.client
-        data = request.json
 
-        reminder_type = data.get('type')
-        reminder_time = data.get('time')
-        is_active = data.get('is_active', True)
 
-        # Parse time
-        hour, minute = map(int, reminder_time.split(':'))
-        time_obj = datetime.strptime(f"{hour:02d}:{minute:02d}", '%H:%M').time()
-
-        # Check if reminder exists
-        reminder = client.reminders.filter_by(reminder_type=reminder_type).first()
-
-        if reminder:
-            reminder.reminder_time = time_obj
-            reminder.is_active = is_active
-        else:
-            reminder = Reminder(
-                client_id=client.id,
-                reminder_type=reminder_type,
-                reminder_time=time_obj,
-                is_active=is_active
-            )
-            db.session.add(reminder)
-
-        db.session.commit()
-
-        return jsonify({
-            'success': True,
-            'message': 'Reminder updated successfully'
-        })
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
 
 
 # ============= PROFILE MANAGEMENT =============
@@ -3724,48 +3613,6 @@ def debug_categories():
 
 # ============= CLIENT REPORT ENDPOINTS =============
 
-@app.route('/api/client/generate-report/<week>', methods=['GET'])
-@require_auth(['client'])
-def client_generate_report(week):
-    """Generate client's own weekly report with translations"""
-    try:
-        client = request.current_user.client
-        lang = get_language_from_header()
-
-        # Parse week
-        year, week_num = week.split('-W')
-        year = int(year)
-        week_num = int(week_num)
-
-        # Calculate week dates
-        jan1 = datetime(year, 1, 1)
-        days_to_monday = (7 - jan1.weekday()) % 7
-        if days_to_monday == 0:
-            days_to_monday = 7
-        first_monday = jan1 + timedelta(days=days_to_monday - 7)
-        week_start = first_monday + timedelta(weeks=week_num - 1)
-        week_end = week_start + timedelta(days=6)
-
-        # Use shared function to create workbook with language support
-        wb = create_weekly_report_excel(client, None, week_start, week_end, week_num, year, lang)
-
-        # Save to BytesIO
-        output = BytesIO()
-        wb.save(output)
-        output.seek(0)
-
-        # Generate filename
-        filename = f"my_therapy_report_{client.client_serial}_week_{week_num}_{year}.xlsx"
-
-        return send_file(
-            output,
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            as_attachment=True,
-            download_name=filename
-        )
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/client/email-report', methods=['POST'])
@@ -4050,57 +3897,7 @@ def get_client_week_goals(week):
 
 # ============= REPORT GENERATION =============
 
-@app.route('/api/reports/generate/<int:client_id>/<week>', methods=['GET'])
-@require_auth(['therapist'])
-def generate_report(client_id, week):
-    """Generate comprehensive weekly Excel report with translations"""
-    try:
-        therapist = request.current_user.therapist
-        lang = get_language_from_header()
 
-        # Verify client belongs to therapist
-        client = Client.query.filter_by(
-            id=client_id,
-            therapist_id=therapist.id
-        ).first()
-
-        if not client:
-            return jsonify({'error': 'Client not found'}), 404
-
-        # Parse week
-        year, week_num = week.split('-W')
-        year = int(year)
-        week_num = int(week_num)
-
-        # Calculate week dates
-        jan1 = datetime(year, 1, 1)
-        days_to_monday = (7 - jan1.weekday()) % 7
-        if days_to_monday == 0:
-            days_to_monday = 7
-        first_monday = jan1 + timedelta(days=days_to_monday - 7)
-        week_start = first_monday + timedelta(weeks=week_num - 1)
-        week_end = week_start + timedelta(days=6)
-
-        # Create Excel workbook using the shared function with language support
-        wb = create_weekly_report_excel(client, therapist, week_start, week_end, week_num, year, lang)
-
-        # Save to BytesIO
-        output = BytesIO()
-        wb.save(output)
-        output.seek(0)
-
-        # Generate filename
-        filename = f"therapy_report_{client.client_serial}_week_{week_num}_{year}.xlsx"
-
-        return send_file(
-            output,
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            as_attachment=True,
-            download_name=filename
-        )
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 
 # The email_therapy_report function is already complete in Part 1
