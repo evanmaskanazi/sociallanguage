@@ -1,3 +1,4 @@
+
 const i18n = {
 // Current language
 currentLang: localStorage.getItem('userLanguage') || 'en',
@@ -211,7 +212,7 @@ translations: {
         'category.physical_activity': 'Physical Activity',
         'category.physical_activity_desc': 'Physical activity level',
 
-        
+
 
         // Client specific
         'client.dashboard_title': 'My Therapy Journey',
@@ -348,7 +349,7 @@ translations: {
         'therapist.recent_notes': 'Recent Notes & Missions',
         'therapist.mission': 'MISSION',
         'therapist.no_notes': 'No notes yet',
-        
+
          // English
         'email.dear_therapist': 'Dear Therapist',
         'email.weekly_report_intro': 'Here is my weekly progress report for',
@@ -356,10 +357,10 @@ translations: {
         'email.best_regards': 'Best regards',
 
 
-       
 
-        
-        
+
+
+
 
         // Index page
         'hero.subtitle': 'A comprehensive therapy companion system for therapists and clients',
@@ -387,7 +388,8 @@ translations: {
         'how.step3.desc': 'Clients complete brief daily assessments to track their progress.',
         'how.step4.title': 'Monitor & Support',
         'how.step4.desc': 'Therapists review progress, add notes, and adjust treatment plans as needed.',
-        'footer.copyright': '© 2024 Therapeutic Companion. Supporting wellness journeys with care and technology.'
+        'footer.copyright': '© 2024 Therapeutic Companion. Supporting wellness journeys with care and technology.',
+        'days': 'days'
     },
 
     he: {
@@ -451,6 +453,7 @@ translations: {
         'reset.update_password': 'עדכן סיסמה',
         'reset.password_updated': 'הסיסמה עודכנה בהצלחה!',
         'reset.invalid_token': 'קישור איפוס לא תקין או שפג תוקפו',
+        'days': 'ימים',
 
         // Registration
         'register.title': 'יצירת חשבון',
@@ -838,6 +841,7 @@ translations: {
         'register.password_length': 'Пароль должен содержать не менее 8 символов',
         'register.license_exists': 'Этот номер лицензии уже зарегистрирован. Пожалуйста, используйте другой.',
         'register.email_exists': 'Этот email уже зарегистрирован. Пожалуйста, используйте вкладку входа.',
+        'days': 'дней',
 
         // Dashboard
         'dashboard.welcome': 'С возвращением',
@@ -882,7 +886,7 @@ translations: {
         'checkin.med_partial': 'Частично',
         'checkin.med_na': 'Не применимо',
 
-        
+
 
         // Goals
         'goals.weekly': 'Недельные цели',
@@ -1016,6 +1020,7 @@ translations: {
             'email.weekly_report_intro': 'هذا هو تقرير التقدم الأسبوعي الخاص بي لـ',
             'email.report_generated_on': 'تم إنشاء التقرير في',
             'email.best_regards': 'مع أطيب التحيات',
+            'days': 'أيام',
             // ... (rest of Arabic translations)
         }
     },
