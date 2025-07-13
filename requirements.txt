@@ -17,8 +17,9 @@ PyJWT==2.8.0
 # Server
 gunicorn==21.2.0
 
-# Excel generation
+# Excel and PDF generation
 openpyxl==3.1.2
+reportlab==4.0.7
 
 # Email support
 python-dotenv==1.0.0
