@@ -4,7 +4,7 @@ services:
     name: therapy-companion
     env: python
     plan: free
-     buildCommand: "chmod +x render-build.sh && ./render-build.sh && pip install -r requirements.txt"
+    buildCommand: "chmod +x render-build.sh && ./render-build.sh && pip install -r requirements.txt"
     startCommand: "./startup.sh"
     envVars:
       - key: PRODUCTION
