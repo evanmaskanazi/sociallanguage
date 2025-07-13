@@ -1171,7 +1171,9 @@
             console.log('clientData.serial:', clientData.serial);
             console.log('clientData.client_serial:', clientData.client_serial);
             //document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${clientData.serial}`;
-            if (clientData && clientData.client_serial) {
+            if (clientData && clientData.serial) {
+    document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${clientData.serial}`;
+} else if (clientData && clientData.client_serial) {
     document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${clientData.client_serial}`;
 } else {
     document.getElementById('clientSerial').textContent = '';
@@ -1272,7 +1274,7 @@
         else if (originalName.toLowerCase().includes('medication')) emoji = '💊';
         else if (originalName.toLowerCase().includes('activity') || originalName.toLowerCase().includes('physical')) emoji = '🏃';
         else if (originalName.toLowerCase().includes('energy')) emoji = '⚡';
-        else if (originalName.toLowerCase().includes('social')) emoji = '👥';
+        else if (originalName.toLowerCase().includes('social')) emoji = '😊';
         else if (originalName.toLowerCase().includes('sleep')) emoji = '😴';
         else if (originalName.toLowerCase().includes('anxiety')) emoji = '😰';
         else if (originalName.toLowerCase().includes('motivation')) emoji = '🎯';
