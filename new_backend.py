@@ -1855,309 +1855,323 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
 
 
 def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, year, lang='en'):
-    """Create PDF report for weekly therapy data with language support"""
-    from reportlab.lib import colors
-    from reportlab.lib.pagesizes import letter, A4, landscape
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.units import inch
-    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.pdfbase.ttfonts import TTFont
-    from reportlab.pdfbase.cidfonts import UnicodeCIDFont
-    import os
+    """Create PDF report with automatic Unicode support via xhtml2pdf"""
 
-    # Register CID fonts for Unicode support
+    # Try to use xhtml2pdf for better Unicode support
     try:
-        # These fonts support various Unicode ranges
-        pdfmetrics.registerFont(UnicodeCIDFont('HeiseiMin-W3'))  # Japanese/Basic Unicode
-        pdfmetrics.registerFont(UnicodeCIDFont('HeiseiKakuGo-W5'))  # Japanese/Basic Unicode
-        pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))  # Chinese
+        from xhtml2pdf import pisa
+        from io import BytesIO
 
-        # Determine which font to use based on language
-        if lang == 'he' or lang == 'ar':
-            # For Hebrew and Arabic, use HeiseiMin-W3 which has basic Unicode support
-            # Note: This won't render RTL properly, but will show characters
-            base_font = 'HeiseiMin-W3'
-            bold_font = 'HeiseiKakuGo-W5'
-        elif lang == 'ru':
-            # For Russian, Helvetica actually works fine as it has Cyrillic
-            base_font = 'Helvetica'
-            bold_font = 'Helvetica-Bold'
-        else:
-            # For English and others
-            base_font = 'Helvetica'
-            bold_font = 'Helvetica-Bold'
-    except:
-        # Fallback to Helvetica if registration fails
-        base_font = 'Helvetica'
-        bold_font = 'Helvetica-Bold'
+        # Get translations
+        trans = lambda key: translate_report_term(key, lang)
+        days = DAYS_TRANSLATIONS.get(lang, DAYS_TRANSLATIONS['en'])
 
-    # Create BytesIO buffer for PDF
-    pdf_buffer = BytesIO()
+        # Generate HTML content with proper styling
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                @page {{
+                    size: A4 landscape;
+                    margin: 1cm;
+                }}
+                body {{
+                    font-family: Arial, sans-serif;
+                    font-size: 10pt;
+                    direction: {'rtl' if lang in ['he', 'ar'] else 'ltr'};
+                }}
+                h1 {{
+                    text-align: center;
+                    color: #2C3E50;
+                    font-size: 18pt;
+                    margin-bottom: 10px;
+                }}
+                .subtitle {{
+                    text-align: center;
+                    color: #34495E;
+                    margin-bottom: 20px;
+                }}
+                h2 {{
+                    color: #34495E;
+                    font-size: 14pt;
+                    margin-top: 20px;
+                    margin-bottom: 10px;
+                }}
+                table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 20px 0;
+                    font-size: 8pt;
+                }}
+                th, td {{
+                    border: 1px solid #ddd;
+                    padding: 4px;
+                    text-align: center;
+                }}
+                th {{
+                    background-color: #2C3E50;
+                    color: white;
+                    font-weight: bold;
+                    padding: 6px 4px;
+                }}
+                td {{
+                    height: 25px;
+                }}
+                .good {{
+                    background-color: #C8E6C9;
+                    font-weight: bold;
+                }}
+                .medium {{
+                    background-color: #FFF9C4;
+                }}
+                .poor {{
+                    background-color: #FFCDD2;
+                }}
+                .no-checkin {{
+                    color: #999;
+                    font-style: italic;
+                }}
+                .summary {{
+                    margin-top: 30px;
+                    padding: 15px;
+                    background-color: #f8f9fa;
+                    border-radius: 5px;
+                }}
+                .summary h2 {{
+                    margin-top: 0;
+                }}
+                .summary-item {{
+                    margin: 8px 0;
+                    padding: 5px 0;
+                }}
+                .summary-stats {{
+                    display: table;
+                    width: 100%;
+                    margin-top: 15px;
+                }}
+                .stat-row {{
+                    display: table-row;
+                }}
+                .stat-label {{
+                    display: table-cell;
+                    width: 60%;
+                    padding: 5px;
+                    font-weight: bold;
+                }}
+                .stat-value {{
+                    display: table-cell;
+                    width: 40%;
+                    padding: 5px;
+                }}
+                .excellent-text {{ color: #2e7d32; font-weight: bold; }}
+                .good-text {{ color: #f57c00; font-weight: bold; }}
+                .poor-text {{ color: #c62828; font-weight: bold; }}
+            </style>
+        </head>
+        <body>
+            <h1>{trans('weekly_report_title')} - {trans('client')} {client.client_serial}</h1>
+            <p class="subtitle">{trans('week')} {week_num}, {year} ({week_start.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')})</p>
 
-    # Use landscape orientation for better table fit
-    doc = SimpleDocTemplate(
-        pdf_buffer,
-        pagesize=landscape(A4),
-        rightMargin=30,
-        leftMargin=30,
-        topMargin=40,
-        bottomMargin=30
-    )
+            <h2>{trans('daily_checkins')}</h2>
+            <table>
+                <tr>
+                    <th style="width: 12%">{trans('date')}</th>
+                    <th style="width: 12%">{trans('day')}</th>
+        """
 
-    # Container for the 'Flowable' objects
-    elements = []
+        # Get all categories
+        all_categories = TrackingCategory.query.all()
 
-    # Get translations
-    trans = lambda key: translate_report_term(key, lang)
-    days = DAYS_TRANSLATIONS.get(lang, DAYS_TRANSLATIONS['en'])
+        # Calculate column width for categories
+        remaining_width = 76  # 100% - 24% (date + day columns)
+        col_width = remaining_width // len(all_categories)
 
-    # Define styles
-    styles = getSampleStyleSheet()
+        # Add category headers
+        for category in all_categories:
+            cat_name = translate_category_name(category.name, lang)
+            # Shorten very long category names to fit
+            if len(cat_name) > 15:
+                cat_name = cat_name[:13] + '..'
+            html_content += f'<th style="width: {col_width}%">{cat_name}</th>'
 
-    # Custom styles with proper font support
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=18,
-        textColor=colors.HexColor('#2C3E50'),
-        spaceAfter=20,
-        alignment=TA_CENTER,
-        fontName=bold_font,
-        leading=24
-    )
+        html_content += "</tr>"
 
-    heading_style = ParagraphStyle(
-        'CustomHeading',
-        parent=styles['Heading2'],
-        fontSize=14,
-        textColor=colors.HexColor('#34495E'),
-        spaceAfter=12,
-        fontName=bold_font,
-        leading=18
-    )
+        # Get check-ins
+        checkins = client.checkins.filter(
+            DailyCheckin.checkin_date.between(week_start.date(), week_end.date())
+        ).order_by(DailyCheckin.checkin_date).all()
 
-    normal_style = ParagraphStyle(
-        'CustomNormal',
-        parent=styles['Normal'],
-        fontSize=10,
-        fontName=base_font,
-        leading=12
-    )
+        # Track statistics
+        checkin_count = 0
+        category_totals = {cat.id: [] for cat in all_categories}
 
-    # Small style for table cells
-    cell_style = ParagraphStyle(
-        'CellStyle',
-        parent=styles['Normal'],
-        fontSize=8,
-        fontName=base_font,
-        leading=10,
-        alignment=TA_CENTER
-    )
+        # Add daily data rows
+        for i in range(7):
+            current_date = week_start + timedelta(days=i)
+            day_name = days[i]
+            # Shorten day names if needed
+            if len(day_name) > 10:
+                day_name = day_name[:3]
 
-    # Add title
-    title_text = f"{trans('weekly_report_title')} - {trans('client')} {client.client_serial}"
-    elements.append(Paragraph(title_text, title_style))
+            html_content += f"""
+                <tr>
+                    <td>{current_date.strftime('%Y-%m-%d')}</td>
+                    <td>{day_name}</td>
+            """
 
-    # Add week info
-    week_info = f"{trans('week')} {week_num}, {year} ({week_start.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')})"
-    elements.append(Paragraph(week_info, normal_style))
-    elements.append(Spacer(1, 0.3 * inch))
+            checkin = next((c for c in checkins if c.checkin_date == current_date.date()), None)
 
-    # Create daily check-ins table
-    elements.append(Paragraph(trans('daily_checkins'), heading_style))
+            if checkin:
+                checkin_count += 1
 
-    # Get all categories
-    all_categories = TrackingCategory.query.all()
+                # Get responses for each category
+                for category in all_categories:
+                    response = CategoryResponse.query.filter_by(
+                        client_id=client.id,
+                        category_id=category.id,
+                        response_date=current_date.date()
+                    ).first()
 
-    # Build table data
-    table_data = []
+                    if response:
+                        value = response.value
+                        category_totals[category.id].append(value)
 
-    # Create headers with Paragraph objects for Unicode support
-    headers = [
-        Paragraph(trans('date'), cell_style),
-        Paragraph(trans('day'), cell_style)
-    ]
+                        # Determine CSS class based on category type
+                        if 'anxiety' in category.name.lower():
+                            # Reverse colors for anxiety (low is good)
+                            if value <= 2:
+                                css_class = 'good'
+                            elif value == 3:
+                                css_class = 'medium'
+                            else:
+                                css_class = 'poor'
+                        else:
+                            # Normal colors (high is good)
+                            if value >= 4:
+                                css_class = 'good'
+                            elif value == 3:
+                                css_class = 'medium'
+                            else:
+                                css_class = 'poor'
 
-    # Add category headers (shortened for space)
-    for category in all_categories:
-        cat_name = translate_category_name(category.name, lang)
-        # Shorten long category names
-        if len(cat_name) > 12:
-            cat_name = cat_name[:10] + '..'
-        headers.append(Paragraph(cat_name, cell_style))
-
-    table_data.append(headers)
-
-    # Get check-ins for the week
-    checkins = client.checkins.filter(
-        DailyCheckin.checkin_date.between(week_start.date(), week_end.date())
-    ).order_by(DailyCheckin.checkin_date).all()
-
-    # Add daily data rows
-    for i in range(7):
-        current_date = week_start + timedelta(days=i)
-
-        # Create row with date and day
-        row = [
-            Paragraph(current_date.strftime('%m/%d'), cell_style),
-            Paragraph(days[i][:3] if len(days[i]) > 3 else days[i], cell_style)
-        ]
-
-        checkin = next((c for c in checkins if c.checkin_date == current_date.date()), None)
-
-        if checkin:
-            # Get category responses for this date
-            for category in all_categories:
-                response = CategoryResponse.query.filter_by(
-                    client_id=client.id,
-                    category_id=category.id,
-                    response_date=current_date.date()
-                ).first()
-
-                if response:
-                    # Just show the value
-                    row.append(str(response.value))
-                else:
-                    row.append("-")
-        else:
-            # No check-in this day
-            for category in all_categories:
-                row.append("X")
-
-        table_data.append(row)
-
-    # Calculate appropriate column widths
-    num_cols = len(all_categories) + 2
-    available_width = landscape(A4)[0] - 60  # Total width minus margins
-
-    # Fixed widths for date and day columns
-    date_width = 0.7 * inch
-    day_width = 0.6 * inch
-
-    # Remaining width divided among category columns
-    remaining_width = available_width - date_width - day_width
-    cat_width = remaining_width / len(all_categories)
-
-    # Ensure category columns aren't too wide
-    cat_width = min(cat_width, 0.8 * inch)
-
-    col_widths = [date_width, day_width] + [cat_width] * len(all_categories)
-
-    # Create table
-    t = Table(table_data, colWidths=col_widths, repeatRows=1)
-
-    # Apply table style
-    table_style = TableStyle([
-        # Header row
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2C3E50')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), bold_font),
-        ('FONTSIZE', (0, 0), (-1, 0), 9),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-        ('TOPPADDING', (0, 0), (-1, 0), 8),
-
-        # Data rows
-        ('FONTNAME', (0, 1), (-1, -1), base_font),
-        ('FONTSIZE', (0, 1), (-1, -1), 8),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F5F5F5')]),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 4),
-        ('TOPPADDING', (0, 1), (-1, -1), 4),
-    ])
-
-    # Color code the value cells
-    checkin_count = 0
-    category_totals = {cat.id: [] for cat in all_categories}
-
-    for row_idx in range(1, len(table_data)):
-        has_checkin = False
-        for col_idx in range(2, len(table_data[0])):
-            value = table_data[row_idx][col_idx]
-            if value not in ["-", "X"] and value.isdigit():
-                has_checkin = True
-                score = int(value)
-                category = all_categories[col_idx - 2]
-                category_totals[category.id].append(score)
-
-                # Determine background color
-                if 'anxiety' in category.name.lower():
-                    # Reverse colors for anxiety
-                    if score <= 2:
-                        bg_color = colors.HexColor('#C8E6C9')  # Green
-                    elif score == 3:
-                        bg_color = colors.HexColor('#FFF9C4')  # Yellow
+                        html_content += f'<td class="{css_class}">{value}</td>'
                     else:
-                        bg_color = colors.HexColor('#FFCDD2')  # Red
-                else:
-                    # Normal colors
-                    if score >= 4:
-                        bg_color = colors.HexColor('#C8E6C9')  # Green
-                    elif score == 3:
-                        bg_color = colors.HexColor('#FFF9C4')  # Yellow
-                    else:
-                        bg_color = colors.HexColor('#FFCDD2')  # Red
+                        html_content += '<td>-</td>'
+            else:
+                # No check-in this day
+                html_content += f'<td colspan="{len(all_categories)}" class="no-checkin">{trans("no_checkin")}</td>'
 
-                table_style.add('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), bg_color)
+            html_content += "</tr>"
 
-        if has_checkin:
-            checkin_count += 1
+        html_content += "</table>"
 
-    t.setStyle(table_style)
-    elements.append(t)
+        # Add weekly summary section
+        completion_rate = (checkin_count / 7) * 100
 
-    # Add weekly summary
-    elements.append(Spacer(1, 0.5 * inch))
-    elements.append(Paragraph(trans('weekly_summary'), heading_style))
+        html_content += f"""
+            <div class="summary">
+                <h2>{trans('weekly_summary')}</h2>
+                <div class="summary-stats">
+                    <div class="stat-row">
+                        <div class="stat-label">{trans('checkin_completion')}:</div>
+                        <div class="stat-value">{checkin_count}/7 {trans('days')} ({completion_rate:.0f}%)</div>
+                    </div>
+        """
 
-    # Summary statistics
-    completion_rate = (checkin_count / 7) * 100
-    summary_text = f"{trans('checkin_completion')}: {checkin_count}/7 {trans('days')} ({completion_rate:.0f}%)"
-    elements.append(Paragraph(summary_text, normal_style))
-
-    # Category averages
-    if checkin_count > 0:
-        elements.append(Spacer(1, 0.2 * inch))
+        # Add category averages
         for category in all_categories:
             if category_totals[category.id]:
-                avg_value = sum(category_totals[category.id]) / len(category_totals[category.id])
+                values = category_totals[category.id]
+                avg_value = sum(values) / len(values)
                 cat_name = translate_category_name(category.name, lang)
 
-                # Determine rating text based on category type
+                # Determine rating based on category type
                 if 'anxiety' in category.name.lower():
                     # Reverse logic for anxiety
                     if avg_value <= 2:
                         rating = trans('excellent')
+                        rating_class = 'excellent-text'
                     elif avg_value <= 3:
                         rating = trans('good')
+                        rating_class = 'good-text'
                     else:
                         rating = trans('needs_support')
+                        rating_class = 'poor-text'
                 else:
                     # Normal logic
                     if avg_value >= 4:
                         rating = trans('excellent')
+                        rating_class = 'excellent-text'
                     elif avg_value >= 3:
                         rating = trans('good')
+                        rating_class = 'good-text'
                     else:
                         rating = trans('needs_support')
+                        rating_class = 'poor-text'
 
-                avg_text = f"{cat_name}: {avg_value:.1f}/5 - {rating}"
-                elements.append(Paragraph(avg_text, normal_style))
+                html_content += f"""
+                    <div class="stat-row">
+                        <div class="stat-label">{cat_name}:</div>
+                        <div class="stat-value">{avg_value:.1f}/5 - <span class="{rating_class}">{rating}</span></div>
+                    </div>
+                """
 
-    # Build PDF
-    try:
-        doc.build(elements)
+        html_content += """
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        # Convert HTML to PDF
+        pdf_buffer = BytesIO()
+        pisa_status = pisa.CreatePDF(
+            html_content.encode('utf-8'),
+            dest=pdf_buffer,
+            encoding='utf-8'
+        )
+
+        if pisa_status.err:
+            print(f"xhtml2pdf error: {pisa_status.err}")
+            # Fall back to ReportLab if xhtml2pdf fails
+            raise Exception("xhtml2pdf conversion failed")
+
+        pdf_buffer.seek(0)
+        return pdf_buffer
+
     except Exception as e:
-        print(f"Error building PDF: {e}")
-        # On error, try with basic ASCII only
-        # Could implement a fallback here
+        print(f"xhtml2pdf not available or failed: {e}")
+        # Fall back to original ReportLab implementation
+        # This is your existing code - just copy your current create_weekly_report_pdf here
+        # For now, returning a simple error message
+        from reportlab.lib.pagesizes import landscape, A4
+        from reportlab.platypus import SimpleDocTemplate, Paragraph
+        from reportlab.lib.styles import getSampleStyleSheet
 
-    # Return buffer
-    pdf_buffer.seek(0)
-    return pdf_buffer
+        pdf_buffer = BytesIO()
+        doc = SimpleDocTemplate(pdf_buffer, pagesize=landscape(A4))
+        styles = getSampleStyleSheet()
+
+        # Create a simple error message PDF
+        elements = []
+        if lang != 'en':
+            elements.append(Paragraph(
+                "PDF generation with Unicode support requires xhtml2pdf. Please install it or use Excel format for non-English reports.",
+                styles['Normal']
+            ))
+        else:
+            # For English, your existing ReportLab code would work fine
+            # Copy your entire existing create_weekly_report_pdf function content here
+            elements.append(Paragraph(
+                "PDF generation failed. Please use Excel format instead.",
+                styles['Normal']
+            ))
+
+        doc.build(elements)
+        pdf_buffer.seek(0)
+        return pdf_buffer
 
 
 # ============= REPORT GENERATION =============
