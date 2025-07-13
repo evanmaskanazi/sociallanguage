@@ -1275,9 +1275,9 @@
         let emoji = '📊';
         if (originalName.toLowerCase().includes('emotion')) emoji = '😊';
         else if (originalName.toLowerCase().includes('medication')) emoji = '💊';
+        else if (originalName.toLowerCase().includes('social')) emoji = '😊'; 
         else if (originalName.toLowerCase().includes('activity') || originalName.toLowerCase().includes('physical')) emoji = '🏃';
         else if (originalName.toLowerCase().includes('energy')) emoji = '⚡';
-        else if (originalName.toLowerCase().includes('social')) emoji = '😊';
         else if (originalName.toLowerCase().includes('sleep')) emoji = '😴';
         else if (originalName.toLowerCase().includes('anxiety')) emoji = '😰';
         else if (originalName.toLowerCase().includes('motivation')) emoji = '🎯';
@@ -1351,16 +1351,16 @@
 
         // Helper function to get emoji for rating values
         function getEmojiForValue(categoryName, value) {
-            if (categoryName.toLowerCase().includes('emotion')) {
-                const emojis = ['😢', '😟', '😐', '🙂', '😄'];
-                return emojis[value - 1] || '';
-            } else if (categoryName.toLowerCase().includes('energy')) {
-                const emojis = ['🔋', '🔋', '⚡', '⚡', '⚡'];
-                return emojis[value - 1] || '';
-            } else if (categoryName.toLowerCase().includes('activity')) {
-                const emojis = ['🛌', '🚶', '🚴', '🏃', '🏋️'];
-                return emojis[value - 1] || '';
-            }
+           if (categoryName.toLowerCase().includes('emotion') || categoryName.toLowerCase().includes('social')) {
+    const emojis = ['😢', '😟', '😐', '🙂', '😄'];
+    return emojis[value - 1] || '';
+} else if (categoryName.toLowerCase().includes('energy')) {
+    const emojis = ['🔋', '🔋', '⚡', '⚡', '⚡'];
+    return emojis[value - 1] || '';
+} else if (categoryName.toLowerCase().includes('activity')) {
+    const emojis = ['🛌', '🚶', '🚴', '🏃', '🏋️'];
+    return emojis[value - 1] || '';
+}
             return '';
         }
 
