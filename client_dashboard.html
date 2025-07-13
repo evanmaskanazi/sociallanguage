@@ -1171,7 +1171,11 @@
             console.log('clientData.serial:', clientData.serial);
             console.log('clientData.client_serial:', clientData.client_serial);
             //document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${clientData.serial}`;
-            document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${clientData.serial || clientData.client_serial || 'Unknown'}`;
+            if (clientData && clientData.client_serial) {
+    document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${clientData.client_serial}`;
+} else {
+    document.getElementById('clientSerial').textContent = '';
+}
 
             // Update welcome message
             const hour = new Date().getHours();
