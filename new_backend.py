@@ -2,6 +2,11 @@
 Enhanced Therapeutic Companion Backend
 With PostgreSQL, Authentication, Role-Based Access, Client Reports, and Password Reset
 """
+import os
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+from reportlab.platypus import Paragraph
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
@@ -702,6 +707,8 @@ def fix_existing_clients():
     except Exception as e:
         print(f"Error fixing client categories: {e}")
         db.session.rollback()
+
+
 # ============= HTML PAGE ROUTES =============
 
 @app.route('/')
@@ -1263,41 +1270,16 @@ def get_client_details(client_id):
         return jsonify({'error': str(e)}), 500
 
 
-
-
-
-
-
-
-
-
-
 # ============= TRACKING CATEGORY MANAGEMENT =============
-
-
 
 
 # NEW ENDPOINT - Added after /api/categories
 
 
-
-
-
-
 # ============= REMINDER ENDPOINTS =============
 
 
-
-
-
-
-
 # ============= PROFILE MANAGEMENT =============
-
-
-
-
-
 
 
 # ============= ANALYTICS ENDPOINTS =============
@@ -1410,8 +1392,6 @@ def get_client_analytics(client_id):
 # ============= EXPORT ENDPOINTS =============
 
 
-
-
 # ============= ADMIN ENDPOINTS (if needed) =============
 
 @app.route('/api/admin/stats', methods=['GET'])
@@ -1482,15 +1462,6 @@ def client_generate_report(week):
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
-
-
-
-
-
-
-
 
 
 def create_weekly_report_excel(client, therapist, week_start, week_end, week_num, year, lang='en'):
@@ -1599,9 +1570,9 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
                         if response.value <= 2:
                             value_cell.fill = excellent_fill  # Green for low anxiety
                         elif response.value == 3:
-                            value_cell.fill = good_fill       # Yellow for medium
+                            value_cell.fill = good_fill  # Yellow for medium
                         else:
-                            value_cell.fill = poor_fill       # Red for high anxiety
+                            value_cell.fill = poor_fill  # Red for high anxiety
                     else:
                         if response.value >= 4:
                             value_cell.fill = excellent_fill
@@ -1669,12 +1640,21 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
             avg_value = sum(category_values[category.id]) / len(category_values[category.id])
             cat_name = translate_category_name(category.name, lang)
 
+            # Check if this is anxiety category
+            if 'anxiety' in category.name.lower():
+                # Reverse logic for anxiety - low values are good, high values are bad
+                rating = trans('excellent') if avg_value <= 2 else trans('good') if avg_value <= 3 else trans(
+                    'needs_support')
+            else:
+                # Normal logic for other categories - high values are good
+                rating = trans('excellent') if avg_value >= 4 else trans('good') if avg_value >= 3 else trans(
+                    'needs_support')
+
             summary_data.append({
                 'metric': f"{trans('average_rating')} - {cat_name}",
                 'value': f"{avg_value:.2f}/5",
                 'percentage': f"{(avg_value / 5) * 100:.1f}%",
-                'rating': trans('excellent') if avg_value >= 4 else trans('good') if avg_value >= 3 else trans(
-                    'needs_support'),
+                'rating': rating,
                 'notes': ''
             })
 
@@ -1687,12 +1667,25 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
 
         rating_cell = ws_summary.cell(row=row, column=4)
         rating_cell.value = data['rating']
-        if trans('excellent') in data['rating']:
-            rating_cell.fill = excellent_fill
-        elif trans('good') in data['rating']:
-            rating_cell.fill = good_fill
+
+        # Check if this row is for anxiety
+        if 'anxiety' in data['metric'].lower() or any(
+                term in data['metric'] for term in ['חרדה', 'тревожности', 'القلق']):
+            # For anxiety, reverse the color logic
+            if trans('excellent') in data['rating']:
+                rating_cell.fill = excellent_fill  # Low anxiety is excellent (green)
+            elif trans('good') in data['rating']:
+                rating_cell.fill = good_fill  # Medium anxiety is good (yellow)
+            else:
+                rating_cell.fill = poor_fill  # High anxiety is poor (red)
         else:
-            rating_cell.fill = poor_fill
+            # Normal color logic for other categories
+            if trans('excellent') in data['rating']:
+                rating_cell.fill = excellent_fill
+            elif trans('good') in data['rating']:
+                rating_cell.fill = good_fill
+            else:
+                rating_cell.fill = poor_fill
 
         ws_summary.cell(row=row, column=5).value = data['notes']
 
@@ -1861,201 +1854,310 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
     return wb
 
 
-
 def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, year, lang='en'):
     """Create PDF report for weekly therapy data with language support"""
     from reportlab.lib import colors
-    from reportlab.lib.pagesizes import letter
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.pagesizes import letter, A4, landscape
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import inch
-    
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+    import os
+
+    # Register CID fonts for Unicode support
+    try:
+        # These fonts support various Unicode ranges
+        pdfmetrics.registerFont(UnicodeCIDFont('HeiseiMin-W3'))  # Japanese/Basic Unicode
+        pdfmetrics.registerFont(UnicodeCIDFont('HeiseiKakuGo-W5'))  # Japanese/Basic Unicode
+        pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))  # Chinese
+
+        # Determine which font to use based on language
+        if lang == 'he' or lang == 'ar':
+            # For Hebrew and Arabic, use HeiseiMin-W3 which has basic Unicode support
+            # Note: This won't render RTL properly, but will show characters
+            base_font = 'HeiseiMin-W3'
+            bold_font = 'HeiseiKakuGo-W5'
+        elif lang == 'ru':
+            # For Russian, Helvetica actually works fine as it has Cyrillic
+            base_font = 'Helvetica'
+            bold_font = 'Helvetica-Bold'
+        else:
+            # For English and others
+            base_font = 'Helvetica'
+            bold_font = 'Helvetica-Bold'
+    except:
+        # Fallback to Helvetica if registration fails
+        base_font = 'Helvetica'
+        bold_font = 'Helvetica-Bold'
+
     # Create BytesIO buffer for PDF
     pdf_buffer = BytesIO()
-    
-    # Create PDF document
-    doc = SimpleDocTemplate(pdf_buffer, pagesize=letter, 
-                           rightMargin=72, leftMargin=72,
-                           topMargin=72, bottomMargin=18)
-    
+
+    # Use landscape orientation for better table fit
+    doc = SimpleDocTemplate(
+        pdf_buffer,
+        pagesize=landscape(A4),
+        rightMargin=30,
+        leftMargin=30,
+        topMargin=40,
+        bottomMargin=30
+    )
+
     # Container for the 'Flowable' objects
     elements = []
-    
+
     # Get translations
     trans = lambda key: translate_report_term(key, lang)
     days = DAYS_TRANSLATIONS.get(lang, DAYS_TRANSLATIONS['en'])
-    
+
     # Define styles
     styles = getSampleStyleSheet()
+
+    # Custom styles with proper font support
     title_style = ParagraphStyle(
         'CustomTitle',
         parent=styles['Heading1'],
-        fontSize=24,
+        fontSize=18,
         textColor=colors.HexColor('#2C3E50'),
-        spaceAfter=30,
-        alignment=1  # Center alignment
+        spaceAfter=20,
+        alignment=TA_CENTER,
+        fontName=bold_font,
+        leading=24
     )
-    
+
     heading_style = ParagraphStyle(
         'CustomHeading',
         parent=styles['Heading2'],
-        fontSize=16,
+        fontSize=14,
         textColor=colors.HexColor('#34495E'),
-        spaceAfter=12
+        spaceAfter=12,
+        fontName=bold_font,
+        leading=18
     )
-    
+
+    normal_style = ParagraphStyle(
+        'CustomNormal',
+        parent=styles['Normal'],
+        fontSize=10,
+        fontName=base_font,
+        leading=12
+    )
+
+    # Small style for table cells
+    cell_style = ParagraphStyle(
+        'CellStyle',
+        parent=styles['Normal'],
+        fontSize=8,
+        fontName=base_font,
+        leading=10,
+        alignment=TA_CENTER
+    )
+
     # Add title
     title_text = f"{trans('weekly_report_title')} - {trans('client')} {client.client_serial}"
     elements.append(Paragraph(title_text, title_style))
-    
+
     # Add week info
     week_info = f"{trans('week')} {week_num}, {year} ({week_start.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')})"
-    elements.append(Paragraph(week_info, styles['Normal']))
-    elements.append(Spacer(1, 0.5*inch))
-    
+    elements.append(Paragraph(week_info, normal_style))
+    elements.append(Spacer(1, 0.3 * inch))
+
     # Create daily check-ins table
     elements.append(Paragraph(trans('daily_checkins'), heading_style))
-    
+
     # Get all categories
     all_categories = TrackingCategory.query.all()
-    
+
     # Build table data
     table_data = []
-    
-    # Headers
-    headers = [trans('date'), trans('day')]
+
+    # Create headers with Paragraph objects for Unicode support
+    headers = [
+        Paragraph(trans('date'), cell_style),
+        Paragraph(trans('day'), cell_style)
+    ]
+
+    # Add category headers (shortened for space)
     for category in all_categories:
         cat_name = translate_category_name(category.name, lang)
-        headers.append(cat_name)
+        # Shorten long category names
+        if len(cat_name) > 12:
+            cat_name = cat_name[:10] + '..'
+        headers.append(Paragraph(cat_name, cell_style))
+
     table_data.append(headers)
-    
+
     # Get check-ins for the week
     checkins = client.checkins.filter(
         DailyCheckin.checkin_date.between(week_start.date(), week_end.date())
     ).order_by(DailyCheckin.checkin_date).all()
-    
-    # Add daily data
+
+    # Add daily data rows
     for i in range(7):
         current_date = week_start + timedelta(days=i)
-        row = [current_date.strftime('%Y-%m-%d'), days[i]]
-        
+
+        # Create row with date and day
+        row = [
+            Paragraph(current_date.strftime('%m/%d'), cell_style),
+            Paragraph(days[i][:3] if len(days[i]) > 3 else days[i], cell_style)
+        ]
+
         checkin = next((c for c in checkins if c.checkin_date == current_date.date()), None)
-        
+
         if checkin:
-            # Get category responses
+            # Get category responses for this date
             for category in all_categories:
                 response = CategoryResponse.query.filter_by(
                     client_id=client.id,
                     category_id=category.id,
                     response_date=current_date.date()
                 ).first()
-                
+
                 if response:
-                    row.append(f"{response.value}/5")
+                    # Just show the value
+                    row.append(str(response.value))
                 else:
                     row.append("-")
         else:
             # No check-in this day
             for category in all_categories:
-                row.append(trans('no_checkin'))
-        
+                row.append("X")
+
         table_data.append(row)
-    
+
+    # Calculate appropriate column widths
+    num_cols = len(all_categories) + 2
+    available_width = landscape(A4)[0] - 60  # Total width minus margins
+
+    # Fixed widths for date and day columns
+    date_width = 0.7 * inch
+    day_width = 0.6 * inch
+
+    # Remaining width divided among category columns
+    remaining_width = available_width - date_width - day_width
+    cat_width = remaining_width / len(all_categories)
+
+    # Ensure category columns aren't too wide
+    cat_width = min(cat_width, 0.8 * inch)
+
+    col_widths = [date_width, day_width] + [cat_width] * len(all_categories)
+
     # Create table
-    t = Table(table_data, repeatRows=1)
-    
+    t = Table(table_data, colWidths=col_widths, repeatRows=1)
+
     # Apply table style
     table_style = TableStyle([
-        # Header style
+        # Header row
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2C3E50')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 12),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        
+        ('FONTNAME', (0, 0), (-1, 0), bold_font),
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('TOPPADDING', (0, 0), (-1, 0), 8),
+
         # Data rows
-        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 1), (-1, -1), 10),
-        ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+        ('FONTNAME', (0, 1), (-1, -1), base_font),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F5F5F5')]),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
-        ('TOPPADDING', (0, 1), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 4),
+        ('TOPPADDING', (0, 1), (-1, -1), 4),
     ])
-    
-    # Color code the values
+
+    # Color code the value cells
+    checkin_count = 0
+    category_totals = {cat.id: [] for cat in all_categories}
+
     for row_idx in range(1, len(table_data)):
+        has_checkin = False
         for col_idx in range(2, len(table_data[0])):
             value = table_data[row_idx][col_idx]
-            if value != "-" and value != trans('no_checkin'):
-                try:
-                    score = int(value.split('/')[0])
-                    category_name = all_categories[col_idx - 2].name
-                    
-                    # Determine color based on category and score
-                    if 'anxiety' in category_name.lower():
-                        # Reverse colors for anxiety
-                        if score <= 2:
-                            bg_color = colors.HexColor('#C8E6C9')  # Green
-                        elif score == 3:
-                            bg_color = colors.HexColor('#FFF9C4')  # Yellow
-                        else:
-                            bg_color = colors.HexColor('#FFCDD2')  # Red
+            if value not in ["-", "X"] and value.isdigit():
+                has_checkin = True
+                score = int(value)
+                category = all_categories[col_idx - 2]
+                category_totals[category.id].append(score)
+
+                # Determine background color
+                if 'anxiety' in category.name.lower():
+                    # Reverse colors for anxiety
+                    if score <= 2:
+                        bg_color = colors.HexColor('#C8E6C9')  # Green
+                    elif score == 3:
+                        bg_color = colors.HexColor('#FFF9C4')  # Yellow
                     else:
-                        # Normal colors
-                        if score >= 4:
-                            bg_color = colors.HexColor('#C8E6C9')  # Green
-                        elif score == 3:
-                            bg_color = colors.HexColor('#FFF9C4')  # Yellow
-                        else:
-                            bg_color = colors.HexColor('#FFCDD2')  # Red
-                    
-                    table_style.add('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), bg_color)
-                except:
-                    pass
-    
+                        bg_color = colors.HexColor('#FFCDD2')  # Red
+                else:
+                    # Normal colors
+                    if score >= 4:
+                        bg_color = colors.HexColor('#C8E6C9')  # Green
+                    elif score == 3:
+                        bg_color = colors.HexColor('#FFF9C4')  # Yellow
+                    else:
+                        bg_color = colors.HexColor('#FFCDD2')  # Red
+
+                table_style.add('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), bg_color)
+
+        if has_checkin:
+            checkin_count += 1
+
     t.setStyle(table_style)
     elements.append(t)
-    
-    # Add summary statistics
-    elements.append(Spacer(1, 0.5*inch))
+
+    # Add weekly summary
+    elements.append(Spacer(1, 0.5 * inch))
     elements.append(Paragraph(trans('weekly_summary'), heading_style))
-    
-    # Calculate statistics
-    checkins_completed = len(checkins)
-    completion_rate = (checkins_completed / 7) * 100
-    
-    summary_text = f"""
-    {trans('checkin_completion')}: {checkins_completed}/7 {trans('days')} ({completion_rate:.0f}%)
-    """
-    
-    # Add category averages
-    for category in all_categories:
-        responses = []
-        for checkin in checkins:
-            response = CategoryResponse.query.filter_by(
-                client_id=client.id,
-                category_id=category.id,
-                response_date=checkin.checkin_date
-            ).first()
-            if response:
-                responses.append(response.value)
-        
-        if responses:
-            avg_value = sum(responses) / len(responses)
-            cat_name = translate_category_name(category.name, lang)
-            summary_text += f"\n{cat_name}: {avg_value:.1f}/5"
-    
-    elements.append(Paragraph(summary_text, styles['Normal']))
-    
+
+    # Summary statistics
+    completion_rate = (checkin_count / 7) * 100
+    summary_text = f"{trans('checkin_completion')}: {checkin_count}/7 {trans('days')} ({completion_rate:.0f}%)"
+    elements.append(Paragraph(summary_text, normal_style))
+
+    # Category averages
+    if checkin_count > 0:
+        elements.append(Spacer(1, 0.2 * inch))
+        for category in all_categories:
+            if category_totals[category.id]:
+                avg_value = sum(category_totals[category.id]) / len(category_totals[category.id])
+                cat_name = translate_category_name(category.name, lang)
+
+                # Determine rating text based on category type
+                if 'anxiety' in category.name.lower():
+                    # Reverse logic for anxiety
+                    if avg_value <= 2:
+                        rating = trans('excellent')
+                    elif avg_value <= 3:
+                        rating = trans('good')
+                    else:
+                        rating = trans('needs_support')
+                else:
+                    # Normal logic
+                    if avg_value >= 4:
+                        rating = trans('excellent')
+                    elif avg_value >= 3:
+                        rating = trans('good')
+                    else:
+                        rating = trans('needs_support')
+
+                avg_text = f"{cat_name}: {avg_value:.1f}/5 - {rating}"
+                elements.append(Paragraph(avg_text, normal_style))
+
     # Build PDF
-    doc.build(elements)
-    
+    try:
+        doc.build(elements)
+    except Exception as e:
+        print(f"Error building PDF: {e}")
+        # On error, try with basic ASCII only
+        # Could implement a fallback here
+
     # Return buffer
     pdf_buffer.seek(0)
     return pdf_buffer
-
 
 
 # ============= REPORT GENERATION =============
@@ -2111,6 +2213,7 @@ def generate_report(client_id, week):
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/reports/generate-pdf/<int:client_id>/<week>', methods=['GET'])
 @require_auth(['therapist'])
@@ -2197,9 +2300,6 @@ def client_generate_pdf(week):
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
-
 
 
 # UPDATED EMAIL REPORT FUNCTION
@@ -2426,13 +2526,10 @@ Best regards,
             pdf_attachment.set_payload(pdf_buffer.read())
             encoders.encode_base64(pdf_attachment)
             pdf_attachment.add_header(
-                        'Content-Disposition',
-                        f'attachment; filename=therapy_report_{client.client_serial}_week_{week_num}_{year}.pdf'
-                                )
+                'Content-Disposition',
+                f'attachment; filename=therapy_report_{client.client_serial}_week_{week_num}_{year}.pdf'
+            )
             msg.attach(pdf_attachment)
-
-
-            
 
             # Send email
             server = smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT'])
@@ -2496,9 +2593,6 @@ def handle_exception(error):
 
 
 # ============= STATIC FILE SERVING =============
-
-
-
 
 
 @app.route('/favicon.svg')
@@ -3389,8 +3483,6 @@ def update_user_profile():
 # ============= ANALYTICS ENDPOINTS =============
 
 
-
-
 # ============= EXPORT ENDPOINTS =============
 
 @app.route('/api/export/client-data/<int:client_id>', methods=['GET'])
@@ -3496,8 +3588,6 @@ def export_client_data(client_id):
 # ============= ADMIN ENDPOINTS (if needed) =============
 
 
-
-
 @app.route('/api/debug/categories', methods=['GET'])
 @require_auth(['therapist'])
 def debug_categories():
@@ -3524,7 +3614,6 @@ def debug_categories():
 
 
 # ============= CLIENT REPORT ENDPOINTS =============
-
 
 
 @app.route('/api/client/email-report', methods=['POST'])
@@ -3810,13 +3899,8 @@ def get_client_week_goals(week):
 # ============= REPORT GENERATION =============
 
 
-
-
 # The email_therapy_report function is already complete in Part 1
 # It's the UPDATED version starting at line 2773
-
-
-
 
 
 # ============= ERROR HANDLERS =============
@@ -3857,9 +3941,6 @@ def reset_password_page():
     except Exception as e:
         app.logger.error(f"Error serving reset-password.html: {e}")
         return f"Error: {str(e)}", 500
-
-
-
 
 
 # ============= INITIALIZATION =============
@@ -3905,8 +3986,6 @@ def initialize_database():
     except Exception as e:
         print(f"Database initialization error: {e}")
         _initialized = False
-
-
 
 
 # Don't initialize on import for production
