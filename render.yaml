@@ -9,8 +9,8 @@ services:
     envVars:
       - key: PRODUCTION
         value: "true"
-      - key: DATABASE_URL
-        value: "postgresql://therapy_user:vwzIok56kcQ4lulTQ93F1Imy4wfZO7vR@dpg-d1n4oifdiees73eobbng-a.oregon-postgres.render.com/therapy_companion"
+       -key: DATABASE_URL
+        sync: false
       - key: SECRET_KEY
         generateValue: true
       - key: FLASK_APP
