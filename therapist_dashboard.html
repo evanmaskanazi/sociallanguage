@@ -939,7 +939,11 @@
                 'therapist.error_preparing': 'Error preparing email report:',
                 'therapist.all_categories_note': 'Note: All categories are selected by default. Uncheck any you don\'t want the client to track.',
                 'therapist.view_client': 'View',
-                'therapist.add_goal': 'Add Goal'
+                'therapist.add_goal': 'Add Goal',
+                'pagination.previous': 'Previous',
+'pagination.next': 'Next',
+'pagination.page_info': 'Page {page} of {pages}',
+'pagination.total': 'Total: {count}'
             });
 
             // Hebrew
@@ -1023,7 +1027,11 @@
                 'therapist.error_preparing': 'שגיאה בהכנת דוח דוא״ל:',
                 'therapist.all_categories_note': 'הערה: כל הקטגוריות נבחרות כברירת מחדל. בטל סימון של כל קטגוריה שאינך רוצה שהמטופל יעקוב אחריה.',
                 'therapist.view_client': 'צפה',
-                'therapist.add_goal': 'הוסף יעד'
+                'therapist.add_goal': 'הוסף יעד',
+                'pagination.previous': 'הקודם',
+'pagination.next': 'הבא',
+'pagination.page_info': 'עמוד {page} מתוך {pages}',
+'pagination.total': 'סה"כ: {count}'
             });
 
             // Russian
@@ -1107,7 +1115,11 @@
                 'therapist.error_preparing': 'Ошибка подготовки email отчета:',
                 'therapist.all_categories_note': 'Примечание: Все категории выбраны по умолчанию. Снимите флажки с тех, которые клиент не должен отслеживать.',
                 'therapist.view_client': 'Просмотр',
-                'therapist.add_goal': 'Добавить цель'
+                'therapist.add_goal': 'Добавить цель',
+                'pagination.previous': 'Предыдущая',
+'pagination.next': 'Следующая',
+'pagination.page_info': 'Страница {page} из {pages}',
+'pagination.total': 'Всего: {count}'
 
             });
 
@@ -1192,7 +1204,11 @@
                 'therapist.error_preparing': 'خطأ في إعداد تقرير البريد الإلكتروني:',
                 'therapist.all_categories_note': 'ملاحظة: جميع الفئات محددة بشكل افتراضي. قم بإلغاء تحديد أي فئة لا تريد أن يتتبعها العميل.',
                 'therapist.view_client': 'عرض',
-                'therapist.add_goal': 'إضافة هدف'
+                'therapist.add_goal': 'إضافة هدف',
+                'pagination.previous': 'السابق',
+'pagination.next': 'التالي',
+'pagination.page_info': 'صفحة {page} من {pages}',
+'pagination.total': 'المجموع: {count}'
             });
 
             // Re-translate page
@@ -1211,6 +1227,8 @@
         let therapistData = null;
         let clientsList = [];
         let trackingCategories = [];
+        let currentPage = 1;
+        let totalPages = 1;
 
         // Translation helper functions
         function translateCategoryName(categoryName) {
@@ -1464,28 +1482,63 @@ async function loadTrackingCategories() {
 }
 
         // Load clients
-        async function loadClients() {
-            try {
-                const response = await fetch('/api/therapist/clients', {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'Accept-Language': i18n.currentLang
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to load clients');
-                }
-
-                const data = await response.json();
-                clientsList = data.clients;
-
-                updateClientsTable();
-                updateReportClientSelect();
-            } catch (error) {
-                showMessage(i18n.t('therapist.error_loading') + ' ' + error.message, 'error');
+        async function loadClients(page = 1) {
+    try {
+        const response = await fetch(`/api/therapist/clients?page=${page}&per_page=20`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Accept-Language': i18n.currentLang
             }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load clients');
         }
+
+        const data = await response.json();
+        clientsList = data.clients;
+        currentPage = data.pagination.page;
+        totalPages = data.pagination.pages;
+
+        updateClientsTable();
+        updatePaginationControls(data.pagination);
+        updateReportClientSelect();
+    } catch (error) {
+        showMessage(i18n.t('therapist.error_loading') + ' ' + error.message, 'error');
+    }
+}
+
+// ADD this new function right after loadClients
+function updatePaginationControls(pagination) {
+    const tableContainer = document.querySelector('.client-table');
+    let paginationDiv = document.getElementById('paginationControls');
+
+    if (!paginationDiv) {
+        paginationDiv = document.createElement('div');
+        paginationDiv.id = 'paginationControls';
+        paginationDiv.style.cssText = 'display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;';
+        tableContainer.appendChild(paginationDiv);
+    }
+
+    paginationDiv.innerHTML = `
+        <button class="btn btn-secondary btn-small"
+                onclick="loadClients(${pagination.page - 1})"
+                ${!pagination.has_prev ? 'disabled' : ''}>
+            <span>${i18n.t('pagination.previous', 'Previous')}</span>
+        </button>
+        <span style="color: #666; font-weight: 500;">
+            ${i18n.t('pagination.page_info', 'Page {page} of {pages}')
+                .replace('{page}', pagination.page)
+                .replace('{pages}', pagination.pages)}
+            (${i18n.t('pagination.total', 'Total: {count}').replace('{count}', pagination.total)})
+        </span>
+        <button class="btn btn-secondary btn-small"
+                onclick="loadClients(${pagination.page + 1})"
+                ${!pagination.has_next ? 'disabled' : ''}>
+            <span>${i18n.t('pagination.next', 'Next')}</span>
+        </button>
+    `;
+}
 
         // Update clients table
         function updateClientsTable() {

@@ -43,6 +43,52 @@ from flask import Response
 import signal
 from functools import wraps
 from threading import Thread
+# ADD THIS BLOCK - Structured Logging Configuration
+import logging
+import json
+import traceback
+from flask import g
+import uuid
+import time
+
+
+# Configure structured logging
+class StructuredFormatter(logging.Formatter):
+    def format(self, record):
+        log_obj = {
+            'timestamp': self.formatTime(record),
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.getMessage(),
+            'module': record.module,
+            'function': record.funcName,
+            'line': record.lineno
+        }
+
+        # Add extra fields if present
+        if hasattr(record, 'request_id'):
+            log_obj['request_id'] = record.request_id
+        if hasattr(record, 'user_id'):
+            log_obj['user_id'] = record.user_id
+        if hasattr(record, 'extra_data'):
+            log_obj.update(record.extra_data)
+
+        return json.dumps(log_obj)
+
+
+# Set up logger
+logger = logging.getLogger('therapy_companion')
+handler = logging.StreamHandler()
+handler.setFormatter(StructuredFormatter())
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+
+# Disable werkzeug logging in production
+if os.environ.get('PRODUCTION'):
+    logging.getLogger('werkzeug').setLevel(logging.WARNING)
+
+
+
 
 def timeout(seconds):
     def decorator(func):
@@ -109,6 +155,49 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
 CORS(app, supports_credentials=True)
+
+
+@app.before_request
+def before_request():
+    g.request_id = str(uuid.uuid4())
+    g.request_start_time = time.time()
+
+    # Log request start
+    extra_data = {
+        'method': request.method,
+        'path': request.path,
+        'remote_addr': request.remote_addr,
+        'user_agent': request.headers.get('User-Agent', ''),
+        'request_id': g.request_id
+    }
+
+    logger.info('request_started', extra={'extra_data': extra_data, 'request_id': g.request_id})
+
+
+@app.after_request
+def after_request(response):
+    # Calculate request duration
+    duration = time.time() - g.request_start_time
+
+    # Log request completion
+    extra_data = {
+        'method': request.method,
+        'path': request.path,
+        'status_code': response.status_code,
+        'duration_ms': round(duration * 1000, 2),
+        'request_id': g.request_id
+    }
+
+    # Add user info if authenticated
+    if hasattr(request, 'current_user') and request.current_user:
+        extra_data['user_id'] = request.current_user.id
+        extra_data['user_role'] = request.current_user.role
+
+    logger.info('request_completed', extra={'extra_data': extra_data, 'request_id': g.request_id})
+
+    # Add request ID to response headers
+    response.headers['X-Request-ID'] = g.request_id
+    return response
 
 limiter = Limiter(
     app=app,
@@ -576,22 +665,64 @@ def require_auth(allowed_roles=None):
         def decorated_function(*args, **kwargs):
             auth_header = request.headers.get('Authorization', '')
             if not auth_header.startswith('Bearer '):
+                logger.warning('auth_failed', extra={
+                    'extra_data': {
+                        'reason': 'missing_bearer_token',
+                        'request_id': getattr(g, 'request_id', 'unknown')
+                    },
+                    'request_id': getattr(g, 'request_id', 'unknown')
+                })
                 return jsonify({'error': 'Invalid authorization header'}), 401
 
             token = auth_header.replace('Bearer ', '')
             payload = verify_token(token)
 
             if not payload:
+                logger.warning('auth_failed', extra={
+                    'extra_data': {
+                        'reason': 'invalid_token',
+                        'request_id': getattr(g, 'request_id', 'unknown')
+                    },
+                    'request_id': getattr(g, 'request_id', 'unknown')
+                })
                 return jsonify({'error': 'Invalid or expired token'}), 401
 
             # Check if user exists and is active
             user = User.query.get(payload['user_id'])
             if not user or not user.is_active:
+                logger.warning('auth_failed', extra={
+                    'extra_data': {
+                        'reason': 'user_not_found_or_inactive',
+                        'user_id': payload['user_id'],
+                        'request_id': getattr(g, 'request_id', 'unknown')
+                    },
+                    'request_id': getattr(g, 'request_id', 'unknown')
+                })
                 return jsonify({'error': 'User not found or inactive'}), 401
 
             # Check role permissions
             if allowed_roles and user.role not in allowed_roles:
+                logger.warning('auth_failed', extra={
+                    'extra_data': {
+                        'reason': 'insufficient_permissions',
+                        'user_role': user.role,
+                        'required_roles': allowed_roles,
+                        'request_id': getattr(g, 'request_id', 'unknown')
+                    },
+                    'request_id': getattr(g, 'request_id', 'unknown')
+                })
                 return jsonify({'error': 'Insufficient permissions'}), 403
+
+            # Log successful auth
+            logger.info('auth_success', extra={
+                'extra_data': {
+                    'user_id': user.id,
+                    'role': user.role,
+                    'request_id': getattr(g, 'request_id', 'unknown')
+                },
+                'request_id': getattr(g, 'request_id', 'unknown'),
+                'user_id': user.id
+            })
 
             # Add user info to request
             request.current_user = user
@@ -874,7 +1005,7 @@ def therapist_dashboard_page():
 def client_dashboard_page():
     """Serve the client dashboard HTML file"""
     try:
-        file_path = os.path.join(BASE_DIR, 'client_dashboard.html')
+        file_path = os.path.join(BASE_DIR, 'client_dashboardpast.html')
         if os.path.exists(file_path):
             return send_file(file_path)
         else:
@@ -915,15 +1046,50 @@ def register():
         password = data.get('password')
         role = data.get('role')
 
+        # Log registration attempt
+        logger.info('registration_attempt', extra={
+            'extra_data': {
+                'email': email,
+                'role': role,
+                'request_id': getattr(g, 'request_id', 'unknown')
+            },
+            'request_id': getattr(g, 'request_id', 'unknown')
+        })
+
         # Validate input
         if not all([email, password, role]):
+            logger.warning('registration_failed', extra={
+                'extra_data': {
+                    'reason': 'missing_required_fields',
+                    'email': email,
+                    'role': role,
+                    'request_id': getattr(g, 'request_id', 'unknown')
+                },
+                'request_id': getattr(g, 'request_id', 'unknown')
+            })
             return jsonify({'error': 'Missing required fields'}), 400
 
         if role not in ['therapist', 'client']:
+            logger.warning('registration_failed', extra={
+                'extra_data': {
+                    'reason': 'invalid_role',
+                    'role': role,
+                    'request_id': getattr(g, 'request_id', 'unknown')
+                },
+                'request_id': getattr(g, 'request_id', 'unknown')
+            })
             return jsonify({'error': 'Invalid role'}), 400
 
         # Check if email exists
         if User.query.filter_by(email=email).first():
+            logger.warning('registration_failed', extra={
+                'extra_data': {
+                    'reason': 'email_already_exists',
+                    'email': email,
+                    'request_id': getattr(g, 'request_id', 'unknown')
+                },
+                'request_id': getattr(g, 'request_id', 'unknown')
+            })
             return jsonify({'error': 'Email already registered'}), 400
 
         # Create user
@@ -940,6 +1106,14 @@ def register():
             # Check if license number already exists
             if Therapist.query.filter_by(license_number=data.get('license_number', '')).first():
                 db.session.rollback()
+                logger.warning('registration_failed', extra={
+                    'extra_data': {
+                        'reason': 'license_already_exists',
+                        'license_number': data.get('license_number', ''),
+                        'request_id': getattr(g, 'request_id', 'unknown')
+                    },
+                    'request_id': getattr(g, 'request_id', 'unknown')
+                })
                 return jsonify({'error': 'License number already registered'}), 400
 
             therapist = Therapist(
@@ -973,6 +1147,18 @@ def register():
         # Generate token
         token = generate_token(user.id, role)
 
+        # Log successful registration
+        logger.info('registration_success', extra={
+            'extra_data': {
+                'user_id': user.id,
+                'email': email,
+                'role': role,
+                'request_id': getattr(g, 'request_id', 'unknown')
+            },
+            'request_id': getattr(g, 'request_id', 'unknown'),
+            'user_id': user.id
+        })
+
         return jsonify({
             'success': True,
             'token': token,
@@ -985,6 +1171,15 @@ def register():
 
     except Exception as e:
         db.session.rollback()
+        logger.error('registration_error', extra={
+            'extra_data': {
+                'error': str(e),
+                'email': email,
+                'role': role,
+                'request_id': getattr(g, 'request_id', 'unknown')
+            },
+            'request_id': getattr(g, 'request_id', 'unknown')
+        }, exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 
@@ -998,14 +1193,39 @@ def login():
         password = data.get('password')
 
         if not all([email, password]):
+            logger.warning('login_failed', extra={
+                'extra_data': {
+                    'reason': 'missing_credentials',
+                    'email': email,
+                    'request_id': g.request_id
+                },
+                'request_id': g.request_id
+            })
             return jsonify({'error': 'Missing email or password'}), 400
 
         # Find user
         user = User.query.filter_by(email=email).first()
         if not user or not bcrypt.check_password_hash(user.password_hash, password):
+            logger.warning('login_failed', extra={
+                'extra_data': {
+                    'reason': 'invalid_credentials',
+                    'email': email,
+                    'request_id': g.request_id
+                },
+                'request_id': g.request_id
+            })
             return jsonify({'error': 'Invalid credentials'}), 401
 
         if not user.is_active:
+            logger.warning('login_failed', extra={
+                'extra_data': {
+                    'reason': 'account_deactivated',
+                    'email': email,
+                    'user_id': user.id,
+                    'request_id': g.request_id
+                },
+                'request_id': g.request_id
+            })
             return jsonify({'error': 'Account deactivated'}), 401
 
         # Update last login
@@ -1014,6 +1234,18 @@ def login():
 
         # Generate token
         token = generate_token(user.id, user.role)
+
+        # Log successful login
+        logger.info('login_success', extra={
+            'extra_data': {
+                'user_id': user.id,
+                'role': user.role,
+                'email': email,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': user.id
+        })
 
         # Get role-specific data
         response_data = {
@@ -1043,6 +1275,13 @@ def login():
         return jsonify(response_data)
 
     except Exception as e:
+        logger.error('login_error', extra={
+            'extra_data': {
+                'error': str(e),
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id
+        }, exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 
@@ -1053,7 +1292,22 @@ def request_password_reset():
         data = request.json
         email = data.get('email')
 
+        logger.info('password_reset_request', extra={
+            'extra_data': {
+                'email': email,
+                'request_id': getattr(g, 'request_id', 'unknown')
+            },
+            'request_id': getattr(g, 'request_id', 'unknown')
+        })
+
         if not email:
+            logger.warning('password_reset_failed', extra={
+                'extra_data': {
+                    'reason': 'missing_email',
+                    'request_id': getattr(g, 'request_id', 'unknown')
+                },
+                'request_id': getattr(g, 'request_id', 'unknown')
+            })
             return jsonify({'error': 'Email is required'}), 400
 
         # Find user
@@ -1061,6 +1315,13 @@ def request_password_reset():
 
         # Always return success to prevent email enumeration
         if not user:
+            logger.info('password_reset_user_not_found', extra={
+                'extra_data': {
+                    'email': email,
+                    'request_id': getattr(g, 'request_id', 'unknown')
+                },
+                'request_id': getattr(g, 'request_id', 'unknown')
+            })
             return jsonify({
                 'success': True,
                 'message': 'If an account exists with this email, a password reset link has been sent.'
@@ -1122,6 +1383,18 @@ Therapeutic Companion Team"""
         # Send email
         email_sent = send_email(email, subject, body, html_body)
 
+        logger.info('password_reset_success', extra={
+            'extra_data': {
+                'user_id': user.id,
+                'email': email,
+                'email_sent': email_sent,
+                'token_expires': expires_at.isoformat(),
+                'request_id': getattr(g, 'request_id', 'unknown')
+            },
+            'request_id': getattr(g, 'request_id', 'unknown'),
+            'user_id': user.id
+        })
+
         return jsonify({
             'success': True,
             'message': 'If an account exists with this email, a password reset link has been sent.',
@@ -1130,6 +1403,14 @@ Therapeutic Companion Team"""
 
     except Exception as e:
         db.session.rollback()
+        logger.error('password_reset_error', extra={
+            'extra_data': {
+                'error': str(e),
+                'email': email,
+                'request_id': getattr(g, 'request_id', 'unknown')
+            },
+            'request_id': getattr(g, 'request_id', 'unknown')
+        }, exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 
@@ -1227,15 +1508,31 @@ def therapist_dashboard():
 @app.route('/api/therapist/clients', methods=['GET'])
 @require_auth(['therapist'])
 def get_therapist_clients():
-    """Get list of therapist's clients with translated category names"""
+    """Get list of therapist's clients with pagination"""
     try:
         therapist = request.current_user.therapist
         lang = get_language_from_header()
-        print(f"Language detected: {lang}")
 
-        # Get filter parameters
+        # Log the request
+        logger.info('get_clients_request', extra={
+            'extra_data': {
+                'therapist_id': therapist.id,
+                'language': lang,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
+
+        # Get filter and pagination parameters
         status = request.args.get('status', 'all')
         sort_by = request.args.get('sort_by', 'start_date')
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 20))
+
+        # Validate pagination parameters
+        page = max(1, page)
+        per_page = min(max(1, per_page), 100)  # Max 100 items per page
 
         # Build query
         query = therapist.clients
@@ -1251,7 +1548,9 @@ def get_therapist_clients():
         elif sort_by == 'serial':
             query = query.order_by(Client.client_serial)
 
-        clients = query.all()
+        # Paginate
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        clients = pagination.items
 
         # Build response
         client_data = []
@@ -1269,7 +1568,6 @@ def get_therapist_clients():
             tracking_categories = []
             for plan in client.tracking_plans.filter_by(is_active=True):
                 translated_name = translate_category_name(plan.category.name, lang)
-                print(f"Translating '{plan.category.name}' to lang '{lang}': '{translated_name}'")
                 tracking_categories.append(translated_name)
 
             client_data.append({
@@ -1282,12 +1580,42 @@ def get_therapist_clients():
                 'tracking_categories': tracking_categories
             })
 
+        # Log successful response
+        logger.info('get_clients_success', extra={
+            'extra_data': {
+                'therapist_id': therapist.id,
+                'client_count': len(client_data),
+                'page': page,
+                'total_pages': pagination.pages,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
+
         return jsonify({
             'success': True,
-            'clients': client_data
+            'clients': client_data,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': pagination.total,
+                'pages': pagination.pages,
+                'has_prev': pagination.has_prev,
+                'has_next': pagination.has_next
+            }
         })
 
     except Exception as e:
+        logger.error('get_clients_error', extra={
+            'extra_data': {
+                'error': str(e),
+                'therapist_id': therapist.id if therapist else None,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        }, exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 
@@ -2574,6 +2902,19 @@ def generate_report(client_id, week):
         therapist = request.current_user.therapist
         lang = get_language_from_header()
 
+        logger.info('report_generation_attempt', extra={
+            'extra_data': {
+                'therapist_id': therapist.id,
+                'client_id': client_id,
+                'week': week,
+                'report_type': 'excel',
+                'language': lang,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
+
         # Verify client belongs to therapist
         client = Client.query.filter_by(
             id=client_id,
@@ -2581,6 +2922,16 @@ def generate_report(client_id, week):
         ).first()
 
         if not client:
+            logger.warning('report_generation_failed', extra={
+                'extra_data': {
+                    'reason': 'client_not_found',
+                    'client_id': client_id,
+                    'therapist_id': therapist.id,
+                    'request_id': g.request_id
+                },
+                'request_id': g.request_id,
+                'user_id': request.current_user.id
+            })
             return jsonify({'error': 'Client not found'}), 404
 
         # Parse week
@@ -2600,6 +2951,9 @@ def generate_report(client_id, week):
         # Generate filename
         filename = f"therapy_report_{client.client_serial}_week_{week_num}_{year}.xlsx"
 
+        # Log report generation start
+        generation_start = time.time()
+
         # Stream the file generation
         def generate():
             # Create Excel workbook
@@ -2611,13 +2965,43 @@ def generate_report(client_id, week):
                 buffer.seek(0)
                 yield buffer.read()
 
-        return Response(
+        response = Response(
             generate(),
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             headers={'Content-Disposition': f'attachment; filename={filename}'}
         )
 
+        # Log successful generation
+        generation_time = time.time() - generation_start
+        logger.info('report_generation_success', extra={
+            'extra_data': {
+                'therapist_id': therapist.id,
+                'client_id': client_id,
+                'client_serial': client.client_serial,
+                'week': week,
+                'report_type': 'excel',
+                'filename': filename,
+                'generation_time_ms': round(generation_time * 1000, 2),
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
+
+        return response
+
     except Exception as e:
+        logger.error('report_generation_error', extra={
+            'extra_data': {
+                'error': str(e),
+                'therapist_id': therapist.id if therapist else None,
+                'client_id': client_id,
+                'week': week,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        }, exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 
@@ -2980,22 +3364,57 @@ def health_check():
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors"""
-    return jsonify({'error': 'Resource not found'}), 404
+    logger.warning('not_found', extra={
+        'extra_data': {
+            'path': request.path,
+            'method': request.method,
+            'request_id': getattr(g, 'request_id', 'unknown')
+        },
+        'request_id': getattr(g, 'request_id', 'unknown')
+    })
+    return jsonify({
+        'error': 'Resource not found',
+        'request_id': getattr(g, 'request_id', 'unknown')
+    }), 404
 
 
 @app.errorhandler(500)
 def internal_error(error):
     """Handle 500 errors"""
     db.session.rollback()
-    return jsonify({'error': 'Internal server error'}), 500
+    logger.error('internal_server_error', extra={
+        'extra_data': {
+            'error': str(error),
+            'request_id': getattr(g, 'request_id', 'unknown')
+        },
+        'request_id': getattr(g, 'request_id', 'unknown')
+    }, exc_info=True)
+    return jsonify({
+        'error': 'Internal server error',
+        'request_id': getattr(g, 'request_id', 'unknown')
+    }), 500
 
 
 @app.errorhandler(Exception)
 def handle_exception(error):
     """Handle unexpected exceptions"""
     db.session.rollback()
-    app.logger.error(f"Unexpected error: {str(error)}")
-    return jsonify({'error': 'An unexpected error occurred'}), 500
+
+    logger.error('unhandled_exception', extra={
+        'extra_data': {
+            'error_type': type(error).__name__,
+            'error_message': str(error),
+            'path': request.path,
+            'method': request.method,
+            'request_id': getattr(g, 'request_id', 'unknown')
+        },
+        'request_id': getattr(g, 'request_id', 'unknown')
+    }, exc_info=True)
+
+    return jsonify({
+        'error': 'An unexpected error occurred',
+        'request_id': getattr(g, 'request_id', 'unknown')
+    }), 500
 
 
 # ============= STATIC FILE SERVING =============
@@ -3127,7 +3546,27 @@ def create_client():
         email = data.get('email')
         password = data.get('password', secrets.token_urlsafe(8))
 
+        logger.info('create_client_attempt', extra={
+            'extra_data': {
+                'therapist_id': therapist.id,
+                'client_email': email,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
+
         if User.query.filter_by(email=email).first():
+            logger.warning('create_client_failed', extra={
+                'extra_data': {
+                    'reason': 'email_already_exists',
+                    'email': email,
+                    'therapist_id': therapist.id,
+                    'request_id': g.request_id
+                },
+                'request_id': g.request_id,
+                'user_id': request.current_user.id
+            })
             return jsonify({'error': 'Email already registered'}), 400
 
         # Create user
@@ -3154,7 +3593,14 @@ def create_client():
 
         # Verify we have exactly 8 categories
         if len(all_categories) != 8:
-            print(f"WARNING: Expected 8 categories but found {len(all_categories)}")
+            logger.warning('category_count_mismatch', extra={
+                'extra_data': {
+                    'expected': 8,
+                    'found': len(all_categories),
+                    'request_id': g.request_id
+                },
+                'request_id': g.request_id
+            })
             # Try to fix it
             ensure_default_categories()
             all_categories = TrackingCategory.query.all()
@@ -3170,15 +3616,32 @@ def create_client():
             db.session.add(plan)
             categories_added += 1
 
-        print(f"Added {categories_added} categories to client {client.client_serial}")
+        logger.info('categories_assigned', extra={
+            'extra_data': {
+                'client_id': client.id,
+                'client_serial': client.client_serial,
+                'categories_added': categories_added,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id
+        })
 
         # Verify the count
         if categories_added != 8:
-            print(f"WARNING: Added {categories_added} categories instead of 8!")
+            logger.warning('incorrect_category_count', extra={
+                'extra_data': {
+                    'expected': 8,
+                    'actual': categories_added,
+                    'client_serial': client.client_serial,
+                    'request_id': g.request_id
+                },
+                'request_id': g.request_id
+            })
 
         # Add initial goals if provided
         goals = data.get('initial_goals', [])
         week_start = date.today() - timedelta(days=date.today().weekday())
+        goals_added = 0
         for goal_text in goals:
             if goal_text.strip():
                 goal = WeeklyGoal(
@@ -3188,6 +3651,7 @@ def create_client():
                     week_start=week_start
                 )
                 db.session.add(goal)
+                goals_added += 1
 
         # Add welcome note
         welcome_note = TherapistNote(
@@ -3202,6 +3666,19 @@ def create_client():
 
         # Final verification
         client_categories = ClientTrackingPlan.query.filter_by(client_id=client.id).count()
+
+        logger.info('create_client_success', extra={
+            'extra_data': {
+                'therapist_id': therapist.id,
+                'client_id': client.id,
+                'client_serial': client.client_serial,
+                'categories_assigned': client_categories,
+                'goals_added': goals_added,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
 
         return jsonify({
             'success': True,
@@ -3218,7 +3695,15 @@ def create_client():
 
     except Exception as e:
         db.session.rollback()
-        print(f"Error creating client: {str(e)}")
+        logger.error('create_client_error', extra={
+            'extra_data': {
+                'error': str(e),
+                'therapist_id': therapist.id,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        }, exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 
@@ -3412,8 +3897,20 @@ def submit_checkin():
         checkin_date = data.get('date', date.today().isoformat())
         checkin_date = datetime.strptime(checkin_date, '%Y-%m-%d').date()
 
+        logger.info('checkin_attempt', extra={
+            'extra_data': {
+                'client_id': client.id,
+                'client_serial': client.client_serial,
+                'checkin_date': checkin_date.isoformat(),
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
+
         # Check if check-in exists
         existing = client.checkins.filter_by(checkin_date=checkin_date).first()
+        is_update = existing is not None
 
         if existing:
             # Update existing check-in
@@ -3438,6 +3935,7 @@ def submit_checkin():
         # Process category responses
         category_responses = data.get('category_responses', {})
         category_notes = data.get('category_notes', {})
+        responses_logged = []
 
         for cat_id, value in category_responses.items():
             # Get category to check its name
@@ -3455,6 +3953,12 @@ def submit_checkin():
             )
             db.session.add(response)
 
+            responses_logged.append({
+                'category': category.name,
+                'value': value,
+                'has_notes': bool(category_notes.get(cat_id, ''))
+            })
+
             # Also update the legacy fields in daily_checkins for backward compatibility
             if 'emotion' in category.name.lower():
                 existing.emotional_value = value
@@ -3468,6 +3972,7 @@ def submit_checkin():
 
         # Save goal completions
         goal_completions = data.get('goal_completions', {})
+        goals_updated = 0
         for goal_id, completed in goal_completions.items():
             # Check if completion exists
             existing_completion = GoalCompletion.query.filter_by(
@@ -3484,8 +3989,24 @@ def submit_checkin():
                     completed=completed
                 )
                 db.session.add(completion)
+            goals_updated += 1
 
         db.session.commit()
+
+        logger.info('checkin_success', extra={
+            'extra_data': {
+                'client_id': client.id,
+                'client_serial': client.client_serial,
+                'checkin_date': checkin_date.isoformat(),
+                'is_update': is_update,
+                'categories_tracked': len(responses_logged),
+                'goals_updated': goals_updated,
+                'responses': responses_logged,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
 
         return jsonify({
             'success': True,
@@ -3494,24 +4015,58 @@ def submit_checkin():
 
     except Exception as e:
         db.session.rollback()
+        logger.error('checkin_error', extra={
+            'extra_data': {
+                'error': str(e),
+                'client_id': client.id,
+                'checkin_date': checkin_date.isoformat() if checkin_date else None,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        }, exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/client/progress', methods=['GET'])
 @require_auth(['client'])
 def get_client_progress():
-    """Get client's progress data"""
+    """Get client's progress data with pagination for large datasets"""
     try:
         client = request.current_user.client
 
-        # Get date range
+        # Get date range and pagination
         end_date = date.today()
-        start_date = end_date - timedelta(days=30)
+        days = int(request.args.get('days', 30))
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 50))
 
-        # Get check-ins
-        checkins = client.checkins.filter(
+        # Validate parameters
+        page = max(1, page)
+        per_page = min(max(1, per_page), 100)
+        days = min(max(1, days), 365)  # Max 1 year
+
+        start_date = end_date - timedelta(days=days)
+
+        # Log request
+        logger.info('get_progress_request', extra={
+            'extra_data': {
+                'client_id': client.id,
+                'days': days,
+                'page': page,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
+
+        # Get paginated check-ins
+        checkins_query = client.checkins.filter(
             DailyCheckin.checkin_date.between(start_date, end_date)
-        ).order_by(DailyCheckin.checkin_date).all()
+        ).order_by(DailyCheckin.checkin_date.desc())
+
+        pagination = checkins_query.paginate(page=page, per_page=per_page, error_out=False)
+        checkins = pagination.items
 
         checkin_data = []
         for checkin in checkins:
@@ -3522,14 +4077,14 @@ def get_client_progress():
                 'activity': checkin.activity_value
             })
 
-        # Get category responses
+        # Get category responses (also paginated if needed)
         category_data = {}
         for plan in client.tracking_plans.filter_by(is_active=True):
             responses = CategoryResponse.query.filter(
                 CategoryResponse.client_id == client.id,
                 CategoryResponse.category_id == plan.category_id,
                 CategoryResponse.response_date.between(start_date, end_date)
-            ).order_by(CategoryResponse.response_date).all()
+            ).order_by(CategoryResponse.response_date.desc()).limit(per_page).all()
 
             category_data[plan.category.name] = [
                 {
@@ -3538,15 +4093,43 @@ def get_client_progress():
                 } for resp in responses
             ]
 
+        # Log success
+        logger.info('get_progress_success', extra={
+            'extra_data': {
+                'client_id': client.id,
+                'checkin_count': len(checkin_data),
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
+
         return jsonify({
             'success': True,
             'progress': {
                 'checkins': checkin_data,
                 'categories': category_data
+            },
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': pagination.total,
+                'pages': pagination.pages,
+                'has_prev': pagination.has_prev,
+                'has_next': pagination.has_next
             }
         })
 
     except Exception as e:
+        logger.error('get_progress_error', extra={
+            'extra_data': {
+                'error': str(e),
+                'client_id': client.id if client else None,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        }, exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 
