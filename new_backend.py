@@ -2,6 +2,13 @@
 Enhanced Therapeutic Companion Backend
 With PostgreSQL, Authentication, Role-Based Access, Client Reports, and Password Reset
 """
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 import random
 import string
 from flask import Flask, request, jsonify, send_file, session
@@ -1854,6 +1861,203 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
     return wb
 
 
+
+def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, year, lang='en'):
+    """Create PDF report for weekly therapy data with language support"""
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    
+    # Create BytesIO buffer for PDF
+    pdf_buffer = BytesIO()
+    
+    # Create PDF document
+    doc = SimpleDocTemplate(pdf_buffer, pagesize=letter, 
+                           rightMargin=72, leftMargin=72,
+                           topMargin=72, bottomMargin=18)
+    
+    # Container for the 'Flowable' objects
+    elements = []
+    
+    # Get translations
+    trans = lambda key: translate_report_term(key, lang)
+    days = DAYS_TRANSLATIONS.get(lang, DAYS_TRANSLATIONS['en'])
+    
+    # Define styles
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#2C3E50'),
+        spaceAfter=30,
+        alignment=1  # Center alignment
+    )
+    
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=16,
+        textColor=colors.HexColor('#34495E'),
+        spaceAfter=12
+    )
+    
+    # Add title
+    title_text = f"{trans('weekly_report_title')} - {trans('client')} {client.client_serial}"
+    elements.append(Paragraph(title_text, title_style))
+    
+    # Add week info
+    week_info = f"{trans('week')} {week_num}, {year} ({week_start.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')})"
+    elements.append(Paragraph(week_info, styles['Normal']))
+    elements.append(Spacer(1, 0.5*inch))
+    
+    # Create daily check-ins table
+    elements.append(Paragraph(trans('daily_checkins'), heading_style))
+    
+    # Get all categories
+    all_categories = TrackingCategory.query.all()
+    
+    # Build table data
+    table_data = []
+    
+    # Headers
+    headers = [trans('date'), trans('day')]
+    for category in all_categories:
+        cat_name = translate_category_name(category.name, lang)
+        headers.append(cat_name)
+    table_data.append(headers)
+    
+    # Get check-ins for the week
+    checkins = client.checkins.filter(
+        DailyCheckin.checkin_date.between(week_start.date(), week_end.date())
+    ).order_by(DailyCheckin.checkin_date).all()
+    
+    # Add daily data
+    for i in range(7):
+        current_date = week_start + timedelta(days=i)
+        row = [current_date.strftime('%Y-%m-%d'), days[i]]
+        
+        checkin = next((c for c in checkins if c.checkin_date == current_date.date()), None)
+        
+        if checkin:
+            # Get category responses
+            for category in all_categories:
+                response = CategoryResponse.query.filter_by(
+                    client_id=client.id,
+                    category_id=category.id,
+                    response_date=current_date.date()
+                ).first()
+                
+                if response:
+                    row.append(f"{response.value}/5")
+                else:
+                    row.append("-")
+        else:
+            # No check-in this day
+            for category in all_categories:
+                row.append(trans('no_checkin'))
+        
+        table_data.append(row)
+    
+    # Create table
+    t = Table(table_data, repeatRows=1)
+    
+    # Apply table style
+    table_style = TableStyle([
+        # Header style
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2C3E50')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        
+        # Data rows
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 10),
+        ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F5F5F5')]),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+        ('TOPPADDING', (0, 1), (-1, -1), 6),
+    ])
+    
+    # Color code the values
+    for row_idx in range(1, len(table_data)):
+        for col_idx in range(2, len(table_data[0])):
+            value = table_data[row_idx][col_idx]
+            if value != "-" and value != trans('no_checkin'):
+                try:
+                    score = int(value.split('/')[0])
+                    category_name = all_categories[col_idx - 2].name
+                    
+                    # Determine color based on category and score
+                    if 'anxiety' in category_name.lower():
+                        # Reverse colors for anxiety
+                        if score <= 2:
+                            bg_color = colors.HexColor('#C8E6C9')  # Green
+                        elif score == 3:
+                            bg_color = colors.HexColor('#FFF9C4')  # Yellow
+                        else:
+                            bg_color = colors.HexColor('#FFCDD2')  # Red
+                    else:
+                        # Normal colors
+                        if score >= 4:
+                            bg_color = colors.HexColor('#C8E6C9')  # Green
+                        elif score == 3:
+                            bg_color = colors.HexColor('#FFF9C4')  # Yellow
+                        else:
+                            bg_color = colors.HexColor('#FFCDD2')  # Red
+                    
+                    table_style.add('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), bg_color)
+                except:
+                    pass
+    
+    t.setStyle(table_style)
+    elements.append(t)
+    
+    # Add summary statistics
+    elements.append(Spacer(1, 0.5*inch))
+    elements.append(Paragraph(trans('weekly_summary'), heading_style))
+    
+    # Calculate statistics
+    checkins_completed = len(checkins)
+    completion_rate = (checkins_completed / 7) * 100
+    
+    summary_text = f"""
+    {trans('checkin_completion')}: {checkins_completed}/7 {trans('days')} ({completion_rate:.0f}%)
+    """
+    
+    # Add category averages
+    for category in all_categories:
+        responses = []
+        for checkin in checkins:
+            response = CategoryResponse.query.filter_by(
+                client_id=client.id,
+                category_id=category.id,
+                response_date=checkin.checkin_date
+            ).first()
+            if response:
+                responses.append(response.value)
+        
+        if responses:
+            avg_value = sum(responses) / len(responses)
+            cat_name = translate_category_name(category.name, lang)
+            summary_text += f"\n{cat_name}: {avg_value:.1f}/5"
+    
+    elements.append(Paragraph(summary_text, styles['Normal']))
+    
+    # Build PDF
+    doc.build(elements)
+    
+    # Return buffer
+    pdf_buffer.seek(0)
+    return pdf_buffer
+
+
+
 # ============= REPORT GENERATION =============
 
 @app.route('/api/reports/generate/<int:client_id>/<week>', methods=['GET'])
@@ -1907,6 +2111,95 @@ def generate_report(client_id, week):
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/reports/generate-pdf/<int:client_id>/<week>', methods=['GET'])
+@require_auth(['therapist'])
+def generate_pdf_report(client_id, week):
+    """Generate PDF weekly report for therapist"""
+    try:
+        therapist = request.current_user.therapist
+        lang = get_language_from_header()
+
+        # Verify client belongs to therapist
+        client = Client.query.filter_by(
+            id=client_id,
+            therapist_id=therapist.id
+        ).first()
+
+        if not client:
+            return jsonify({'error': 'Client not found'}), 404
+
+        # Parse week
+        year, week_num = week.split('-W')
+        year = int(year)
+        week_num = int(week_num)
+
+        # Calculate week dates
+        jan1 = datetime(year, 1, 1)
+        days_to_monday = (7 - jan1.weekday()) % 7
+        if days_to_monday == 0:
+            days_to_monday = 7
+        first_monday = jan1 + timedelta(days=days_to_monday - 7)
+        week_start = first_monday + timedelta(weeks=week_num - 1)
+        week_end = week_start + timedelta(days=6)
+
+        # Create PDF
+        pdf_buffer = create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, year, lang)
+
+        # Generate filename
+        filename = f"therapy_report_{client.client_serial}_week_{week_num}_{year}.pdf"
+
+        return send_file(
+            pdf_buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/client/generate-pdf/<week>', methods=['GET'])
+@require_auth(['client'])
+def client_generate_pdf(week):
+    """Generate client's own weekly PDF report"""
+    try:
+        client = request.current_user.client
+        lang = get_language_from_header()
+
+        # Parse week
+        year, week_num = week.split('-W')
+        year = int(year)
+        week_num = int(week_num)
+
+        # Calculate week dates
+        jan1 = datetime(year, 1, 1)
+        days_to_monday = (7 - jan1.weekday()) % 7
+        if days_to_monday == 0:
+            days_to_monday = 7
+        first_monday = jan1 + timedelta(days=days_to_monday - 7)
+        week_start = first_monday + timedelta(weeks=week_num - 1)
+        week_end = week_start + timedelta(days=6)
+
+        # Create PDF
+        pdf_buffer = create_weekly_report_pdf(client, None, week_start, week_end, week_num, year, lang)
+
+        # Generate filename
+        filename = f"my_therapy_report_{client.client_serial}_week_{week_num}_{year}.pdf"
+
+        return send_file(
+            pdf_buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
 
 
 # UPDATED EMAIL REPORT FUNCTION
@@ -2126,6 +2419,20 @@ Best regards,
                 f'attachment; filename=therapy_report_{client.client_serial}_week_{week_num}_{year}.xlsx'
             )
             msg.attach(excel_attachment)
+
+            # Create PDF attachment
+            pdf_buffer = create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, year, lang)
+            pdf_attachment = MIMEBase('application', 'pdf')
+            pdf_attachment.set_payload(pdf_buffer.read())
+            encoders.encode_base64(pdf_attachment)
+            pdf_attachment.add_header(
+                        'Content-Disposition',
+                        f'attachment; filename=therapy_report_{client.client_serial}_week_{week_num}_{year}.pdf'
+                                )
+            msg.attach(pdf_attachment)
+
+
+            
 
             # Send email
             server = smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT'])
