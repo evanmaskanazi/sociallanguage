@@ -51,6 +51,16 @@ def init_database():
                 name='Motivation',
                 description='Level of motivation and drive',
                 is_default=False
+            ),
+            TrackingCategory(
+                name='Medication',
+                description='Medication adherence',
+                is_default=True
+            ),
+            TrackingCategory(
+                name='Physical Activity',
+                description='Physical activity level',
+                is_default=True
             )
         ]
         
