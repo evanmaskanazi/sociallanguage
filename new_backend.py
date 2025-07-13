@@ -1855,9 +1855,292 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
 
 
 def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, year, lang='en'):
-    """Create PDF report with automatic Unicode support via xhtml2pdf"""
+    """Create PDF report with proper Unicode support via WeasyPrint"""
 
-    # Try to use xhtml2pdf for better Unicode support
+    try:
+        from weasyprint import HTML
+        from io import BytesIO
+
+        # Get translations
+        trans = lambda key: translate_report_term(key, lang)
+        days = DAYS_TRANSLATIONS.get(lang, DAYS_TRANSLATIONS['en'])
+
+        # Determine text direction
+        is_rtl = lang in ['he', 'ar']
+
+        # Generate HTML content with proper fonts
+        html_content = f"""
+        <!DOCTYPE html>
+        <html dir="{'rtl' if is_rtl else 'ltr'}">
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&family=Noto+Sans+Hebrew:wght@400;700&family=Noto+Sans+Arabic:wght@400;700&display=swap');
+
+                @page {{
+                    size: A4 landscape;
+                    margin: 1cm;
+                }}
+
+                body {{
+                    font-family: 'Noto Sans', 'Noto Sans Hebrew', 'Noto Sans Arabic', Arial, sans-serif;
+                    font-size: 10pt;
+                    direction: {'rtl' if is_rtl else 'ltr'};
+                    text-align: {'right' if is_rtl else 'left'};
+                }}
+
+                h1 {{
+                    text-align: center;
+                    color: #2C3E50;
+                    font-size: 18pt;
+                    margin-bottom: 10px;
+                }}
+
+                .subtitle {{
+                    text-align: center;
+                    color: #34495E;
+                    margin-bottom: 20px;
+                }}
+
+                h2 {{
+                    color: #34495E;
+                    font-size: 14pt;
+                    margin-top: 20px;
+                    margin-bottom: 10px;
+                }}
+
+                table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 20px 0;
+                    font-size: 8pt;
+                    direction: {'rtl' if is_rtl else 'ltr'};
+                }}
+
+                th, td {{
+                    border: 1px solid #ddd;
+                    padding: 4px;
+                    text-align: center;
+                }}
+
+                th {{
+                    background-color: #2C3E50;
+                    color: white;
+                    font-weight: bold;
+                    padding: 6px 4px;
+                }}
+
+                td {{
+                    height: 25px;
+                }}
+
+                .good {{
+                    background-color: #C8E6C9;
+                    font-weight: bold;
+                }}
+
+                .medium {{
+                    background-color: #FFF9C4;
+                }}
+
+                .poor {{
+                    background-color: #FFCDD2;
+                }}
+
+                .no-checkin {{
+                    color: #999;
+                    font-style: italic;
+                }}
+
+                .summary {{
+                    margin-top: 30px;
+                    padding: 15px;
+                    background-color: #f8f9fa;
+                    border-radius: 5px;
+                }}
+
+                .summary h2 {{
+                    margin-top: 0;
+                }}
+
+                .summary-item {{
+                    margin: 8px 0;
+                    padding: 5px 0;
+                }}
+
+                .excellent-text {{ color: #2e7d32; font-weight: bold; }}
+                .good-text {{ color: #f57c00; font-weight: bold; }}
+                .poor-text {{ color: #c62828; font-weight: bold; }}
+            </style>
+        </head>
+        <body>
+            <h1>{trans('weekly_report_title')} - {trans('client')} {client.client_serial}</h1>
+            <p class="subtitle">{trans('week')} {week_num}, {year} ({week_start.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')})</p>
+
+            <h2>{trans('daily_checkins')}</h2>
+            <table>
+                <tr>
+                    <th style="width: 12%">{trans('date')}</th>
+                    <th style="width: 12%">{trans('day')}</th>
+        """
+
+        # Get all categories
+        all_categories = TrackingCategory.query.all()
+
+        # Calculate column width for categories
+        remaining_width = 76  # 100% - 24% (date + day columns)
+        col_width = remaining_width // len(all_categories)
+
+        # Add category headers
+        for category in all_categories:
+            cat_name = translate_category_name(category.name, lang)
+            # Shorten very long category names to fit
+            if len(cat_name) > 15:
+                cat_name = cat_name[:13] + '..'
+            html_content += f'<th style="width: {col_width}%">{cat_name}</th>'
+
+        html_content += "</tr>"
+
+        # Get check-ins
+        checkins = client.checkins.filter(
+            DailyCheckin.checkin_date.between(week_start.date(), week_end.date())
+        ).order_by(DailyCheckin.checkin_date).all()
+
+        # Track statistics
+        checkin_count = 0
+        category_totals = {cat.id: [] for cat in all_categories}
+
+        # Add daily data rows
+        for i in range(7):
+            current_date = week_start + timedelta(days=i)
+            day_name = days[i]
+            # Shorten day names if needed
+            if len(day_name) > 10:
+                day_name = day_name[:3]
+
+            html_content += f"""
+                <tr>
+                    <td>{current_date.strftime('%Y-%m-%d')}</td>
+                    <td>{day_name}</td>
+            """
+
+            checkin = next((c for c in checkins if c.checkin_date == current_date.date()), None)
+
+            if checkin:
+                checkin_count += 1
+
+                # Get responses for each category
+                for category in all_categories:
+                    response = CategoryResponse.query.filter_by(
+                        client_id=client.id,
+                        category_id=category.id,
+                        response_date=current_date.date()
+                    ).first()
+
+                    if response:
+                        value = response.value
+                        category_totals[category.id].append(value)
+
+                        # Determine CSS class based on category type
+                        if 'anxiety' in category.name.lower():
+                            # Reverse colors for anxiety (low is good)
+                            if value <= 2:
+                                css_class = 'good'
+                            elif value == 3:
+                                css_class = 'medium'
+                            else:
+                                css_class = 'poor'
+                        else:
+                            # Normal colors (high is good)
+                            if value >= 4:
+                                css_class = 'good'
+                            elif value == 3:
+                                css_class = 'medium'
+                            else:
+                                css_class = 'poor'
+
+                        html_content += f'<td class="{css_class}">{value}</td>'
+                    else:
+                        html_content += '<td>-</td>'
+            else:
+                # No check-in this day
+                html_content += f'<td colspan="{len(all_categories)}" class="no-checkin">{trans("no_checkin")}</td>'
+
+            html_content += "</tr>"
+
+        html_content += "</table>"
+
+        # Add weekly summary section
+        completion_rate = (checkin_count / 7) * 100
+
+        html_content += f"""
+            <div class="summary">
+                <h2>{trans('weekly_summary')}</h2>
+                <div class="summary-item">
+                    <strong>{trans('checkin_completion')}:</strong> {checkin_count}/7 {trans('days')} ({completion_rate:.0f}%)
+                </div>
+        """
+
+        # Add category averages
+        for category in all_categories:
+            if category_totals[category.id]:
+                values = category_totals[category.id]
+                avg_value = sum(values) / len(values)
+                cat_name = translate_category_name(category.name, lang)
+
+                # Determine rating based on category type
+                if 'anxiety' in category.name.lower():
+                    # Reverse logic for anxiety
+                    if avg_value <= 2:
+                        rating = trans('excellent')
+                        rating_class = 'excellent-text'
+                    elif avg_value <= 3:
+                        rating = trans('good')
+                        rating_class = 'good-text'
+                    else:
+                        rating = trans('needs_support')
+                        rating_class = 'poor-text'
+                else:
+                    # Normal logic
+                    if avg_value >= 4:
+                        rating = trans('excellent')
+                        rating_class = 'excellent-text'
+                    elif avg_value >= 3:
+                        rating = trans('good')
+                        rating_class = 'good-text'
+                    else:
+                        rating = trans('needs_support')
+                        rating_class = 'poor-text'
+
+                html_content += f"""
+                    <div class="summary-item">
+                        <strong>{cat_name}:</strong> {avg_value:.1f}/5 - <span class="{rating_class}">{rating}</span>
+                    </div>
+                """
+
+        html_content += """
+            </div>
+        </body>
+        </html>
+        """
+
+        # Generate PDF with WeasyPrint
+        pdf_buffer = BytesIO()
+        HTML(string=html_content).write_pdf(pdf_buffer)
+        pdf_buffer.seek(0)
+
+        return pdf_buffer
+
+    except ImportError:
+        print("WeasyPrint not available, falling back to xhtml2pdf")
+        # Fall back to original xhtml2pdf implementation
+        pass
+    except Exception as e:
+        print(f"Error generating PDF with WeasyPrint: {e}")
+        # Fall back to original implementation
+        pass
+
+    # FALLBACK: xhtml2pdf implementation
     try:
         from xhtml2pdf import pisa
         from io import BytesIO
@@ -2135,17 +2418,14 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
 
         if pisa_status.err:
             print(f"xhtml2pdf error: {pisa_status.err}")
-            # Fall back to ReportLab if xhtml2pdf fails
-            raise Exception("xhtml2pdf conversion failed")
+            # Still return the buffer even if there was an error
 
         pdf_buffer.seek(0)
         return pdf_buffer
 
     except Exception as e:
-        print(f"xhtml2pdf not available or failed: {e}")
-        # Fall back to original ReportLab implementation
-        # This is your existing code - just copy your current create_weekly_report_pdf here
-        # For now, returning a simple error message
+        print(f"xhtml2pdf also failed: {e}")
+        # Return a simple error message PDF
         from reportlab.lib.pagesizes import landscape, A4
         from reportlab.platypus import SimpleDocTemplate, Paragraph
         from reportlab.lib.styles import getSampleStyleSheet
@@ -2154,7 +2434,6 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
         doc = SimpleDocTemplate(pdf_buffer, pagesize=landscape(A4))
         styles = getSampleStyleSheet()
 
-        # Create a simple error message PDF
         elements = []
         if lang != 'en':
             elements.append(Paragraph(
@@ -2162,8 +2441,6 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
                 styles['Normal']
             ))
         else:
-            # For English, your existing ReportLab code would work fine
-            # Copy your entire existing create_weekly_report_pdf function content here
             elements.append(Paragraph(
                 "PDF generation failed. Please use Excel format instead.",
                 styles['Normal']
