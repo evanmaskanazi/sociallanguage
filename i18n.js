@@ -272,6 +272,8 @@ translations: {
         'client.password_too_short': 'Password must be at least 8 characters long',
         'client.incorrect_password': 'Current password is incorrect',
         'client.error_changing_password': 'Error changing password:',
+        'therapist.generate_pdf': 'Generate PDF Report',
+        'client.generate_pdf': 'Generate PDF Report',
 
         // Therapist specific
         'therapist.dashboard_title': 'Therapist Dashboard',
@@ -737,6 +739,8 @@ translations: {
         'therapist.recent_notes': 'הערות ומשימות אחרונות',
         'therapist.mission': 'משימה',
         'therapist.no_notes': 'אין הערות עדיין',
+        'therapist.generate_pdf': 'צור דוח PDF',
+        'client.generate_pdf': 'צור דוח PDF',
 
         // Index page
         'hero.subtitle': 'מערכת ליווי טיפולית מקיפה למטפלים ומטופלים',
@@ -868,6 +872,8 @@ translations: {
         'client.view': 'Просмотр',
         'client.add_goal': 'Добавить цель',
         'client.add_note': 'Добавить заметку',
+        'therapist.generate_pdf': 'Создать PDF отчет',
+        'client.generate_pdf': 'Создать PDF отчет',
 
         // Check-in
         'checkin.title': 'Ежедневная отметка',
@@ -1149,6 +1155,8 @@ translations: {
     'checkin.med_no': 'لا',
     'checkin.med_partial': 'جزئي',
     'checkin.med_na': 'غير متاح',
+    'therapist.generate_pdf': 'إنشاء تقرير PDF',
+    'client.generate_pdf': 'إنشاء تقرير PDF',       
 
     // Goals
     'goals.weekly': 'الأهداف الأسبوعية',
