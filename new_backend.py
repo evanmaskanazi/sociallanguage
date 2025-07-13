@@ -615,9 +615,61 @@ def generate_client_serial():
             return serial
 
 
+class EmailCircuitBreaker:
+    """Simple circuit breaker for email service"""
+
+    def __init__(self, failure_threshold=5, recovery_timeout=60):
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.failure_count = 0
+        self.last_failure_time = None
+        self.is_open = False
+
+    def call_succeeded(self):
+        """Reset the circuit breaker on success"""
+        self.failure_count = 0
+        self.is_open = False
+        self.last_failure_time = None
+
+    def call_failed(self):
+        """Record a failure and potentially open the circuit"""
+        self.failure_count += 1
+        self.last_failure_time = datetime.utcnow()
+
+        if self.failure_count >= self.failure_threshold:
+            self.is_open = True
+            app.logger.error(f"Email circuit breaker opened after {self.failure_count} failures")
+
+    def can_attempt_call(self):
+        """Check if we can attempt to send email"""
+        if not self.is_open:
+            return True
+
+        # Check if we should attempt recovery
+        if self.last_failure_time:
+            time_since_failure = (datetime.utcnow() - self.last_failure_time).total_seconds()
+            if time_since_failure >= self.recovery_timeout:
+                # Attempt recovery
+                self.is_open = False
+                self.failure_count = 0
+                app.logger.info("Email circuit breaker attempting recovery")
+                return True
+
+        return False
+
+
+# Create global circuit breaker instance
+email_circuit_breaker = EmailCircuitBreaker()
+
+
 def send_email_async(app, to_email, subject, body, html_body=None):
-    """Send email asynchronously in app context"""
+    """Send email asynchronously in app context with circuit breaker"""
     with app.app_context():
+        # Check circuit breaker
+        if not email_circuit_breaker.can_attempt_call():
+            app.logger.warning(f"Email circuit breaker is open, not sending email to {to_email}")
+            return
+
         try:
             msg = MIMEMultipart('alternative')
             msg['From'] = app.config['MAIL_USERNAME']
@@ -639,14 +691,22 @@ def send_email_async(app, to_email, subject, body, html_body=None):
             server.quit()
 
             app.logger.info(f"Email sent successfully to {to_email}")
+            email_circuit_breaker.call_succeeded()
+
         except Exception as e:
             app.logger.error(f"Error sending email: {e}")
+            email_circuit_breaker.call_failed()
 
 
 def send_email(to_email, subject, body, html_body=None):
     """Send email using configured SMTP settings (async)"""
     if not app.config.get('MAIL_USERNAME'):
         # Email not configured, return silently
+        return False
+
+    # Check circuit breaker before creating thread
+    if not email_circuit_breaker.can_attempt_call():
+        app.logger.warning(f"Email circuit breaker is open, skipping email to {to_email}")
         return False
 
     # Send email in background thread
@@ -2965,21 +3025,57 @@ def initialize_database():
 
     _initialized = True
 
+    # Use database-based locking to prevent race conditions
+    lock_acquired = False
+
     try:
-        db.create_all()
+        # Try to create a lock record in the database
+        with db.session.begin_nested():
+            # Check if already initialized
+            existing_lock = db.session.execute(
+                "SELECT COUNT(*) FROM tracking_categories"
+            ).scalar()
 
-        # Always ensure all default categories exist
-        ensure_default_categories()
+            if existing_lock >= 8:
+                print("Database already initialized by another process")
+                return
 
-        # Automatically fix any existing clients
-        fix_existing_clients()
+            # Create tables if they don't exist
+            db.create_all()
 
-        print("Database initialized with all default tracking categories")
-        print("All existing clients have been updated with missing categories")
+            # Use advisory lock for PostgreSQL
+            db.session.execute("SELECT pg_advisory_lock(12345)")
+            lock_acquired = True
+
+            # Double-check after acquiring lock
+            category_count = TrackingCategory.query.count()
+            if category_count >= 8:
+                print("Database already initialized by another process")
+                return
+
+            # Always ensure all default categories exist
+            ensure_default_categories()
+
+            # Automatically fix any existing clients
+            fix_existing_clients()
+
+            print("Database initialized with all default tracking categories")
+            print("All existing clients have been updated with missing categories")
+
+            # Commit the transaction
+            db.session.commit()
 
     except Exception as e:
         print(f"Database initialization error: {e}")
+        db.session.rollback()
         _initialized = False
+    finally:
+        if lock_acquired:
+            try:
+                db.session.execute("SELECT pg_advisory_unlock(12345)")
+                db.session.commit()
+            except:
+                pass
 
 
 # Initialize on first request
