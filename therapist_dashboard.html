@@ -823,13 +823,16 @@
                 </div>
 
                 <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                    <button class="btn btn-primary" onclick="generateReport()">
-                        <span>📊</span> <span data-i18n="therapist.generate_excel">Generate Excel Report</span>
-                    </button>
-                    <button class="btn btn-secondary" onclick="prepareEmailReport()">
-                        <span>📧</span> <span data-i18n="therapist.prepare_email">Prepare Email Report</span>
-                    </button>
-                </div>
+    <button class="btn btn-primary" onclick="generateReport()">
+        <span>📊</span> <span data-i18n="therapist.generate_excel">Generate Excel Report</span>
+    </button>
+    <button class="btn btn-primary" onclick="generatePDFReport()">
+        <span>📄</span> <span data-i18n="therapist.generate_pdf">Generate PDF Report</span>
+    </button>
+    <button class="btn btn-secondary" onclick="prepareEmailReport()">
+        <span>📧</span> <span data-i18n="therapist.prepare_email">Prepare Email Report</span>
+    </button>
+            </div>
             </div>
 
             <div id="reportStatus" style="display: none;">
@@ -1896,6 +1899,50 @@ async function loadTrackingCategories() {
                 showMessage(i18n.t('therapist.error_generating') + ' ' + error.message, 'error');
             }
         }
+
+
+        async function generatePDFReport() {
+    const clientId = document.getElementById('reportClient').value;
+    const week = document.getElementById('reportWeek').value;
+
+    if (!clientId || !week) {
+        showMessage(i18n.t('therapist.select_both'), 'error');
+        return;
+    }
+
+    try {
+        showMessage(i18n.t('therapist.generating_report'), 'success');
+
+        const response = await fetch(`/api/reports/generate-pdf/${clientId}/${week}`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Accept-Language': i18n.currentLang
+            }
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `therapy_report_${week}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            showMessage(i18n.t('therapist.report_downloaded'), 'success');
+        } else {
+            const error = await response.json();
+            showMessage(error.error || i18n.t('msg.error'), 'error');
+        }
+    } catch (error) {
+        showMessage(i18n.t('therapist.error_generating') + ' ' + error.message, 'error');
+    }
+}
+
+
+
 
         // Prepare email report - FIXED
         async function prepareEmailReport() {
