@@ -1005,7 +1005,7 @@ def therapist_dashboard_page():
 def client_dashboard_page():
     """Serve the client dashboard HTML file"""
     try:
-        file_path = os.path.join(BASE_DIR, 'client_dashboardpast.html')
+        file_path = os.path.join(BASE_DIR, 'client_dashboard.html')
         if os.path.exists(file_path):
             return send_file(file_path)
         else:
