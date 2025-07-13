@@ -39,7 +39,6 @@ from io import BytesIO
 import uuid
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_wtf.csrf import CSRFProtect
 from flask import Response
 import signal
 from functools import wraps
@@ -110,14 +109,7 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
 CORS(app, supports_credentials=True)
-# Initialize CSRF protection
-csrf = CSRFProtect(app)
 
-# Disable CSRF for API routes since we use JWT
-@app.before_request
-def csrf_exempt_api():
-    if request.path.startswith('/api/'):
-        csrf.exempt(request.endpoint)
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
