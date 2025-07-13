@@ -1588,12 +1588,20 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
                     category_values[category.id].append(response.value)
 
                     # Apply color coding
-                    if response.value >= 4:
-                        value_cell.fill = excellent_fill
-                    elif response.value == 3:
-                        value_cell.fill = good_fill
+                    if 'anxiety' in category.name.lower():
+                        if response.value <= 2:
+                            value_cell.fill = excellent_fill  # Green for low anxiety
+                        elif response.value == 3:
+                            value_cell.fill = good_fill       # Yellow for medium
+                        else:
+                            value_cell.fill = poor_fill       # Red for high anxiety
                     else:
-                        value_cell.fill = poor_fill
+                        if response.value >= 4:
+                            value_cell.fill = excellent_fill
+                        elif response.value == 3:
+                            value_cell.fill = good_fill
+                        else:
+                            value_cell.fill = poor_fill
 
                     # Notes cell
                     ws_checkins.cell(row=row, column=col_idx + 1).value = response.notes or ''
