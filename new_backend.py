@@ -37,6 +37,35 @@ from email.mime.base import MIMEBase
 from email import encoders
 from io import BytesIO
 import uuid
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_wtf.csrf import CSRFProtect
+from flask import Response
+import signal
+from functools import wraps
+from threading import Thread
+
+def timeout(seconds):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            def timeout_handler(signum, frame):
+                raise TimeoutError(f"Function {func.__name__} timed out after {seconds} seconds")
+
+            # Set the timeout
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(seconds)
+            try:
+                result = func(*args, **kwargs)
+            finally:
+                # Disable the timeout
+                signal.alarm(0)
+            return result
+
+        return wrapper
+
+    return decorator
+
 
 # Create Flask app
 app = Flask(__name__)
@@ -81,6 +110,22 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
 CORS(app, supports_credentials=True)
+# Initialize CSRF protection
+csrf = CSRFProtect(app)
+
+# Disable CSRF for API routes since we use JWT
+@app.before_request
+def csrf_exempt_api():
+    if request.path.startswith('/api/'):
+        csrf.exempt(request.endpoint)
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
+
+
 
 # JWT configuration
 JWT_SECRET = app.config['SECRET_KEY']
@@ -578,36 +623,49 @@ def generate_client_serial():
             return serial
 
 
+def send_email_async(app, to_email, subject, body, html_body=None):
+    """Send email asynchronously in app context"""
+    with app.app_context():
+        try:
+            msg = MIMEMultipart('alternative')
+            msg['From'] = app.config['MAIL_USERNAME']
+            msg['To'] = to_email
+            msg['Subject'] = subject
+
+            # Add plain text part
+            msg.attach(MIMEText(body, 'plain'))
+
+            # Add HTML part if provided
+            if html_body:
+                msg.attach(MIMEText(html_body, 'html'))
+
+            # Send email
+            server = smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT'])
+            server.starttls()
+            server.login(app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
+            server.send_message(msg)
+            server.quit()
+
+            app.logger.info(f"Email sent successfully to {to_email}")
+        except Exception as e:
+            app.logger.error(f"Error sending email: {e}")
+
+
 def send_email(to_email, subject, body, html_body=None):
-    """Send email using configured SMTP settings"""
+    """Send email using configured SMTP settings (async)"""
     if not app.config.get('MAIL_USERNAME'):
         # Email not configured, return silently
         return False
 
-    try:
-        msg = MIMEMultipart('alternative')
-        msg['From'] = app.config['MAIL_USERNAME']
-        msg['To'] = to_email
-        msg['Subject'] = subject
+    # Send email in background thread
+    thread = Thread(
+        target=send_email_async,
+        args=(app._get_current_object(), to_email, subject, body, html_body)
+    )
+    thread.daemon = True
+    thread.start()
 
-        # Add plain text part
-        msg.attach(MIMEText(body, 'plain'))
-
-        # Add HTML part if provided
-        if html_body:
-            msg.attach(MIMEText(html_body, 'html'))
-
-        # Send email
-        server = smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT'])
-        server.starttls()
-        server.login(app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
-        server.send_message(msg)
-        server.quit()
-
-        return True
-    except Exception as e:
-        print(f"Error sending email: {e}")
-        return False
+    return True
 
 
 def get_language_from_header():
@@ -879,6 +937,7 @@ def register():
 
 
 @app.route('/api/auth/login', methods=['POST'])
+@limiter.limit("5 per minute")
 def login():
     """Login user"""
     try:
@@ -2455,8 +2514,10 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
 
 @app.route('/api/reports/generate/<int:client_id>/<week>', methods=['GET'])
 @require_auth(['therapist'])
+@limiter.limit("10 per hour")
+@timeout(60)
 def generate_report(client_id, week):
-    """Generate comprehensive weekly Excel report with translations"""
+    """Generate comprehensive weekly Excel report with streaming"""
     try:
         therapist = request.current_user.therapist
         lang = get_language_from_header()
@@ -2484,22 +2545,24 @@ def generate_report(client_id, week):
         week_start = first_monday + timedelta(weeks=week_num - 1)
         week_end = week_start + timedelta(days=6)
 
-        # Create Excel workbook using the shared function with language support
-        wb = create_weekly_report_excel(client, therapist, week_start, week_end, week_num, year, lang)
-
-        # Save to BytesIO
-        output = BytesIO()
-        wb.save(output)
-        output.seek(0)
-
         # Generate filename
         filename = f"therapy_report_{client.client_serial}_week_{week_num}_{year}.xlsx"
 
-        return send_file(
-            output,
+        # Stream the file generation
+        def generate():
+            # Create Excel workbook
+            wb = create_weekly_report_excel(client, therapist, week_start, week_end, week_num, year, lang)
+
+            # Save to temporary buffer
+            with BytesIO() as buffer:
+                wb.save(buffer)
+                buffer.seek(0)
+                yield buffer.read()
+
+        return Response(
+            generate(),
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            as_attachment=True,
-            download_name=filename
+            headers={'Content-Disposition': f'attachment; filename={filename}'}
         )
 
     except Exception as e:
@@ -2928,29 +2991,22 @@ def initialize_database():
 
 
 # Initialize on first request
-@app.before_request
-def before_request():
-    """Run before each request"""
+def initialize_app_data():
+    """Initialize application data - run once at startup"""
     try:
-        # Use inspector to check if table exists
         from sqlalchemy import inspect
         inspector = inspect(db.engine)
 
-        # Only run initialization if tables exist
         if 'tracking_categories' in inspector.get_table_names():
             with app.app_context():
-                # Check if we have all 8 categories
                 category_count = TrackingCategory.query.count()
                 if category_count < 8:
                     print(f"Found only {category_count} categories, ensuring all defaults exist...")
                     ensure_default_categories()
                     fix_existing_clients()
+                    print("Database initialization completed")
     except Exception as e:
-        # Don't crash the app if there's an issue with the check
-        print(f"Error in before_request: {e}")
-        pass
-
-    initialize_database()
+        print(f"Error during initialization: {e}")
 
 
 # Don't initialize on import for production
@@ -4292,6 +4348,7 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         initialize_database()
+        initialize_app_data()  # Run once at startup
 
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=not os.environ.get('PRODUCTION'))
