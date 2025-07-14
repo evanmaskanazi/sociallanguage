@@ -3,7 +3,7 @@ services:
   - type: web
     name: therapy-companion
     runtime: docker
-    plan: starter  # or 'standard' for paid tier
+    plan: free  # or 'starter' for paid web service
     dockerfilePath: ./Dockerfile
     envVars:
       - key: PRODUCTION
@@ -35,7 +35,7 @@ services:
   - type: worker
     name: therapy-companion-celery
     runtime: docker
-    plan: starter  # paid tier
+    plan: free  # or 'starter' for paid worker
     dockerfilePath: ./Dockerfile
     dockerCommand: celery -A celery_app worker --loglevel=info --concurrency=2
     envVars:
@@ -64,7 +64,7 @@ services:
   - type: worker
     name: therapy-companion-celery-beat
     runtime: docker
-    plan: starter  # paid tier
+    plan: free  # or 'starter' for paid worker
     dockerfilePath: ./Dockerfile
     dockerCommand: celery -A celery_app beat --loglevel=info
     envVars:
@@ -85,4 +85,8 @@ databases:
   - name: therapy-companion-db
     databaseName: therapy_companion
     user: therapy_user
-    plan: starter  # paid tier
+    plan: free  # CHANGED: Use 'free' for free tier
+    # For paid PostgreSQL, use one of these instead:
+    # plan: starter-4  # 4GB storage, $7/month
+    # plan: standard-4  # 4GB storage, $17/month
+    # plan: pro-4  # 4GB storage, $57/month
