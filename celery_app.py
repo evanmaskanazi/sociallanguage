@@ -94,7 +94,10 @@ def send_daily_reminders():
                 Client.is_active == True,
                 User.is_active == True,
                 User.email.isnot(None),
-                ~User.email.endswith('example.com')  # Skip test emails
+                # Skip test emails - check for multiple patterns
+                ~User.email.endswith('example.com'),
+                ~User.email.endswith('test.test'),
+                User.email != 'test@test.test'
             ).all()
 
             print(f"[TESTING MODE] Found {len(all_active_clients)} active clients with real emails")
