@@ -37,8 +37,12 @@ services:
     runtime: docker
     plan: Starter  # or 'starter' for paid worker
     dockerfilePath: ./Dockerfile
-    dockerCommand: celery -A celery_app worker --loglevel=info --concurrency=2
+    dockerCommand: celery -A celery_app worker --loglevel=INFO --logfile=- --without-gossip --without-mingle --without-heartbeat
     envVars:
+      - key: PYTHONUNBUFFERED
+        value: 1
+      - key: C_FORCE_ROOT
+        value: 1
       - key: PRODUCTION
         value: "true"
       - key: DATABASE_URL
@@ -66,8 +70,10 @@ services:
     runtime: docker
     plan: Starter  # or 'starter' for paid worker
     dockerfilePath: ./Dockerfile
-    dockerCommand: celery -A celery_app beat --loglevel=info
+    dockerCommand: celery -A celery_app beat --loglevel=INFO --logfile=-
     envVars:
+      - key: PYTHONUNBUFFERED
+        value: 1
       - key: PRODUCTION
         value: "true"
       - key: DATABASE_URL
