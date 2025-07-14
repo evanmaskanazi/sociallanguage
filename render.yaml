@@ -1,24 +1,23 @@
 services:
-  # Web Service
+  # Web Service - with WeasyPrint support
   - type: web
     name: therapy-companion
-    env: python
-    plan: free
-    buildCommand: "chmod +x render-build.sh && ./render-build.sh && pip install -r requirements.txt"
-    startCommand: "./startup.sh"
+    runtime: docker
+    plan: starter  # or 'standard' for paid tier
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: PRODUCTION
         value: "true"
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: therapy-companion-db
+          property: connectionString
       - key: SECRET_KEY
         generateValue: true
       - key: FLASK_APP
         value: "new_backend.py"
       - key: PYTHONUNBUFFERED
         value: "1"
-      - key: PORT
-        value: "10000"
       - key: SYSTEM_EMAIL
         sync: false
       - key: SYSTEM_EMAIL_PASSWORD
@@ -38,19 +37,24 @@ services:
   # Redis Service
   - type: redis
     name: therapy-companion-redis
-    plan: free
+    plan: starter  # paid tier
+    maxmemoryPolicy: allkeys-lru
     ipAllowList: []
 
   # Celery Worker
   - type: worker
     name: therapy-companion-celery
-    env: python
-    plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "celery -A celery_app worker --loglevel=info --concurrency=2"
+    runtime: docker
+    plan: starter  # paid tier
+    dockerfilePath: ./Dockerfile
+    dockerCommand: celery -A celery_app worker --loglevel=info --concurrency=2
     envVars:
+      - key: PRODUCTION
+        value: "true"
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: therapy-companion-db
+          property: connectionString
       - key: SECRET_KEY
         sync: false
       - key: FLASK_APP
@@ -72,13 +76,17 @@ services:
   # Celery Beat Scheduler
   - type: worker
     name: therapy-companion-celery-beat
-    env: python
-    plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "celery -A celery_app beat --loglevel=info"
+    runtime: docker
+    plan: starter  # paid tier
+    dockerfilePath: ./Dockerfile
+    dockerCommand: celery -A celery_app beat --loglevel=info
     envVars:
+      - key: PRODUCTION
+        value: "true"
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: therapy-companion-db
+          property: connectionString
       - key: SECRET_KEY
         sync: false
       - key: FLASK_APP
@@ -88,3 +96,9 @@ services:
           type: redis
           name: therapy-companion-redis
           property: connectionString
+
+databases:
+  - name: therapy-companion-db
+    databaseName: therapy_companion
+    user: therapy_user
+    plan: starter  # paid tier
