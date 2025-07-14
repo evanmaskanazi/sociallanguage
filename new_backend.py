@@ -4948,6 +4948,8 @@ def handle_exception(error):
 
 # Import and configure Celery
 try:
+    from celery_app import celery
+    from celery import Celery
     from celery_app import celery, send_reminder_test
 
 
