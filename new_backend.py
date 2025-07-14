@@ -843,7 +843,7 @@ def send_email(to_email, subject, body, html_body=None):
     # Send email in background thread
     thread = Thread(
         target=send_email_async,
-        args=(app._get_current_object(), to_email, subject, body, html_body)
+        args=(app, to_email, subject, body, html_body)
     )
     thread.daemon = True
     thread.start()
