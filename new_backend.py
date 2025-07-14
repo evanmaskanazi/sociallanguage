@@ -4423,6 +4423,177 @@ def update_reminder():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/debug/reminders', methods=['GET'])
+@require_auth(['therapist', 'client'])  # Allow both roles for debugging
+def debug_reminders():
+    """Debug endpoint to check reminder status"""
+    try:
+        from datetime import datetime, timedelta
+
+        # Get all reminders with client info
+        reminders = db.session.query(
+            Reminder.id,
+            Reminder.reminder_type,
+            Reminder.reminder_time,
+            Reminder.is_active,
+            Reminder.last_sent,
+            Client.client_serial,
+            User.email
+        ).join(
+            Client, Reminder.client_id == Client.id
+        ).join(
+            User, Client.user_id == User.id
+        ).all()
+
+        current_hour = datetime.now().hour
+        current_time = datetime.now()
+        reminder_data = []
+
+        for r in reminders:
+            reminder_hour = r.reminder_time.hour if r.reminder_time else None
+            should_send_this_hour = (
+                    r.is_active and
+                    r.reminder_type == 'daily_checkin' and
+                    reminder_hour == current_hour
+            )
+
+            time_since_sent = None
+            sent_recently = False
+            if r.last_sent:
+                delta = datetime.utcnow() - r.last_sent
+                hours = delta.total_seconds() / 3600
+                minutes = delta.total_seconds() / 60
+
+                if minutes < 60:
+                    time_since_sent = f"{int(minutes)} minutes ago"
+                    sent_recently = minutes < 5  # Sent in last 5 minutes
+                elif hours < 24:
+                    time_since_sent = f"{int(hours)} hours ago"
+                else:
+                    time_since_sent = f"{int(hours / 24)} days ago"
+
+            reminder_data.append({
+                'id': r.id,
+                'client_serial': r.client_serial,
+                'email': r.email,
+                'type': r.reminder_type,
+                'time': r.reminder_time.strftime('%H:%M') if r.reminder_time else None,
+                'is_active': r.is_active,
+                'last_sent': r.last_sent.isoformat() if r.last_sent else None,
+                'time_since_sent': time_since_sent,
+                'sent_recently': sent_recently,
+                'should_send_this_hour': should_send_this_hour,
+                'reminder_hour': reminder_hour,
+                'current_hour': current_hour
+            })
+
+        # Get reminders sent in last hour
+        one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+        recent_sends = [r for r in reminder_data if r['last_sent'] and
+                        datetime.fromisoformat(r['last_sent'].replace('Z', '+00:00')) > one_hour_ago]
+
+        # Check Celery status
+        celery_status = "Unknown"
+        active_tasks = 0
+
+        if celery:
+            try:
+                inspector = celery.control.inspect()
+                stats = inspector.stats()
+                if stats:
+                    celery_status = "Connected"
+                    active = inspector.active()
+                    if active:
+                        active_tasks = sum(len(tasks) for tasks in active.values())
+                else:
+                    celery_status = "No workers found"
+            except:
+                celery_status = "Connection failed"
+        else:
+            celery_status = "Not configured"
+
+        return jsonify({
+            'success': True,
+            'current_time': current_time.isoformat(),
+            'current_hour': current_hour,
+            'celery_status': celery_status,
+            'active_tasks': active_tasks,
+            'total_reminders': len(reminder_data),
+            'active_reminders': sum(1 for r in reminder_data if r['is_active']),
+            'sent_in_last_hour': len(recent_sends),
+            'should_send_this_hour': sum(1 for r in reminder_data if r['should_send_this_hour']),
+            'reminders': reminder_data,
+            'recent_sends': recent_sends,
+            'email_configured': bool(app.config.get('MAIL_USERNAME')),
+            'smtp_server': app.config.get('MAIL_SERVER', 'Not configured')
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/test/send-reminder-now', methods=['POST'])
+@require_auth(['therapist', 'client'])
+def test_send_reminder_now():
+    """Force send a reminder email right now for testing"""
+    try:
+        # Get current user's email
+        email = request.current_user.email
+
+        # Send test reminder
+        subject = "TEST: Daily Check-in Reminder"
+        body = f"""
+This is a TEST reminder email sent at {datetime.now().isoformat()}.
+
+If you're receiving this, the email system is working correctly!
+
+Your actual reminders will come at your scheduled time.
+
+Best regards,
+Therapeutic Companion Team
+        """
+
+        html_body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif;">
+            <h2 style="color: #e91e63;">TEST Email</h2>
+            <p>This is a TEST reminder email sent at {datetime.now().isoformat()}.</p>
+            <p>If you're receiving this, the email system is working correctly!</p>
+            <p>Your actual reminders will come at your scheduled time.</p>
+            <hr>
+            <p style="color: #666;">Best regards,<br>Therapeutic Companion Team</p>
+        </body>
+        </html>
+        """
+
+        # Try to send directly
+        success = send_email(email, subject, body, html_body)
+
+        # Also try through Celery if available
+        celery_task_id = None
+        if celery:
+            try:
+                from celery_app import send_reminder_test
+                task = send_reminder_test.delay(email)
+                celery_task_id = task.id
+            except:
+                pass
+
+        return jsonify({
+            'success': True,
+            'direct_send': success,
+            'celery_task_id': celery_task_id,
+            'email': email,
+            'timestamp': datetime.now().isoformat(),
+            'email_configured': bool(app.config.get('MAIL_USERNAME'))
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
+
 # ============= PROFILE MANAGEMENT =============
 
 @app.route('/api/user/profile', methods=['GET'])
