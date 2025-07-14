@@ -3451,8 +3451,9 @@ def initialize_database():
         # Try to create a lock record in the database
         with db.session.begin_nested():
             # Check if already initialized
+            from sqlalchemy import text
             existing_lock = db.session.execute(
-                "SELECT COUNT(*) FROM tracking_categories"
+                text("SELECT COUNT(*) FROM tracking_categories")
             ).scalar()
 
             if existing_lock >= 8:
