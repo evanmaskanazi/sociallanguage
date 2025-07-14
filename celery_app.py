@@ -25,11 +25,10 @@ celery.conf.update(
     beat_schedule={
         'send-daily-reminders': {
             'task': 'celery_app.send_daily_reminders',
-            'schedule': 60.0,  # Run every minute
+            'schedule': 3600.0,  # Run every hour
         },
     }
 )
-
 
 @celery.task
 def send_reminder_test(email):
@@ -73,7 +72,6 @@ def send_reminder_test(email):
     except Exception as e:
         return {'error': str(e)}
 
-
 @celery.task
 def send_daily_reminders():
     """Send daily reminder emails to all clients with active reminders"""
@@ -81,76 +79,41 @@ def send_daily_reminders():
     import os
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-    from new_backend import app, db, Client, Reminder, send_single_reminder_email_sync, User
+    from new_backend import app, db, Client, Reminder, send_single_reminder_email_sync
     from datetime import datetime
 
     with app.app_context():
         try:
             current_hour = datetime.now().hour
-            print(f"[TESTING MODE] Running send_daily_reminders at {datetime.now()}")
 
-            # TESTING MODE: Send to ALL active clients, not just those with reminders
-            all_active_clients = db.session.query(Client).join(User).filter(
-                Client.is_active == True,
-                User.is_active == True,
-                User.email.isnot(None),
-                # Skip test emails - check for multiple patterns
-                ~User.email.endswith('example.com'),
-                ~User.email.endswith('test.test'),
-                User.email != 'test@test.test'
+            # Find all active reminders for this hour
+            reminders = db.session.query(Reminder).join(Client).filter(
+                Reminder.is_active == True,
+                Reminder.reminder_type == 'daily_checkin',
+                db.extract('hour', Reminder.reminder_time) == current_hour
             ).all()
 
-            print(f"[TESTING MODE] Found {len(all_active_clients)} active clients with real emails")
-
             sent_count = 0
-            failed_count = 0
-
-            for client in all_active_clients:
+            for reminder in reminders:
                 try:
-                    if client.user and client.user.email:
-                        print(
-                            f"[TESTING MODE] Sending reminder to {client.user.email} (Client: {client.client_serial})")
-
-                        # Check if we've sent recently (to avoid spam)
-                        reminder = Reminder.query.filter_by(
-                            client_id=client.id,
-                            reminder_type='daily_checkin'
-                        ).first()
-
-                        if reminder and reminder.last_sent:
-                            minutes_since = (datetime.utcnow() - reminder.last_sent).total_seconds() / 60
-                            if minutes_since < 2:
-                                print(
-                                    f"[TESTING MODE] Skipping {client.user.email} - sent {minutes_since:.1f} minutes ago")
-                                continue
-
-                        # Send the email
-                        result = send_single_reminder_email_sync(client)
-
-                        # Update last_sent if reminder exists
-                        if reminder:
-                            reminder.last_sent = datetime.utcnow()
-
+                    # Send reminder to this client
+                    client = reminder.client
+                    if client and client.user and client.user.email:
+                        # Use the existing send function
+                        send_single_reminder_email_sync(client)
+                        reminder.last_sent = datetime.utcnow()
                         sent_count += 1
-                        print(f"[TESTING MODE] Successfully sent to {client.user.email}")
                 except Exception as e:
-                    failed_count += 1
-                    print(f"[TESTING MODE] Failed to send to client {client.client_serial}: {e}")
                     app.logger.error(f"Failed to send reminder to client {client.client_serial}: {e}")
 
             db.session.commit()
-
-            result_message = f'[TESTING MODE] Sent {sent_count} reminders to real emails, {failed_count} failed'
-            print(result_message)
-            return {'message': result_message}
+            return {'message': f'Sent {sent_count} daily reminders'}
 
         except Exception as e:
-            print(f"[TESTING MODE] Error: {str(e)}")
             return {'error': str(e)}
-
 
 @celery.task
 def send_single_reminder(client_id, reminder_type):
     """Send a single reminder to a specific client"""
     # Placeholder for sending individual reminders
-    return {'message': f'Reminder sent to client {client_id}'}
+    return {'message': f'Reminder sent to client {client_id}'}'Reminder sent to client {client_id}'}
