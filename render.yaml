@@ -87,6 +87,6 @@ databases:
     user: therapy_user
     # plan: free  # CHANGED: Use 'free' for free tier
     # For paid PostgreSQL, use one of these instead:
-    plan: starter-4  # 4GB storage, $7/month
-    # plan: standard-4  # 4GB storage, $17/month
-    # plan: pro-4  # 4GB storage, $57/month
+    plan: basic  # 4GB storage, $7/month
+    # plan: standard  # 4GB storage, $17/month
+    # plan: pro  # 4GB storage, $57/month
