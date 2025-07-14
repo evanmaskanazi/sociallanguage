@@ -37,7 +37,7 @@ services:
     runtime: docker
     plan: Starter  # or 'starter' for paid worker
     dockerfilePath: ./Dockerfile
-    dockerCommand: celery -A celery_app worker --loglevel=INFO --logfile=- --without-gossip --without-mingle --without-heartbeat
+    dockerCommand: celery -A celery_app worker --loglevel=INFO --max-tasks-per-child=50 --concurrency=1 --without-gossip --without-mingle --without-heartbeat
     envVars:
       - key: PYTHONUNBUFFERED
         value: 1
