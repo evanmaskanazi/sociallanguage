@@ -75,7 +75,7 @@ def send_reminder_test(email):
 @celery.task
 def send_daily_reminders():
     """Send daily reminder emails to all clients with active reminders"""
-    from new_backend import app, db, Client, Reminder
+    from .new_backend import app, db, Client, Reminder
     from datetime import datetime
     
     with app.app_context():
