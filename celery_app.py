@@ -75,10 +75,38 @@ def send_reminder_test(email):
 @celery.task
 def send_daily_reminders():
     """Send daily reminder emails to all clients with active reminders"""
-    # This would need access to your database models
-    # You'd typically import your Flask app context here
-    # For now, this is a placeholder
-    return {'message': 'Daily reminders task placeholder'}
+    from new_backend import app, db, Client, Reminder
+    from datetime import datetime
+    
+    with app.app_context():
+        try:
+            current_hour = datetime.now().hour
+            
+            # Find all active reminders for this hour
+            reminders = db.session.query(Reminder).join(Client).filter(
+                Reminder.is_active == True,
+                Reminder.reminder_type == 'daily_checkin',
+                db.extract('hour', Reminder.reminder_time) == current_hour
+            ).all()
+            
+            sent_count = 0
+            for reminder in reminders:
+                try:
+                    # Send reminder to this client
+                    client = reminder.client
+                    if client and client.user and client.user.email:
+                        # Use the existing send function
+                        send_single_reminder_email_sync(client)
+                        reminder.last_sent = datetime.utcnow()
+                        sent_count += 1
+                except Exception as e:
+                    app.logger.error(f"Failed to send reminder to client {client.client_serial}: {e}")
+            
+            db.session.commit()
+            return {'message': f'Sent {sent_count} daily reminders'}
+            
+        except Exception as e:
+            return {'error': str(e)}
 
 @celery.task
 def send_single_reminder(client_id, reminder_type):
