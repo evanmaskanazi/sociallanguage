@@ -1,6 +1,3 @@
-3.94 KB •119 lines
-•
-Formatting may be inconsistent from source
 """
 Celery configuration and tasks for Therapeutic Companion
 """
@@ -28,7 +25,7 @@ celery.conf.update(
     beat_schedule={
         'send-daily-reminders': {
             'task': 'celery_app.send_daily_reminders',
-            'schedule': 60.0,  # Run every hour
+            'schedule': 3600.0,  # Run every hour
         },
     }
 )
