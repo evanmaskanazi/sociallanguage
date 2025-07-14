@@ -1,5 +1,5 @@
 services:
-  # Web Service only - database already exists
+  # Web Service
   - type: web
     name: therapy-companion
     env: python
@@ -9,7 +9,7 @@ services:
     envVars:
       - key: PRODUCTION
         value: "true"
-       -key: DATABASE_URL
+      - key: DATABASE_URL
         sync: false
       - key: SECRET_KEY
         generateValue: true
@@ -27,3 +27,64 @@ services:
         value: "smtp.gmail.com"
       - key: SMTP_PORT
         value: "587"
+      - key: APP_BASE_URL
+        value: "https://therapy-companion.onrender.com"
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: therapy-companion-redis
+          property: connectionString
+
+  # Redis Service
+  - type: redis
+    name: therapy-companion-redis
+    plan: free
+    ipAllowList: []
+
+  # Celery Worker
+  - type: worker
+    name: therapy-companion-celery
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "celery -A celery_app worker --loglevel=info --concurrency=2"
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: FLASK_APP
+        value: "new_backend.py"
+      - key: SYSTEM_EMAIL
+        sync: false
+      - key: SYSTEM_EMAIL_PASSWORD
+        sync: false
+      - key: SMTP_SERVER
+        value: "smtp.gmail.com"
+      - key: SMTP_PORT
+        value: "587"
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: therapy-companion-redis
+          property: connectionString
+
+  # Celery Beat Scheduler
+  - type: worker
+    name: therapy-companion-celery-beat
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "celery -A celery_app beat --loglevel=info"
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: FLASK_APP
+        value: "new_backend.py"
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: therapy-companion-redis
+          property: connectionString
