@@ -29,17 +29,7 @@ services:
       - key: APP_BASE_URL
         value: "https://therapy-companion.onrender.com"
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: therapy-companion-redis
-          property: connectionString
-
-  # Redis Service
-  - type: redis
-    name: therapy-companion-redis
-    plan: starter  # paid tier
-    maxmemoryPolicy: allkeys-lru
-    ipAllowList: []
+        value: "redis://red-d1qd17je5dus73e50pr0:HVsZ3KO84jUqRaYFwbMy2Kw9DbGf8ISK@red-d1qd17je5dus73e50pr0:6379"
 
   # Celery Worker
   - type: worker
@@ -68,10 +58,7 @@ services:
       - key: SMTP_PORT
         value: "587"
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: therapy-companion-redis
-          property: connectionString
+        value: "redis://red-d1qd17je5dus73e50pr0:HVsZ3KO84jUqRaYFwbMy2Kw9DbGf8ISK@red-d1qd17je5dus73e50pr0:6379"
 
   # Celery Beat Scheduler
   - type: worker
@@ -92,10 +79,7 @@ services:
       - key: FLASK_APP
         value: "new_backend.py"
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: therapy-companion-redis
-          property: connectionString
+        value: "redis://red-d1qd17je5dus73e50pr0:HVsZ3KO84jUqRaYFwbMy2Kw9DbGf8ISK@red-d1qd17je5dus73e50pr0:6379"
 
 databases:
   - name: therapy-companion-db
