@@ -4944,6 +4944,186 @@ def handle_exception(error):
     return jsonify({'error': 'An unexpected error occurred'}), 500
 
 
+# ============= CELERY INTEGRATION =============
+
+# Import and configure Celery
+try:
+    from celery_app import celery, send_reminder_test
+
+
+    # Add Celery context to Flask
+    class FlaskCelery(Celery):
+        def __init__(self, *args, **kwargs):
+            super(FlaskCelery, self).__init__(*args, **kwargs)
+            self.patch_task()
+
+        def patch_task(self):
+            TaskBase = self.Task
+            _celery = self
+
+            class ContextTask(TaskBase):
+                abstract = True
+
+                def __call__(self, *args, **kwargs):
+                    with app.app_context():
+                        return TaskBase.__call__(self, *args, **kwargs)
+
+            self.Task = ContextTask
+
+
+    # Update celery configuration with Flask app config
+    celery.conf.update(app.config)
+
+except ImportError:
+    logger.warning("Celery not available, background tasks disabled")
+    celery = None
+
+
+# Helper function for sending reminder emails
+def send_single_reminder_email_sync(client):
+    """Synchronous version of reminder email sending"""
+    try:
+        base_url = os.environ.get('APP_BASE_URL', 'https://therapy-companion.onrender.com')
+
+        subject = "Daily Check-in Reminder - Therapeutic Companion"
+
+        body = f"""Hello,
+
+This is your daily reminder to complete your therapy check-in.
+
+Your therapist is tracking your progress, and your daily input is valuable for your treatment.
+
+Click here to log in and complete today's check-in:
+{base_url}/login.html
+
+Client ID: {client.client_serial}
+
+If you've already completed today's check-in, please disregard this message.
+
+Best regards,
+Your Therapy Team"""
+
+        html_body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #2c3e50;">Daily Check-in Reminder</h2>
+                <p>Hello,</p>
+                <p>This is your daily reminder to complete your therapy check-in.</p>
+                <p>Your therapist is tracking your progress, and your daily input is valuable for your treatment.</p>
+                <div style="text-align: center; margin: 40px 0;">
+                    <a href="{base_url}/login.html"
+                       style="background-color: #4CAF50; color: white; padding: 15px 40px;
+                              text-decoration: none; border-radius: 5px; display: inline-block;
+                              font-weight: bold; font-size: 16px;">
+                        Complete Today's Check-in
+                    </a>
+                </div>
+                <p style="color: #666; font-size: 14px;">Client ID: {client.client_serial}</p>
+                <p style="color: #666; font-size: 14px;">
+                    If you've already completed today's check-in, please disregard this message.
+                </p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                <p style="color: #999; font-size: 12px;">
+                    Best regards,<br>
+                    Your Therapy Team
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+
+        return send_email(client.user.email, subject, body, html_body)
+
+    except Exception as e:
+        logger.error(f"Error sending reminder email: {str(e)}")
+        return False
+
+
+@app.route('/api/admin/celery-status', methods=['GET'])
+@require_auth(['therapist'])
+def celery_status():
+    """Check Celery worker status"""
+    if not celery:
+        return jsonify({'status': 'disabled', 'message': 'Celery not configured'})
+
+    try:
+        # Try to inspect active workers
+        inspector = celery.control.inspect()
+        stats = inspector.stats()
+
+        if stats:
+            worker_count = len(stats)
+            return jsonify({
+                'status': 'active',
+                'workers': worker_count,
+                'stats': stats
+            })
+        else:
+            return jsonify({
+                'status': 'offline',
+                'message': 'No active workers found'
+            })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        })
+
+
+@app.route('/api/admin/test-celery', methods=['POST'])
+@require_auth(['therapist'])
+def test_celery():
+    """Test Celery by sending a test email"""
+    if not celery:
+        return jsonify({'error': 'Celery not configured'}), 503
+
+    try:
+        email = request.json.get('email', request.current_user.email)
+
+        # Queue the test task
+        from celery_app import send_reminder_test
+        task = send_reminder_test.delay(email)
+
+        return jsonify({
+            'success': True,
+            'task_id': task.id,
+            'message': f'Test email queued for {email}'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/admin/queue-stats', methods=['GET'])
+@require_auth(['therapist'])
+def queue_stats():
+    """Get queue statistics"""
+    if not celery:
+        return jsonify({'error': 'Celery not configured'}), 503
+
+    try:
+        inspector = celery.control.inspect()
+
+        # Get various stats
+        active_tasks = inspector.active()
+        scheduled_tasks = inspector.scheduled()
+        reserved_tasks = inspector.reserved()
+
+        # Count tasks
+        total_active = sum(len(tasks) for tasks in (active_tasks or {}).values())
+        total_scheduled = sum(len(tasks) for tasks in (scheduled_tasks or {}).values())
+        total_reserved = sum(len(tasks) for tasks in (reserved_tasks or {}).values())
+
+        return jsonify({
+            'active': total_active,
+            'scheduled': total_scheduled,
+            'reserved': total_reserved,
+            'workers': list((active_tasks or {}).keys())
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # ============= STATIC FILE SERVING =============
 
 @app.route('/reset-password.html')

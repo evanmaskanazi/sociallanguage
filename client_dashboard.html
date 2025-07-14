@@ -749,6 +749,61 @@
             </div>
         </div>
     </div>
+    <!-- Email Reminder Settings -->
+            <div class="card" style="margin-top: 2rem;">
+                <h3 data-i18n="client.reminder_settings">Email Reminder Settings</h3>
+                <p style="color: #666; margin-bottom: 1rem;" data-i18n="client.reminder_desc">
+                    Set up daily email reminders for your check-ins
+                </p>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="enableReminder" onchange="toggleReminder()" style="width: auto;">
+                        <span data-i18n="client.enable_reminder">Enable daily check-in reminder</span>
+                    </label>
+                </div>
+
+                <div id="reminderTimeSection" style="display: none; margin-top: 1rem;">
+                    <div class="form-group">
+                        <label for="reminderTime" data-i18n="client.reminder_time">Reminder Time</label>
+                        <input type="time" id="reminderTime" class="form-input" value="09:00">
+                        <small style="color: #666; display: block; margin-top: 0.5rem;" data-i18n="client.reminder_timezone">
+                            Time is in your local timezone
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reminderEmail" data-i18n="client.reminder_email">Email Address (optional)</label>
+                        <input type="email" id="reminderEmail" class="form-input" placeholder="Leave blank to use account email">
+                        <small style="color: #666; display: block; margin-top: 0.5rem;" data-i18n="client.reminder_email_desc">
+                            We'll use your account email if this is left blank
+                        </small>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="saveReminderSettings()">
+                        <span data-i18n="client.save_reminder">Save Reminder Settings</span>
+                    </button>
+
+                    <button class="btn btn-secondary btn-small" onclick="testReminder()" style="margin-left: 1rem;">
+                        <span data-i18n="client.test_reminder">Send Test Reminder</span>
+                    </button>
+                </div>
+
+                <div id="reminderStatus" style="margin-top: 1rem; display: none;">
+                    <p class="message success" data-i18n="client.reminder_saved">
+                        Reminder settings saved successfully!
+                    </p>
+                </div>
+
+                <div id="queueStatus" style="margin-top: 1rem; display: none;">
+                    <p style="color: #666; font-size: 0.875rem;">
+                        <span data-i18n="client.queue_status">Queue Status:</span>
+                        <span id="queueInfo"></span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Add translations for client dashboard
@@ -787,6 +842,20 @@
                 'client.incorrect_password': 'Current password is incorrect',
                 'client.error_changing_password': 'Error changing password:',
                 'client.dashboard_title': 'My Therapy Journey',
+                'client.reminder_settings': 'Email Reminder Settings',
+                'client.reminder_desc': 'Set up daily email reminders for your check-ins',
+                'client.enable_reminder': 'Enable daily check-in reminder',
+                'client.reminder_time': 'Reminder Time',
+                'client.reminder_timezone': 'Time is in your local timezone',
+                'client.reminder_email': 'Email Address (optional)',
+                'client.reminder_email_desc': 'We\'ll use your account email if this is left blank',
+                'client.save_reminder': 'Save Reminder Settings',
+                'client.test_reminder': 'Send Test Reminder',
+                'client.reminder_saved': 'Reminder settings saved successfully!',
+                'client.please_select_time': 'Please select a reminder time',
+                'client.sending_test': 'Sending test reminder...',
+                'client.test_sent': 'Test reminder queued for delivery!',
+                'client.queue_status': 'Queue Status:',
                 'client.encouragement': 'Your journey to wellness continues. Every step counts!',
                 'client.previous_week': '← Previous Week',
                 'client.next_week': 'Next Week →',
@@ -868,6 +937,20 @@
                 'client.incorrect_password': 'הסיסמה הנוכחית שגויה',
                 'client.error_changing_password': 'שגיאה בשינוי הסיסמה:',
                 'client.dashboard_title': 'המסע הטיפולי שלי',
+                'client.reminder_settings': 'הגדרות תזכורות דוא״ל',
+                'client.reminder_desc': 'הגדר תזכורות יומיות בדוא״ל עבור הצ׳ק-אינים שלך',
+                'client.enable_reminder': 'הפעל תזכורת יומית לצ׳ק-אין',
+                'client.reminder_time': 'שעת התזכורת',
+                'client.reminder_timezone': 'השעה היא לפי אזור הזמן המקומי שלך',
+                'client.reminder_email': 'כתובת דוא״ל (אופציונלי)',
+                'client.reminder_email_desc': 'נשתמש בדוא״ל החשבון שלך אם תשאיר ריק',
+                'client.save_reminder': 'שמור הגדרות תזכורת',
+                'client.test_reminder': 'שלח תזכורת ניסיון',
+                'client.reminder_saved': 'הגדרות התזכורת נשמרו בהצלחה!',
+                'client.please_select_time': 'אנא בחר שעה לתזכורת',
+                'client.sending_test': 'שולח תזכורת ניסיון...',
+                'client.test_sent': 'תזכורת הניסיון נוספה לתור המשלוח!',
+                'client.queue_status': 'סטטוס תור:',
                 'client.encouragement': 'המסע שלך לבריאות ממשיך. כל צעד נחשב!',
                 'client.previous_week': '→ שבוע קודם',
                 'client.next_week': 'שבוע הבא ←',
@@ -949,6 +1032,20 @@
                 'client.incorrect_password': 'Текущий пароль неверный',
                 'client.error_changing_password': 'Ошибка при изменении пароля:',
                 'client.dashboard_title': 'Мой терапевтический путь',
+                'client.reminder_settings': 'Настройки напоминаний по email',
+                'client.reminder_desc': 'Настройте ежедневные напоминания по email для ваших отметок',
+                'client.enable_reminder': 'Включить ежедневное напоминание об отметке',
+                'client.reminder_time': 'Время напоминания',
+                'client.reminder_timezone': 'Время указано в вашем местном часовом поясе',
+                'client.reminder_email': 'Адрес электронной почты (необязательно)',
+                'client.reminder_email_desc': 'Мы будем использовать email вашей учетной записи, если оставите пустым',
+                'client.save_reminder': 'Сохранить настройки напоминания',
+                'client.test_reminder': 'Отправить тестовое напоминание',
+                'client.reminder_saved': 'Настройки напоминания успешно сохранены!',
+                'client.please_select_time': 'Пожалуйста, выберите время напоминания',
+                'client.sending_test': 'Отправка тестового напоминания...',
+                'client.test_sent': 'Тестовое напоминание добавлено в очередь отправки!',
+                'client.queue_status': 'Статус очереди:',
                 'client.encouragement': 'Ваш путь к здоровью продолжается. Каждый шаг важен!',
                 'client.previous_week': '← Предыдущая неделя',
                 'client.next_week': 'Следующая неделя →',
@@ -1030,6 +1127,20 @@
                 'client.incorrect_password': 'كلمة المرور الحالية غير صحيحة',
                 'client.error_changing_password': 'خطأ في تغيير كلمة المرور:',
                 'client.dashboard_title': 'رحلتي العلاجية',
+                'client.reminder_settings': 'إعدادات تذكيرات البريد الإلكتروني',
+                'client.reminder_desc': 'قم بإعداد تذكيرات يومية بالبريد الإلكتروني لتسجيلات الحضور الخاصة بك',
+                'client.enable_reminder': 'تفعيل التذكير اليومي لتسجيل الحضور',
+                'client.reminder_time': 'وقت التذكير',
+                'client.reminder_timezone': 'الوقت حسب منطقتك الزمنية المحلية',
+                'client.reminder_email': 'عنوان البريد الإلكتروني (اختياري)',
+                'client.reminder_email_desc': 'سنستخدم البريد الإلكتروني لحسابك إذا تركت هذا فارغاً',
+                'client.save_reminder': 'حفظ إعدادات التذكير',
+                'client.test_reminder': 'إرسال تذكير تجريبي',
+                'client.reminder_saved': 'تم حفظ إعدادات التذكير بنجاح!',
+                'client.please_select_time': 'يرجى اختيار وقت التذكير',
+                'client.sending_test': 'جاري إرسال التذكير التجريبي...',
+                'client.test_sent': 'تم إضافة التذكير التجريبي إلى قائمة الانتظار للإرسال!',
+                'client.queue_status': 'حالة قائمة الانتظار:',
                 'client.encouragement': 'رحلتك نحو العافية مستمرة. كل خطوة مهمة!',
                 'client.previous_week': '→ الأسبوع السابق',
                 'client.next_week': 'الأسبوع القادم ←',
@@ -2018,6 +2129,179 @@
         document.getElementById('checkinDate').addEventListener('change', function() {
             checkDateStatus(new Date(this.value));
         });
+
+
+// Email Reminder Functions with Celery
+        async function loadReminderSettings() {
+            try {
+                const response = await fetch('/api/client/reminders', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Accept-Language': i18n.currentLang
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const reminder = data.reminders.find(r => r.type === 'daily_checkin');
+
+                    if (reminder) {
+                        document.getElementById('enableReminder').checked = reminder.is_active !== false;
+                        document.getElementById('reminderTime').value = reminder.time || '09:00';
+                        if (reminder.is_active !== false) {
+                            document.getElementById('reminderTimeSection').style.display = 'block';
+                        }
+                    }
+                }
+
+                // Check queue status if reminders are enabled
+                if (document.getElementById('enableReminder').checked) {
+                    checkQueueStatus();
+                }
+            } catch (error) {
+                console.error('Error loading reminder settings:', error);
+            }
+        }
+
+        function toggleReminder() {
+            const enabled = document.getElementById('enableReminder').checked;
+            document.getElementById('reminderTimeSection').style.display = enabled ? 'block' : 'none';
+            document.getElementById('reminderStatus').style.display = 'none';
+            document.getElementById('queueStatus').style.display = enabled ? 'block' : 'none';
+
+            if (enabled) {
+                checkQueueStatus();
+            }
+        }
+
+        async function saveReminderSettings() {
+            const enabled = document.getElementById('enableReminder').checked;
+            const time = document.getElementById('reminderTime').value;
+            const email = document.getElementById('reminderEmail').value;
+
+            if (!time && enabled) {
+                showMessage(i18n.t('client.please_select_time'), 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/client/update-reminder', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept-Language': i18n.currentLang
+                    },
+                    body: JSON.stringify({
+                        type: 'daily_checkin',
+                        time: time || '09:00',
+                        is_active: enabled,
+                        email: email || undefined
+                    })
+                });
+
+                if (response.ok) {
+                    document.getElementById('reminderStatus').style.display = 'block';
+                    setTimeout(() => {
+                        document.getElementById('reminderStatus').style.display = 'none';
+                    }, 3000);
+
+                    // Check queue status after saving
+                    if (enabled) {
+                        setTimeout(checkQueueStatus, 1000);
+                    }
+                } else {
+                    const error = await response.json();
+                    showMessage(error.error || i18n.t('msg.error'), 'error');
+                }
+            } catch (error) {
+                showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
+            }
+        }
+
+        async function testReminder() {
+            try {
+                showMessage(i18n.t('client.sending_test'), 'info');
+
+                const response = await fetch('/api/admin/test-celery', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept-Language': i18n.currentLang
+                    },
+                    body: JSON.stringify({
+                        email: document.getElementById('reminderEmail').value || null
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showMessage(i18n.t('client.test_sent'), 'success');
+
+                    // Update queue status
+                    setTimeout(checkQueueStatus, 2000);
+                } else {
+                    const error = await response.json();
+                    showMessage(error.error || i18n.t('msg.error'), 'error');
+                }
+            } catch (error) {
+                showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
+            }
+        }
+
+        async function checkQueueStatus() {
+            try {
+                const response = await fetch('/api/admin/queue-stats', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Accept-Language': i18n.currentLang
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const queueInfo = document.getElementById('queueInfo');
+
+                    if (data.workers && data.workers.length > 0) {
+                        queueInfo.innerHTML = `<span style="color: #4caf50;">✓ Active (${data.active} tasks, ${data.workers.length} workers)</span>`;
+                    } else {
+                        queueInfo.innerHTML = '<span style="color: #ff9800;">⚠ No workers detected</span>';
+                    }
+
+                    document.getElementById('queueStatus').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error checking queue status:', error);
+            }
+        }
+
+        // Load reminder settings when settings tab is shown
+        const originalShowTab = window.showTab;
+        window.showTab = function(tabName) {
+            originalShowTab(tabName);
+            if (tabName === 'settings') {
+                loadReminderSettings();
+            }
+        };
+
+        // Auto-refresh queue status when on settings tab
+        let queueStatusInterval = null;
+        window.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                if (queueStatusInterval) {
+                    clearInterval(queueStatusInterval);
+                    queueStatusInterval = null;
+                }
+            } else {
+                if (document.getElementById('settings').classList.contains('active') &&
+                    document.getElementById('enableReminder').checked) {
+                    queueStatusInterval = setInterval(checkQueueStatus, 30000); // Every 30 seconds
+                }
+            }
+        });
+
+
 
         // Password change function
         async function changePassword(event) {
