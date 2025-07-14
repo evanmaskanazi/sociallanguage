@@ -2220,61 +2220,61 @@
         }
 
         async function testReminder() {
-            try {
-                showMessage(i18n.t('client.sending_test'), 'info');
+    try {
+        showMessage(i18n.t('client.sending_test'), 'info');
 
-                const response = await fetch('/api/admin/test-celery', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'Content-Type': 'application/json',
-                        'Accept-Language': i18n.currentLang
-                    },
-                    body: JSON.stringify({
-                        email: document.getElementById('reminderEmail').value || null
-                    })
-                });
+        const response = await fetch('/api/client/test-reminder', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json',
+                'Accept-Language': i18n.currentLang
+            },
+            body: JSON.stringify({
+                email: document.getElementById('reminderEmail').value || null
+            })
+        });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    showMessage(i18n.t('client.test_sent'), 'success');
+        if (response.ok) {
+            const data = await response.json();
+            showMessage(i18n.t('client.test_sent'), 'success');
 
-                    // Update queue status
-                    setTimeout(checkQueueStatus, 2000);
-                } else {
-                    const error = await response.json();
-                    showMessage(error.error || i18n.t('msg.error'), 'error');
-                }
-            } catch (error) {
-                showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
-            }
+            // Update queue status
+            setTimeout(checkQueueStatus, 2000);
+        } else {
+            const error = await response.json();
+            showMessage(error.error || i18n.t('msg.error'), 'error');
         }
+    } catch (error) {
+        showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
+    }
+}
 
-        async function checkQueueStatus() {
-            try {
-                const response = await fetch('/api/admin/queue-stats', {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'Accept-Language': i18n.currentLang
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    const queueInfo = document.getElementById('queueInfo');
-
-                    if (data.workers && data.workers.length > 0) {
-                        queueInfo.innerHTML = `<span style="color: #4caf50;">✓ Active (${data.active} tasks, ${data.workers.length} workers)</span>`;
-                    } else {
-                        queueInfo.innerHTML = '<span style="color: #ff9800;">⚠ No workers detected</span>';
-                    }
-
-                    document.getElementById('queueStatus').style.display = 'block';
-                }
-            } catch (error) {
-                console.error('Error checking queue status:', error);
+async function checkQueueStatus() {
+    try {
+        const response = await fetch('/api/client/reminder-queue-status', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Accept-Language': i18n.currentLang
             }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const queueInfo = document.getElementById('queueInfo');
+
+            if (data.workers && data.workers.length > 0) {
+                queueInfo.innerHTML = `<span style="color: #4caf50;">✓ Active (${data.active} tasks, ${data.workers.length} workers)</span>`;
+            } else {
+                queueInfo.innerHTML = '<span style="color: #ff9800;">⚠ No workers detected</span>';
+            }
+
+            document.getElementById('queueStatus').style.display = 'block';
         }
+    } catch (error) {
+        console.error('Error checking queue status:', error);
+    }
+}
 
         // Load reminder settings when settings tab is shown
         const originalShowTab = window.showTab;

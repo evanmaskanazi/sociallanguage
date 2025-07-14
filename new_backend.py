@@ -5144,6 +5144,69 @@ def reset_password_page():
         return f"Error: {str(e)}", 500
 
 
+# ============= CLIENT REMINDER ENDPOINTS =============
+
+@app.route('/api/client/test-reminder', methods=['POST'])
+@require_auth(['client'])
+def test_client_reminder():
+    """Test reminder for client"""
+    if not celery:
+        return jsonify({'error': 'Celery not configured'}), 503
+
+    try:
+        client = request.current_user.client
+        email = request.json.get('email', request.current_user.email)
+
+        # Use the client's email if not specified
+        if not email:
+            email = request.current_user.email
+
+        # Queue the test task
+        from celery_app import send_reminder_test
+        task = send_reminder_test.delay(email)
+
+        return jsonify({
+            'success': True,
+            'task_id': task.id,
+            'message': f'Test email queued for {email}'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/client/reminder-queue-status', methods=['GET'])
+@require_auth(['client'])
+def client_queue_status():
+    """Get queue status for client"""
+    if not celery:
+        return jsonify({'error': 'Celery not configured'}), 503
+
+    try:
+        inspector = celery.control.inspect()
+
+        # Get various stats
+        active_tasks = inspector.active()
+        scheduled_tasks = inspector.scheduled()
+        reserved_tasks = inspector.reserved()
+
+        # Count tasks
+        total_active = sum(len(tasks) for tasks in (active_tasks or {}).values())
+        total_scheduled = sum(len(tasks) for tasks in (scheduled_tasks or {}).values())
+        total_reserved = sum(len(tasks) for tasks in (reserved_tasks or {}).values())
+
+        return jsonify({
+            'active': total_active,
+            'scheduled': total_scheduled,
+            'reserved': total_reserved,
+            'workers': list((active_tasks or {}).keys()) if active_tasks else []
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
+
+
 # ============= INITIALIZATION =============
 
 # Flag to ensure single initialization
