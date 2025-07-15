@@ -785,7 +785,7 @@
                         <span data-i18n="client.save_reminder">Save Reminder Settings</span>
                     </button>
 
-                    <button class="btn btn-secondary btn-small" onclick="testReminder()" style="margin-left: 1rem;">
+                    <button class="btn btn-secondary btn-small" id="testReminderBtn" style="margin-left: 1rem;">
                         <span data-i18n="client.test_reminder">Send Test Reminder</span>
                     </button>
                 </div>
@@ -1220,10 +1220,17 @@
         }
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
+       document.addEventListener('DOMContentLoaded', function() {
             loadDashboard();
             setCurrentWeek();
             setToday();
+
+            // Add event listener for test reminder button
+            const testReminderBtn = document.getElementById('testReminderBtn');
+            if (testReminderBtn) {
+                testReminderBtn.addEventListener('click', testReminder);
+            }
+
             window.addEventListener('languageChanged', function() {
              console.log('Language changed in client dashboard');
           //   ['en', 'he', 'ru', 'ar'].forEach(lang => {
