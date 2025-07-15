@@ -2144,15 +2144,29 @@
 
         if (response.ok) {
             const data = await response.json();
+            console.log('Loaded reminder data:', data); // Debug log
+
             const reminder = data.reminders.find(r => r.type === 'daily_checkin');
 
             if (reminder) {
+                console.log('Found reminder:', reminder); // Debug log
+
                 document.getElementById('enableReminder').checked = reminder.is_active !== false;
-                document.getElementById('reminderTime').value = reminder.time || '09:00';
-                document.getElementById('reminderEmail').value = reminder.email || '';  // ADD THIS LINE
+
+                // Use the time from the server
+                if (reminder.time) {
+                    document.getElementById('reminderTime').value = reminder.time;
+                    console.log('Set reminder time to:', reminder.time); // Debug log
+                } else {
+                    document.getElementById('reminderTime').value = '09:00';
+                }
+
+                document.getElementById('reminderEmail').value = reminder.email || '';
+
                 if (reminder.is_active !== false) {
                     document.getElementById('reminderTimeSection').style.display = 'block';
                 }
+
                 updateUTCDisplay();
             }
         }
@@ -2209,22 +2223,24 @@
                 });
 
                 if (response.ok) {
-                    document.getElementById('reminderStatus').style.display = 'block';
-                    setTimeout(() => {
-                        document.getElementById('reminderStatus').style.display = 'none';
-                    }, 3000);
+    console.log('Reminder saved successfully');
+    document.getElementById('reminderStatus').style.display = 'block';
+    setTimeout(() => {
+        document.getElementById('reminderStatus').style.display = 'none';
+    }, 3000);
 
-                    // Check queue status after saving
-                    if (enabled) {
-                        setTimeout(checkQueueStatus, 1000);
-                    }
-                } else {
-                    const error = await response.json();
-                    showMessage(error.error || i18n.t('msg.error'), 'error');
-                }
-            } catch (error) {
-                showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
-            }
+    // After save, immediately check what was saved
+    await loadReminderSettings();
+    console.log('Reloaded settings, time is now:', document.getElementById('reminderTime').value);
+
+    // Check queue status after saving
+    if (enabled) {
+        setTimeout(checkQueueStatus, 1000);
+    }
+} else {
+    const error = await response.json();
+    showMessage(error.error || i18n.t('msg.error'), 'error');
+}
         }
 
         async function testReminder() {

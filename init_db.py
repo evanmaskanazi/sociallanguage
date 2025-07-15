@@ -125,18 +125,40 @@ def fix_reminder_timezone_issue():
                 current_hour = reminder.reminder_time.hour
                 current_minute = reminder.reminder_time.minute
 
-                print(f"\nClient {reminder.client.client_serial}:")
-                print(f"  Current stored time: {reminder.reminder_time}")
-                print(f"  Current hour: {current_hour}")
+                print(f"\nClient {reminder.client.client_serial} ({client_email}):")
+                print(f"  Current stored UTC time: {reminder.reminder_time}")
+                print(f"  Current local_reminder_time: {reminder.local_reminder_time}")
 
-                # If the stored hour seems wrong (e.g., very early morning hours that don't make sense)
-                # you can fix them here. For example:
-                # if current_hour < 6:  # Reminders before 6 AM UTC might be wrong
-                #     # Adjust by adding hours if needed
-                #     new_hour = (current_hour + 7) % 24  # Example: add 7 hours
-                #     reminder.reminder_time = time(new_hour, current_minute)
-                #     fixed_count += 1
-                #     print(f"  -> Fixed to: {reminder.reminder_time}")
+                # Fix missing local_reminder_time
+                if not reminder.local_reminder_time:
+                    # If the UTC hour is between 16-23 (4 PM - 11 PM UTC)
+                    # it's likely this was meant to be morning hours in PDT/PST
+                    if 16 <= current_hour <= 23:
+                        # Convert from UTC to PDT (subtract 7 hours)
+                        local_hour = (current_hour - 7) % 24
+                        reminder.local_reminder_time = f"{local_hour:02d}:{current_minute:02d}"
+                        fixed_count += 1
+                        print(f"  -> Set local_reminder_time to: {reminder.local_reminder_time}")
+                    elif 0 <= current_hour <= 6:
+                        # Early morning UTC might be evening PDT from previous day
+                        local_hour = (current_hour + 17) % 24  # +17 = -7 + 24
+                        reminder.local_reminder_time = f"{local_hour:02d}:{current_minute:02d}"
+                        fixed_count += 1
+                        print(f"  -> Set local_reminder_time to: {reminder.local_reminder_time}")
+                    else:
+                        # For other hours, assume they might be correct
+                        reminder.local_reminder_time = f"{current_hour:02d}:{current_minute:02d}"
+                        fixed_count += 1
+                        print(f"  -> Set local_reminder_time to: {reminder.local_reminder_time}")
+
+                # Special fix for the specific user
+                if client_email == 'ema9u@virginia.edu' and reminder.local_reminder_time == '09:00':
+                    # You mentioned they want 2 PM, not 9 AM
+                    reminder.local_reminder_time = '14:00'
+                    # Calculate UTC time for 2 PM PDT (add 7 hours)
+                    reminder.reminder_time = time(21, 0)  # 2 PM PDT = 9 PM UTC
+                    fixed_count += 1
+                    print(f"  -> SPECIAL FIX: Set to 14:00 local (21:00 UTC)")
 
             if fixed_count > 0:
                 db.session.commit()

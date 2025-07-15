@@ -4361,21 +4361,25 @@ def get_reminders():
     """Get client's reminders"""
     try:
         client = request.current_user.client
-
         reminders = client.reminders.filter_by(is_active=True).all()
 
         reminder_data = []
         for reminder in reminders:
-            # Use the stored local time if available, otherwise fall back to UTC
-            display_time = reminder.local_reminder_time if reminder.local_reminder_time else reminder.reminder_time.strftime(
-                '%H:%M')
+            # IMPORTANT: Always use local_reminder_time if available
+            if reminder.local_reminder_time:
+                display_time = reminder.local_reminder_time
+            else:
+                # If no local time stored, we need to convert UTC back to local
+                # This is a fallback - ideally local_reminder_time should always be set
+                display_time = reminder.reminder_time.strftime('%H:%M')
 
             reminder_data.append({
                 'id': reminder.id,
                 'type': reminder.reminder_type,
-                'time': display_time,  # CHANGED THIS LINE
+                'time': display_time,
+                'utc_time': reminder.reminder_time.strftime('%H:%M'),  # Add this for debugging
                 'email': reminder.reminder_email,
-                'is_active': True,
+                'is_active': reminder.is_active,
                 'last_sent': reminder.last_sent.isoformat() if reminder.last_sent else None
             })
 
