@@ -72,6 +72,7 @@ def send_reminder_test(email):
     except Exception as e:
         return {'error': str(e)}
 
+
 @celery.task
 def send_daily_reminders():
     """Send daily reminder emails to all clients with active reminders"""
@@ -79,37 +80,85 @@ def send_daily_reminders():
     import os
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-    from new_backend import app, db, Client, Reminder, send_single_reminder_email_sync
+    from new_backend import app, db, Client, Reminder, send_single_reminder_email_sync, User
     from datetime import datetime
+    import pytz
 
     with app.app_context():
         try:
-            current_hour = datetime.now().hour
+            # Get current UTC time and hour
+            utc_now = datetime.utcnow()
+            current_utc_hour = utc_now.hour
 
-            # Find all active reminders for this hour
+            print(f"[PRODUCTION] Running send_daily_reminders at {utc_now} UTC (hour: {current_utc_hour})")
+
+            # Find all active reminders for this UTC hour
             reminders = db.session.query(Reminder).join(Client).filter(
                 Reminder.is_active == True,
                 Reminder.reminder_type == 'daily_checkin',
-                db.extract('hour', Reminder.reminder_time) == current_hour
+                db.extract('hour', Reminder.reminder_time) == current_utc_hour
             ).all()
 
+            print(f"[PRODUCTION] Found {len(reminders)} reminders for UTC hour {current_utc_hour}")
+
             sent_count = 0
+            failed_count = 0
+
             for reminder in reminders:
                 try:
                     # Send reminder to this client
                     client = reminder.client
                     if client and client.user and client.user.email:
-                        # Use the existing send function
-                        send_single_reminder_email_sync(client)
-                        reminder.last_sent = datetime.utcnow()
+                        # Skip test emails
+                        if (client.user.email.endswith('example.com') or
+                                client.user.email.endswith('test.test') or
+                                client.user.email == 'test@test.test'):
+                            print(f"[PRODUCTION] Skipping test email: {client.user.email}")
+                            continue
+
+                        print(f"[PRODUCTION] Sending reminder to {client.user.email} (Client: {client.client_serial})")
+
+                        # Check if we've sent recently (to avoid duplicates)
+                        if reminder.last_sent:
+                            minutes_since = (utc_now - reminder.last_sent).total_seconds() / 60
+                            if minutes_since < 30:  # Don't send if sent in last 30 minutes
+                                print(
+                                    f"[PRODUCTION] Skipping {client.user.email} - sent {minutes_since:.1f} minutes ago")
+                                continue
+
+                        # Send the email
+                        result = send_single_reminder_email_sync(client)
+
+                        # Update last_sent
+                        reminder.last_sent = utc_now
                         sent_count += 1
+                        print(f"[PRODUCTION] Successfully sent to {client.user.email}")
+
                 except Exception as e:
-                    app.logger.error(f"Failed to send reminder to client {client.client_serial}: {e}")
+                    failed_count += 1
+                    print(f"[PRODUCTION] Failed to send to client {reminder.client.client_serial}: {e}")
+                    app.logger.error(f"Failed to send reminder to client {reminder.client.client_serial}: {e}")
 
             db.session.commit()
-            return {'message': f'Sent {sent_count} daily reminders'}
+
+            result_message = f'[PRODUCTION] Sent {sent_count} daily reminders, {failed_count} failed'
+            print(result_message)
+
+            # Also log all active reminders for debugging
+            if sent_count == 0:
+                all_active = db.session.query(Reminder).filter(
+                    Reminder.is_active == True,
+                    Reminder.reminder_type == 'daily_checkin'
+                ).all()
+                print(f"[PRODUCTION] Total active reminders in system: {len(all_active)}")
+                for r in all_active[:5]:  # Show first 5
+                    print(
+                        f"  - Client {r.client.client_serial}: reminder at {r.reminder_time} (hour: {r.reminder_time.hour})")
+
+            return {'message': result_message}
 
         except Exception as e:
+            print(f"[PRODUCTION] Error: {str(e)}")
             return {'error': str(e)}
 
 @celery.task
