@@ -4423,6 +4423,88 @@ def update_reminder():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/debug/reminder-times', methods=['GET'])
+@require_auth(['therapist'])
+def debug_reminder_times():
+    """Debug endpoint to check all reminder times and timezone handling"""
+    try:
+        from datetime import datetime
+
+        reminders = db.session.query(
+            Reminder.id,
+            Reminder.reminder_type,
+            Reminder.reminder_time,
+            Reminder.is_active,
+            Reminder.last_sent,
+            Client.client_serial,
+            User.email
+        ).join(
+            Client, Reminder.client_id == Client.id
+        ).join(
+            User, Client.user_id == User.id
+        ).filter(
+            Reminder.reminder_type == 'daily_checkin',
+            Reminder.is_active == True
+        ).all()
+
+        current_utc = datetime.utcnow()
+        current_utc_hour = current_utc.hour
+
+        reminder_data = []
+        hour_distribution = {}
+
+        for r in reminders:
+            reminder_hour = r.reminder_time.hour if r.reminder_time else None
+
+            # Count hour distribution
+            if reminder_hour is not None:
+                hour_distribution[reminder_hour] = hour_distribution.get(reminder_hour, 0) + 1
+
+            # Check if should send this hour
+            should_send_now = (
+                    r.is_active and
+                    reminder_hour == current_utc_hour
+            )
+
+            # Skip test emails in count
+            is_test_email = (
+                    r.email.endswith('example.com') or
+                    r.email.endswith('test.test')
+            )
+
+            reminder_data.append({
+                'id': r.id,
+                'client_serial': r.client_serial,
+                'email': r.email,
+                'is_test_email': is_test_email,
+                'reminder_time': r.reminder_time.strftime('%H:%M') if r.reminder_time else None,
+                'reminder_hour': reminder_hour,
+                'is_active': r.is_active,
+                'last_sent': r.last_sent.isoformat() if r.last_sent else None,
+                'should_send_now': should_send_now
+            })
+
+        # Sort hour distribution
+        hour_dist_sorted = dict(sorted(hour_distribution.items()))
+
+        # Count reminders that should send this hour (excluding test emails)
+        should_send_count = sum(1 for r in reminder_data
+                                if r['should_send_now'] and not r['is_test_email'])
+
+        return jsonify({
+            'current_utc_time': current_utc.isoformat(),
+            'current_utc_hour': current_utc_hour,
+            'total_active_reminders': len(reminder_data),
+            'should_send_this_hour': should_send_count,
+            'hour_distribution': hour_dist_sorted,
+            'reminders': reminder_data[:20]  # First 20 for review
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
 @app.route('/api/debug/reminders', methods=['GET'])
 @require_auth(['therapist', 'client'])  # Allow both roles for debugging
 def debug_reminders():

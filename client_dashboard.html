@@ -763,14 +763,17 @@
                     </label>
                 </div>
 
-                <div id="reminderTimeSection" style="display: none; margin-top: 1rem;">
-                    <div class="form-group">
-                        <label for="reminderTime" data-i18n="client.reminder_time">Reminder Time</label>
-                        <input type="time" id="reminderTime" class="form-input" value="09:00">
-                        <small style="color: #666; display: block; margin-top: 0.5rem;" data-i18n="client.reminder_timezone">
-                            Time is in your local timezone
-                        </small>
-                    </div>
+               <div id="reminderTimeSection" style="display: none; margin-top: 1rem;">
+    <div class="form-group">
+        <label for="reminderTime" data-i18n="client.reminder_time">Reminder Time</label>
+        <input type="time" id="reminderTime" class="form-input" value="09:00">
+        <small style="color: #666; display: block; margin-top: 0.5rem;" data-i18n="client.reminder_timezone">
+            Time is in your local timezone
+        </small>
+        <small id="utcTimeDisplay" style="color: #666; display: block; margin-top: 0.5rem;">
+            <!-- UTC time will be shown here -->
+        </small>
+    </div>
 
                     <div class="form-group">
                         <label for="reminderEmail" data-i18n="client.reminder_email">Email Address (optional)</label>
@@ -2150,6 +2153,7 @@
                         document.getElementById('reminderTime').value = reminder.time || '09:00';
                         if (reminder.is_active !== false) {
                             document.getElementById('reminderTimeSection').style.display = 'block';
+                            updateUTCTimeDisplay();
                         }
                     }
                 }
@@ -2301,7 +2305,24 @@ async function checkQueueStatus() {
             }
         });
 
+ document.getElementById('reminderTime').addEventListener('change', function() {
+            updateUTCTimeDisplay();
+        });
 
+        function updateUTCTimeDisplay() {
+            const localTime = document.getElementById('reminderTime').value;
+            if (!localTime) return;
+
+            const [hours, minutes] = localTime.split(':').map(Number);
+            const now = new Date();
+            now.setHours(hours, minutes, 0, 0);
+
+            const utcHours = now.getUTCHours();
+            const utcTimeStr = `${utcHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+            document.getElementById('utcTimeDisplay').innerHTML =
+                `This will send at ${utcTimeStr} UTC (server time)`;
+        }
 
         // Password change function
         async function changePassword(event) {
