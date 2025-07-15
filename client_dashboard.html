@@ -766,7 +766,7 @@
                <div id="reminderTimeSection" style="display: none; margin-top: 1rem;">
     <div class="form-group">
                         <label for="reminderTime" data-i18n="client.reminder_time">Reminder Time</label>
-                        <input type="time" id="reminderTime" class="form-input" value="09:00" onchange="updateUTCDisplay()">
+                        <input type="time" id="reminderTime" class="form-input" onchange="updateUTCDisplay()">
                         <small style="color: #666; display: block; margin-top: 0.5rem;">
                             <span data-i18n="client.reminder_timezone">Time is in your local timezone</span>
                             <span id="utcTimeDisplay" style="font-weight: bold;"></span>
@@ -1332,25 +1332,27 @@
 
         // Show tab
         function showTab(tabName) {
-            // Update nav tabs
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            event.target.classList.add('active');
+    // Update nav tabs
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    event.target.classList.add('active');
 
-            // Update content
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            document.getElementById(tabName).classList.add('active');
+    // Update content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(tabName).classList.add('active');
 
-            // Load tab-specific content
-            if (tabName === 'progress') {
-                loadProgress();
-            } else if (tabName === 'goals') {
-                loadWeeklyGoals();
-            }
-        }
+    // Load tab-specific content
+    if (tabName === 'progress') {
+        loadProgress();
+    } else if (tabName === 'goals') {
+        loadWeeklyGoals();
+    } else if (tabName === 'settings') {
+        loadReminderSettings();
+    }
+}
 
         // Setup all categories dynamically
         function setupAllCategories() {
