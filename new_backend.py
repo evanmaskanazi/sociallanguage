@@ -4390,39 +4390,35 @@ def update_reminder():
         client = request.current_user.client
         data = request.json
 
+        # Log raw request
+        app.logger.info(f"Update reminder request: {data}")
+
         reminder_type = data.get('type')
         reminder_time = data.get('time')
-        reminder_email = data.get('email')  # ADD THIS LINE
+        reminder_email = data.get('email')
         is_active = data.get('is_active', True)
+        timezone_offset = data.get('timezone_offset', 0)  # in minutes
 
         # Parse time
         hour, minute = map(int, reminder_time.split(':'))
 
-        # Get timezone offset from request (we'll add this to the frontend)
-        timezone_offset = data.get('timezone_offset', 0)  # in minutes
+        app.logger.info(
+            f"Client {client.client_serial}: Setting reminder for {hour:02d}:{minute:02d} with offset {timezone_offset}")
 
-        app.logger.info(f"Updating reminder - Local time: {hour:02d}:{minute:02d}")
-        app.logger.info(f"Timezone offset received: {timezone_offset} minutes")
+        # The hour/minute we receive is in the user's local time
+        # We need to convert it to UTC for storage
 
-        # Create a datetime for today with the local time
-        # Create a datetime for today with the local time
-        local_dt = datetime.now().replace(hour=hour, minute=minute, second=0, microsecond=0)
+        # Create a base datetime (doesn't matter which day)
+        base_dt = datetime(2025, 1, 1, hour, minute, 0)
 
-        # Convert to UTC by ADDING the offset (timezone offset is negative for west of UTC)
-        # PDT is UTC-7, so offset is +420 minutes to add to get UTC
-        utc_dt = local_dt + timedelta(minutes=timezone_offset)
-
-        # Handle day boundary crossing
-        if utc_dt.date() != local_dt.date():
-            # If UTC is next day, just use the time component
-            time_obj = utc_dt.time()
-        else:
-            time_obj = utc_dt.time()
+        # Add timezone offset to get UTC
+        # PDT is UTC-7, so offset is 420 minutes, and we ADD to get UTC
+        utc_dt = base_dt + timedelta(minutes=timezone_offset)
 
         # Extract just the time
         time_obj = utc_dt.time()
 
-        app.logger.info(f"Reminder time conversion: Local {hour:02d}:{minute:02d} -> UTC {time_obj}")
+        app.logger.info(f"Converted {hour:02d}:{minute:02d} local -> {time_obj} UTC")
 
         # Check if reminder exists
         reminder = client.reminders.filter_by(reminder_type=reminder_type).first()
@@ -4430,16 +4426,18 @@ def update_reminder():
         if reminder:
             reminder.reminder_time = time_obj
             reminder.is_active = is_active
-            reminder.reminder_email = reminder_email  # ADD THIS LINE
+            reminder.reminder_email = reminder_email
+            app.logger.info(f"Updated existing reminder to {time_obj} UTC")
         else:
             reminder = Reminder(
                 client_id=client.id,
                 reminder_type=reminder_type,
                 reminder_time=time_obj,
-                reminder_email=reminder_email,  # ADD THIS LINE
+                reminder_email=reminder_email,
                 is_active=is_active
             )
             db.session.add(reminder)
+            app.logger.info(f"Created new reminder for {time_obj} UTC")
 
         db.session.commit()
 
@@ -4450,6 +4448,7 @@ def update_reminder():
 
     except Exception as e:
         db.session.rollback()
+        app.logger.error(f"Error updating reminder: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 
