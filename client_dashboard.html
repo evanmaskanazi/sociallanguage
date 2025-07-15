@@ -2192,62 +2192,21 @@
         }
 
         async function saveReminderSettings() {
-            const enabled = document.getElementById('enableReminder').checked;
-            const time = document.getElementById('reminderTime').value;
-            const email = document.getElementById('reminderEmail').value;
+    const enabled = document.getElementById('enableReminder').checked;
+    const time = document.getElementById('reminderTime').value;
+    const email = document.getElementById('reminderEmail').value;
 
-            if (!time && enabled) {
-                showMessage(i18n.t('client.please_select_time'), 'error');
-                return;
-            }
-
-            const tzOffset = new Date().getTimezoneOffset();
-            console.log('Timezone offset detected:', tzOffset);
-            console.log('Expected for PDT:', 420);  
-
-            try {
-                const response = await fetch('/api/client/update-reminder', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'Content-Type': 'application/json',
-                        'Accept-Language': i18n.currentLang
-                    },
-                    body: JSON.stringify({
-                        type: 'daily_checkin',
-                        time: time || '09:00',
-                        is_active: enabled,
-                        email: email || undefined,
-                        timezone_offset: new Date().getTimezoneOffset() || 420
-                    })
-                });
-
-                if (response.ok) {
-    console.log('Reminder saved successfully');
-    document.getElementById('reminderStatus').style.display = 'block';
-    setTimeout(() => {
-        document.getElementById('reminderStatus').style.display = 'none';
-    }, 3000);
-
-    // After save, immediately check what was saved
-    await loadReminderSettings();
-    console.log('Reloaded settings, time is now:', document.getElementById('reminderTime').value);
-
-    // Check queue status after saving
-    if (enabled) {
-        setTimeout(checkQueueStatus, 1000);
+    if (!time && enabled) {
+        showMessage(i18n.t('client.please_select_time'), 'error');
+        return;
     }
-} else {
-    const error = await response.json();
-    showMessage(error.error || i18n.t('msg.error'), 'error');
-}
-        }
 
-        async function testReminder() {
+    const tzOffset = new Date().getTimezoneOffset();
+    console.log('Timezone offset detected:', tzOffset);
+    console.log('Expected for PDT:', 420);
+
     try {
-        showMessage(i18n.t('client.sending_test'), 'info');
-
-        const response = await fetch('/api/client/test-reminder', {
+        const response = await fetch('/api/client/update-reminder', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${authToken}`,
@@ -2255,16 +2214,29 @@
                 'Accept-Language': i18n.currentLang
             },
             body: JSON.stringify({
-                email: document.getElementById('reminderEmail').value || null
+                type: 'daily_checkin',
+                time: time || '09:00',
+                is_active: enabled,
+                email: email || undefined,
+                timezone_offset: new Date().getTimezoneOffset() || 420
             })
         });
 
         if (response.ok) {
-            const data = await response.json();
-            showMessage(i18n.t('client.test_sent'), 'success');
+            console.log('Reminder saved successfully');
+            document.getElementById('reminderStatus').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('reminderStatus').style.display = 'none';
+            }, 3000);
 
-            // Update queue status
-            setTimeout(checkQueueStatus, 2000);
+            // After save, immediately check what was saved
+            await loadReminderSettings();
+            console.log('Reloaded settings, time is now:', document.getElementById('reminderTime').value);
+
+            // Check queue status after saving
+            if (enabled) {
+                setTimeout(checkQueueStatus, 1000);
+            }
         } else {
             const error = await response.json();
             showMessage(error.error || i18n.t('msg.error'), 'error');
