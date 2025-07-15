@@ -1,109 +1,88 @@
-"""
-Initialize Database Script
-Run this to set up the database with initial data
-"""
-
-from new_backend import app, db, User, Therapist, Client, TrackingCategory, bcrypt
-from datetime import datetime
+#!/usr/bin/env python
+"""Initialize database with proper migration handling"""
 import os
+import sys
+from pathlib import Path
 
-def init_database():
-    """Initialize the database with tables and default data"""
+# Add parent directory to path
+sys.path.insert(0, str(Path(__file__).parent))
+
+from new_backend import app, db, TrackingCategory, ensure_default_categories, fix_existing_clients
+from sqlalchemy import text
+
+def safe_add_column():
+    """Safely add reminder_email column if it doesn't exist"""
     with app.app_context():
-        # Create all tables
-        print("Creating database tables...")
-        db.create_all()
-        
-        # Check if already initialized
-        if TrackingCategory.query.count() > 0:
-            print("Database already initialized!")
-            return
-        
-        # Add default tracking categories
-        print("Adding default tracking categories...")
-        default_categories = [
-            TrackingCategory(
-                name='Emotion Level',
-                description='Overall emotional state',
-                is_default=True
-            ),
-            TrackingCategory(
-                name='Energy',
-                description='Physical and mental energy levels',
-                is_default=True
-            ),
-            TrackingCategory(
-                name='Social Activity',
-                description='Engagement in social interactions',
-                is_default=True
-            ),
-            TrackingCategory(
-                name='Sleep Quality',
-                description='Quality of sleep',
-                is_default=False
-            ),
-            TrackingCategory(
-                name='Anxiety Level',
-                description='Level of anxiety experienced',
-                is_default=False
-            ),
-            TrackingCategory(
-                name='Motivation',
-                description='Level of motivation and drive',
-                is_default=False
-            ),
-            TrackingCategory(
-                name='Medication',
-                description='Medication adherence',
-                is_default=True
-            ),
-            TrackingCategory(
-                name='Physical Activity',
-                description='Physical activity level',
-                is_default=True
-            )
-        ]
-        
-        for category in default_categories:
-            db.session.add(category)
-        
-        # Create demo therapist account (optional)
-        if os.environ.get('CREATE_DEMO_ACCOUNTS', 'false').lower() == 'true':
-            print("Creating demo therapist account...")
+        try:
+            # Check if column exists
+            result = db.session.execute(text("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name='reminders' 
+                AND column_name='reminder_email'
+            """))
             
-            # Check if demo account already exists
-            if not User.query.filter_by(email='demo.therapist@example.com').first():
-                demo_therapist_user = User(
-                    email='demo.therapist@example.com',
-                    password_hash=bcrypt.generate_password_hash('demo123').decode('utf-8'),
-                    role='therapist',
-                    is_active=True
-                )
-                db.session.add(demo_therapist_user)
-                db.session.flush()
+            if not result.fetchone():
+                # Column doesn't exist, add it
+                db.session.execute(text("""
+                    ALTER TABLE reminders 
+                    ADD COLUMN reminder_email VARCHAR(255)
+                """))
+                db.session.commit()
+                print("Successfully added reminder_email column to reminders table")
+            else:
+                print("reminder_email column already exists - skipping")
                 
-                demo_therapist = Therapist(
-                    user_id=demo_therapist_user.id,
-                    license_number='DEMO-12345',
-                    name='Dr. Demo Therapist',
-                    organization='Demo Mental Health Clinic',
-                    specializations=['Anxiety', 'Depression', 'Stress Management']
-                )
-                db.session.add(demo_therapist)
-                
-                print("Demo therapist created:")
-                print("  Email: demo.therapist@example.com")
-                print("  Password: demo123")
-                print("  License: DEMO-12345")
+        except Exception as e:
+            print(f"Error checking/adding reminder_email column: {e}")
+            db.session.rollback()
+
+def initialize_database():
+    """Initialize database with all required setup"""
+    print("Starting database initialization...")
+    
+    try:
+        # Create all tables
+        db.create_all()
+        print("✓ Database tables created/verified")
         
-        # Commit all changes
-        db.session.commit()
-        print("Database initialization complete!")
+        # Add new columns safely
+        safe_add_column()
+        
+        # Ensure all default tracking categories exist
+        categories = ensure_default_categories()
+        print(f"✓ Verified {len(categories)} tracking categories")
+        
+        # Fix any existing clients that might be missing categories
+        fix_existing_clients()
+        print("✓ Updated existing clients with any missing categories")
+        
+        # Check if we have the expected 8 categories
+        category_count = TrackingCategory.query.count()
+        if category_count < 8:
+            print(f"⚠️  Warning: Only {category_count} categories found, expected 8")
+            print("   Running ensure_default_categories again...")
+            ensure_default_categories()
+            category_count = TrackingCategory.query.count()
+            print(f"   Now have {category_count} categories")
+        
+        # List all categories for verification
+        print("\nTracking categories in database:")
+        for cat in TrackingCategory.query.all():
+            print(f"  - {cat.name} (ID: {cat.id}, Default: {cat.is_default})")
+        
+        print("\n✅ Database initialization complete!")
+        
+    except Exception as e:
+        print(f"\n❌ Error during database initialization: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
 if __name__ == '__main__':
-    print("=" * 60)
-    print("Therapeutic Companion - Database Initialization")
-    print("=" * 60)
+    print("=" * 50)
+    print("Therapy Companion Database Initialization")
+    print("=" * 50)
     
     # Check if we're in production
     if os.environ.get('PRODUCTION'):
@@ -111,26 +90,32 @@ if __name__ == '__main__':
     else:
         print("Running in DEVELOPMENT mode")
     
-    # Check database URL
+    # Show database URL (masked for security)
     db_url = os.environ.get('DATABASE_URL', 'Not set')
     if db_url != 'Not set':
-        # Hide password in output
+        # Mask the password in the URL for security
         if '@' in db_url:
             parts = db_url.split('@')
-            safe_url = parts[0].split('//')[0] + '//***:***@' + parts[1]
-            print(f"Database URL: {safe_url}")
+            if '://' in parts[0]:
+                proto_and_creds = parts[0].split('://')
+                if ':' in proto_and_creds[1]:
+                    user = proto_and_creds[1].split(':')[0]
+                    masked_url = f"{proto_and_creds[0]}://{user}:****@{parts[1]}"
+                    print(f"Database URL: {masked_url}")
+                else:
+                    print(f"Database URL: {db_url}")
+            else:
+                print(f"Database URL: [configured]")
         else:
             print(f"Database URL: {db_url}")
     else:
-        print("WARNING: DATABASE_URL not set, using default")
+        print("Database URL: [using default]")
     
-    try:
-        init_database()
-        print("\n✅ Success! Database is ready.")
-    except Exception as e:
-        print(f"\n❌ Error during initialization: {e}")
-        print("\nTroubleshooting:")
-        print("1. Make sure PostgreSQL is running")
-        print("2. Check DATABASE_URL environment variable")
-        print("3. Ensure database user has proper permissions")
-        exit(1)
+    print()
+    
+    with app.app_context():
+        initialize_database()
+    
+    print("\n" + "=" * 50)
+    print("Initialization script completed")
+    print("=" * 50)
