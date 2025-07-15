@@ -119,3 +119,6 @@ if __name__ == '__main__':
     print("\n" + "=" * 50)
     print("Initialization script completed")
     print("=" * 50)
+    
+    # Exit with success code
+    sys.exit(0)
