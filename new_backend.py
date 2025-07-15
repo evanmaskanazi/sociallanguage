@@ -5611,11 +5611,23 @@ def test_client_reminder():
 
     try:
         client = request.current_user.client
-        email = request.json.get('email', request.current_user.email)
 
-        # Use the client's email if not specified
+        # Handle both JSON and non-JSON requests
+        email = None
+        if request.is_json and request.json:
+            email = request.json.get('email')
+
+        # Use the client's reminder email if configured, otherwise use account email
         if not email:
-            email = request.current_user.email
+            reminder = client.reminders.filter_by(
+                reminder_type='daily_checkin',
+                is_active=True
+            ).first()
+
+            if reminder and reminder.reminder_email:
+                email = reminder.reminder_email
+            else:
+                email = request.current_user.email
 
         # Queue the test task
         from celery_app import send_reminder_test
