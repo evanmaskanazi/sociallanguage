@@ -109,11 +109,14 @@ def send_daily_reminders():
                     # Send reminder to this client
                     client = reminder.client
                     if client and client.user and client.user.email:
+                        # Determine which email to use
+                        email_to_use = reminder.reminder_email if reminder.reminder_email else client.user.email
+
                         # Skip test emails
-                        if (client.user.email.endswith('example.com') or
-                                client.user.email.endswith('test.test') or
-                                client.user.email == 'test@test.test'):
-                            print(f"[PRODUCTION] Skipping test email: {client.user.email}")
+                        if (email_to_use.endswith('example.com') or
+                                email_to_use.endswith('test.test') or
+                                email_to_use == 'test@test.test'):
+                            print(f"[PRODUCTION] Skipping test email: {email_to_use}")
                             continue
 
                         print(f"[PRODUCTION] Sending reminder to {client.user.email} (Client: {client.client_serial})")
