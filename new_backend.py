@@ -4382,6 +4382,16 @@ def get_reminders():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/client/update-reminder', methods=['GET'])
+@require_auth(['client'])
+def update_reminder_get():
+    """Handle GET requests to update-reminder endpoint"""
+    return jsonify({
+        'error': 'This endpoint only accepts POST requests',
+        'method': 'GET not allowed'
+    }), 405
+
+
 @app.route('/api/client/update-reminder', methods=['POST'])
 @require_auth(['client'])
 def update_reminder():
@@ -4426,14 +4436,23 @@ def update_reminder():
         # FIX: The hour/minute we receive is in the user's local time
         # We need to convert it to UTC for storage
 
-        # Create a base datetime (using any date)
-        base_dt = datetime(2025, 1, 1, hour, minute, 0)
+        # JavaScript's getTimezoneOffset() returns minutes to SUBTRACT from local time to get UTC
+        # For PDT (UTC-7), it returns 420
+        # So to convert local time to UTC, we need to ADD the offset
 
-        # Add timezone offset to get UTC
-        # PDT is UTC-7, so offset is 420 minutes, and we ADD to get UTC
-        utc_dt = base_dt + timedelta(minutes=timezone_offset)
+        # Create a UTC datetime for today with the local time values
+        # This ensures we're working with UTC regardless of server timezone
+        now_utc = datetime.utcnow()
 
-        # Extract just the time component
+        # Create a datetime with the user's local time
+        local_dt = now_utc.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+        # Adjust by timezone offset to get actual UTC time
+        # For PDT: if user enters 12:00, and offset is 420 (7 hours)
+        # then UTC time should be 19:00 (12:00 + 7:00)
+        utc_dt = local_dt + timedelta(minutes=timezone_offset)
+
+        # Handle day wraparound - we only care about the time, not the date
         time_obj = utc_dt.time()
 
         # Log the conversion result
@@ -4707,6 +4726,26 @@ def debug_reminders():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/debug/server-time', methods=['GET'])
+def debug_server_time():
+    """Debug endpoint to check server time and timezone"""
+    import time
+    from datetime import datetime
+
+    return jsonify({
+        'server_local_time': datetime.now().isoformat(),
+        'server_utc_time': datetime.utcnow().isoformat(),
+        'timezone_name': time.tzname,
+        'timezone_offset_seconds': time.timezone,
+        'dst_offset_seconds': time.altzone,
+        'is_dst': time.daylight,
+        'python_thinks_offset_minutes': int(time.timezone / -60),  # Python's offset convention
+        'datetime_now': str(datetime.now()),
+        'datetime_utcnow': str(datetime.utcnow()),
+        'difference_minutes': int((datetime.now() - datetime.utcnow()).total_seconds() / 60)
+    })
 
 
 @app.route('/api/debug/reminder-timezone-test', methods=['GET'])
