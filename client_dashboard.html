@@ -1224,13 +1224,6 @@
             loadDashboard();
             setCurrentWeek();
             setToday();
-
-            // Add event listener for test reminder button
-            const testReminderBtn = document.getElementById('testReminderBtn');
-            if (testReminderBtn) {
-                testReminderBtn.addEventListener('click', testReminder);
-            }
-
             window.addEventListener('languageChanged', function() {
              console.log('Language changed in client dashboard');
           //   ['en', 'he', 'ru', 'ar'].forEach(lang => {
@@ -2402,6 +2395,35 @@ async function checkQueueStatus() {
         document.addEventListener('DOMContentLoaded', function() {
             if (document.getElementById('reminderTime').value) {
                 updateUTCDisplay();
+            }
+        });
+         async function testReminder() {
+            try {
+                const response = await fetch('/api/client/test-reminder', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept-Language': i18n.currentLang
+                    }
+                });
+
+                if (response.ok) {
+                    showMessage(i18n.t('client.test_sent'), 'success');
+                } else {
+                    const error = await response.json();
+                    showMessage(error.error || i18n.t('msg.error'), 'error');
+                }
+            } catch (error) {
+                showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
+            }
+        }
+
+        // Attach event listener for test reminder button
+        document.addEventListener('DOMContentLoaded', function() {
+            const testReminderBtn = document.getElementById('testReminderBtn');
+            if (testReminderBtn) {
+                testReminderBtn.addEventListener('click', testReminder);
             }
         });
 </script>
