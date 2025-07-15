@@ -593,6 +593,7 @@ class Reminder(db.Model):
     client_id = db.Column(db.Integer, db.ForeignKey('clients.id'))
     reminder_type = db.Column(db.String(50), nullable=False)
     reminder_time = db.Column(db.Time, nullable=False)
+    local_reminder_time = db.Column(db.String(5))
     reminder_email = db.Column(db.String(255))
     is_active = db.Column(db.Boolean, default=True)
     last_sent = db.Column(db.DateTime)
@@ -4365,11 +4366,16 @@ def get_reminders():
 
         reminder_data = []
         for reminder in reminders:
+            # Use the stored local time if available, otherwise fall back to UTC
+            display_time = reminder.local_reminder_time if reminder.local_reminder_time else reminder.reminder_time.strftime(
+                '%H:%M')
+
             reminder_data.append({
                 'id': reminder.id,
                 'type': reminder.reminder_type,
-                'time': reminder.reminder_time.strftime('%H:%M'),
-                'email': reminder.reminder_email,  # ADD THIS LINE
+                'time': display_time,  # CHANGED THIS LINE
+                'email': reminder.reminder_email,
+                'is_active': True,
                 'last_sent': reminder.last_sent.isoformat() if reminder.last_sent else None
             })
 
@@ -4420,6 +4426,8 @@ def update_reminder():
 
         # Parse time
         hour, minute = map(int, reminder_time.split(':'))
+
+        local_time_str = f"{hour:02d}:{minute:02d}"
 
         # Log the timezone conversion details
         logger.info('timezone_conversion_start', extra={
@@ -4476,6 +4484,7 @@ def update_reminder():
         if reminder:
             old_time = reminder.reminder_time
             reminder.reminder_time = time_obj
+            reminder.local_reminder_time = local_time_str
             reminder.is_active = is_active
             reminder.reminder_email = reminder_email
 
@@ -4495,6 +4504,7 @@ def update_reminder():
                 client_id=client.id,
                 reminder_type=reminder_type,
                 reminder_time=time_obj,
+                local_reminder_time=local_time_str,
                 reminder_email=reminder_email,
                 is_active=is_active
             )

@@ -39,6 +39,34 @@ def safe_add_column():
             db.session.rollback()
 
 
+def add_local_reminder_time_column():
+    """Add column to store the original local time for display purposes"""
+    with app.app_context():
+        try:
+            # Check if column exists
+            result = db.session.execute(text("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name='reminders'
+                AND column_name='local_reminder_time'
+            """))
+
+            if not result.fetchone():
+                # Column doesn't exist, add it
+                db.session.execute(text("""
+                    ALTER TABLE reminders
+                    ADD COLUMN local_reminder_time VARCHAR(5)
+                """))
+                db.session.commit()
+                print("Successfully added local_reminder_time column to reminders table")
+            else:
+                print("local_reminder_time column already exists - skipping")
+
+        except Exception as e:
+            print(f"Error checking/adding local_reminder_time column: {e}")
+            db.session.rollback()
+
+
 def fix_existing_reminder_times():
     """Convert existing reminder times to UTC if they seem to be in local time"""
     with app.app_context():
@@ -138,6 +166,7 @@ def initialize_database():
 
         # Add new columns safely
         safe_add_column()
+        add_local_reminder_time_column()  # ADD THIS LINE - This is the new function call
         fix_existing_reminder_times()
         # Ensure all default tracking categories exist
         categories = ensure_default_categories()
