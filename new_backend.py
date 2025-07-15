@@ -4390,8 +4390,17 @@ def update_reminder():
         client = request.current_user.client
         data = request.json
 
-        # Log raw request
-        app.logger.info(f"Update reminder request: {data}")
+        # Use structured logger for visibility
+        logger.info('update_reminder_request', extra={
+            'extra_data': {
+                'client_id': client.id,
+                'client_serial': client.client_serial,
+                'request_data': data,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
 
         reminder_type = data.get('type')
         reminder_time = data.get('time')
@@ -4402,32 +4411,66 @@ def update_reminder():
         # Parse time
         hour, minute = map(int, reminder_time.split(':'))
 
-        app.logger.info(
-            f"Client {client.client_serial}: Setting reminder for {hour:02d}:{minute:02d} with offset {timezone_offset}")
+        # Log the timezone conversion details
+        logger.info('timezone_conversion_start', extra={
+            'extra_data': {
+                'local_time': f"{hour:02d}:{minute:02d}",
+                'timezone_offset': timezone_offset,
+                'client_serial': client.client_serial,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
 
-        # The hour/minute we receive is in the user's local time
+        # FIX: The hour/minute we receive is in the user's local time
         # We need to convert it to UTC for storage
 
-        # Create a base datetime (doesn't matter which day)
+        # Create a base datetime (using any date)
         base_dt = datetime(2025, 1, 1, hour, minute, 0)
 
         # Add timezone offset to get UTC
         # PDT is UTC-7, so offset is 420 minutes, and we ADD to get UTC
         utc_dt = base_dt + timedelta(minutes=timezone_offset)
 
-        # Extract just the time
+        # Extract just the time component
         time_obj = utc_dt.time()
 
-        app.logger.info(f"Converted {hour:02d}:{minute:02d} local -> {time_obj} UTC")
+        # Log the conversion result
+        logger.info('timezone_conversion_result', extra={
+            'extra_data': {
+                'input_local_time': f"{hour:02d}:{minute:02d}",
+                'output_utc_time': str(time_obj),
+                'utc_hour': time_obj.hour,
+                'utc_minute': time_obj.minute,
+                'timezone_offset_minutes': timezone_offset,
+                'client_serial': client.client_serial,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
 
         # Check if reminder exists
         reminder = client.reminders.filter_by(reminder_type=reminder_type).first()
 
         if reminder:
+            old_time = reminder.reminder_time
             reminder.reminder_time = time_obj
             reminder.is_active = is_active
             reminder.reminder_email = reminder_email
-            app.logger.info(f"Updated existing reminder to {time_obj} UTC")
+
+            logger.info('reminder_updated', extra={
+                'extra_data': {
+                    'client_serial': client.client_serial,
+                    'old_time': str(old_time),
+                    'new_time': str(time_obj),
+                    'email': reminder_email or 'using account email',
+                    'request_id': g.request_id
+                },
+                'request_id': g.request_id,
+                'user_id': request.current_user.id
+            })
         else:
             reminder = Reminder(
                 client_id=client.id,
@@ -4437,18 +4480,41 @@ def update_reminder():
                 is_active=is_active
             )
             db.session.add(reminder)
-            app.logger.info(f"Created new reminder for {time_obj} UTC")
+
+            logger.info('reminder_created', extra={
+                'extra_data': {
+                    'client_serial': client.client_serial,
+                    'time': str(time_obj),
+                    'email': reminder_email or 'using account email',
+                    'request_id': g.request_id
+                },
+                'request_id': g.request_id,
+                'user_id': request.current_user.id
+            })
 
         db.session.commit()
 
         return jsonify({
             'success': True,
-            'message': 'Reminder updated successfully'
+            'message': 'Reminder updated successfully',
+            'debug': {
+                'local_time': f"{hour:02d}:{minute:02d}",
+                'utc_time': str(time_obj),
+                'timezone_offset': timezone_offset
+            }
         })
 
     except Exception as e:
         db.session.rollback()
-        app.logger.error(f"Error updating reminder: {str(e)}")
+        logger.error('update_reminder_error', extra={
+            'extra_data': {
+                'error': str(e),
+                'client_id': client.id if client else None,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        }, exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 
