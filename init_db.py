@@ -37,6 +37,40 @@ def safe_add_column():
             print(f"Error checking/adding reminder_email column: {e}")
             db.session.rollback()
 
+
+def fix_existing_reminder_times():
+    """Convert existing reminder times to UTC if they seem to be in local time"""
+    with app.app_context():
+        try:
+            from new_backend import Reminder
+
+            # Get all reminders
+            reminders = Reminder.query.filter_by(reminder_type='daily_checkin').all()
+
+            for reminder in reminders:
+                # If reminder hour is greater than 12, it's likely in local time (PM hours)
+                if reminder.reminder_time and reminder.reminder_time.hour > 12:
+                    print(f"Converting reminder time for client {reminder.client_id}: {reminder.reminder_time}")
+                    # This is a rough conversion - assumes PST/PDT (UTC-7/8)
+                    # You may need to adjust based on your users' locations
+                    old_hour = reminder.reminder_time.hour
+                    new_hour = (old_hour + 7) % 24  # Add 7 for PDT to UTC
+
+                    from datetime import time
+                    reminder.reminder_time = time(new_hour, reminder.reminder_time.minute)
+                    print(f"  -> Converted to UTC: {reminder.reminder_time}")
+
+            db.session.commit()
+            print("Reminder time conversion complete")
+
+        except Exception as e:
+            print(f"Error converting reminder times: {e}")
+            db.session.rollback()
+
+
+
+
+
 def initialize_database():
     """Initialize database with all required setup"""
     print("Starting database initialization...")
@@ -48,7 +82,7 @@ def initialize_database():
         
         # Add new columns safely
         safe_add_column()
-        
+        fix_existing_reminder_times()
         # Ensure all default tracking categories exist
         categories = ensure_default_categories()
         print(f"✓ Verified {len(categories)} tracking categories")

@@ -4397,7 +4397,20 @@ def update_reminder():
 
         # Parse time
         hour, minute = map(int, reminder_time.split(':'))
-        time_obj = datetime.strptime(f"{hour:02d}:{minute:02d}", '%H:%M').time()
+
+        # Get timezone offset from request (we'll add this to the frontend)
+        timezone_offset = data.get('timezone_offset', 0)  # in minutes
+
+        # Create a datetime for today with the local time
+        local_dt = datetime.now().replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+        # Convert to UTC by subtracting the offset
+        utc_dt = local_dt - timedelta(minutes=timezone_offset)
+
+        # Extract just the time
+        time_obj = utc_dt.time()
+
+        app.logger.info(f"Reminder time conversion: Local {hour:02d}:{minute:02d} -> UTC {time_obj}")
 
         # Check if reminder exists
         reminder = client.reminders.filter_by(reminder_type=reminder_type).first()
@@ -4617,6 +4630,48 @@ def debug_reminders():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/debug/reminder-timezone-test', methods=['GET'])
+@require_auth(['therapist', 'client'])
+def debug_reminder_timezone():
+    """Debug timezone handling for reminders"""
+    try:
+        from datetime import datetime
+
+        current_utc = datetime.utcnow()
+        current_local = datetime.now()
+
+        # Get all reminders
+        reminders = Reminder.query.filter_by(
+            is_active=True,
+            reminder_type='daily_checkin'
+        ).all()
+
+        reminder_data = []
+        for r in reminders:
+            reminder_data.append({
+                'client_serial': r.client.client_serial,
+                'stored_time': r.reminder_time.strftime('%H:%M'),
+                'stored_hour': r.reminder_time.hour,
+                'email_to_use': r.reminder_email if r.reminder_email else r.client.user.email,
+                'matches_current_utc_hour': r.reminder_time.hour == current_utc.hour
+            })
+
+        return jsonify({
+            'current_utc_time': current_utc.strftime('%Y-%m-%d %H:%M:%S'),
+            'current_utc_hour': current_utc.hour,
+            'current_local_time': current_local.strftime('%Y-%m-%d %H:%M:%S'),
+            'local_offset_minutes': int((current_local - current_utc).total_seconds() / 60),
+            'reminders': reminder_data,
+            'reminders_for_current_hour': [r for r in reminder_data if r['matches_current_utc_hour']]
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
 
 
 @app.route('/api/test/send-reminder-now', methods=['POST'])
@@ -5252,8 +5307,12 @@ def send_single_reminder_email_sync(client):
             is_active=True
         ).first()
 
-        # Use reminder email if set, otherwise use user email
-        email_to_use = reminder.reminder_email if reminder and reminder.reminder_email else client.user.email
+        # Use reminder email if set and not empty, otherwise use user email
+        email_to_use = client.user.email  # Default to user email
+        if reminder and reminder.reminder_email and reminder.reminder_email.strip():
+            email_to_use = reminder.reminder_email.strip()
+
+        app.logger.info(f"Sending reminder to {email_to_use} for client {client.client_serial}")
 
         subject = "Daily Check-in Reminder - Therapeutic Companion"
 
