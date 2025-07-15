@@ -4401,11 +4401,23 @@ def update_reminder():
         # Get timezone offset from request (we'll add this to the frontend)
         timezone_offset = data.get('timezone_offset', 0)  # in minutes
 
+        app.logger.info(f"Updating reminder - Local time: {hour:02d}:{minute:02d}")
+        app.logger.info(f"Timezone offset received: {timezone_offset} minutes")
+
+        # Create a datetime for today with the local time
         # Create a datetime for today with the local time
         local_dt = datetime.now().replace(hour=hour, minute=minute, second=0, microsecond=0)
 
-        # Convert to UTC by subtracting the offset
-        utc_dt = local_dt - timedelta(minutes=timezone_offset)
+        # Convert to UTC by ADDING the offset (timezone offset is negative for west of UTC)
+        # PDT is UTC-7, so offset is +420 minutes to add to get UTC
+        utc_dt = local_dt + timedelta(minutes=timezone_offset)
+
+        # Handle day boundary crossing
+        if utc_dt.date() != local_dt.date():
+            # If UTC is next day, just use the time component
+            time_obj = utc_dt.time()
+        else:
+            time_obj = utc_dt.time()
 
         # Extract just the time
         time_obj = utc_dt.time()
