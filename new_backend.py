@@ -5606,10 +5606,30 @@ def reset_password_page():
 @require_auth(['client'])
 def test_client_reminder():
     """Test reminder for client"""
-    if not celery:
-        return jsonify({'error': 'Celery not configured'}), 503
-
     try:
+        # Add debug logging at the start
+        logger.info('test_reminder_start', extra={
+            'extra_data': {
+                'celery_available': celery is not None,
+                'user_id': request.current_user.id,
+                'user_email': request.current_user.email,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
+
+        if not celery:
+            logger.error('test_reminder_no_celery', extra={
+                'extra_data': {
+                    'error': 'Celery not configured',
+                    'request_id': g.request_id
+                },
+                'request_id': g.request_id,
+                'user_id': request.current_user.id
+            })
+            return jsonify({'error': 'Celery not configured'}), 503
+
         client = request.current_user.client
 
         # Handle both JSON and non-JSON requests
@@ -5629,16 +5649,81 @@ def test_client_reminder():
             else:
                 email = request.current_user.email
 
+        logger.info('test_reminder_email_determined', extra={
+            'extra_data': {
+                'email': email,
+                'has_reminder': reminder is not None if 'reminder' in locals() else False,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
+
         # Queue the test task
-        from celery_app import send_reminder_test
-        task = send_reminder_test.delay(email)
+        try:
+            from celery_app import send_reminder_test
+            logger.info('test_reminder_importing_celery', extra={
+                'extra_data': {
+                    'import_successful': True,
+                    'request_id': g.request_id
+                },
+                'request_id': g.request_id,
+                'user_id': request.current_user.id
+            })
+
+            task = send_reminder_test.delay(email)
+
+            logger.info('test_reminder_task_queued', extra={
+                'extra_data': {
+                    'task_id': task.id,
+                    'email': email,
+                    'request_id': g.request_id
+                },
+                'request_id': g.request_id,
+                'user_id': request.current_user.id
+            })
+
+        except ImportError as ie:
+            logger.error('test_reminder_import_error', extra={
+                'extra_data': {
+                    'error': str(ie),
+                    'error_type': 'ImportError',
+                    'request_id': g.request_id
+                },
+                'request_id': g.request_id,
+                'user_id': request.current_user.id
+            }, exc_info=True)
+            return jsonify({'error': f'Celery import error: {str(ie)}'}), 500
+
+        except Exception as ce:
+            logger.error('test_reminder_celery_error', extra={
+                'extra_data': {
+                    'error': str(ce),
+                    'error_type': type(ce).__name__,
+                    'request_id': g.request_id
+                },
+                'request_id': g.request_id,
+                'user_id': request.current_user.id
+            }, exc_info=True)
+            return jsonify({'error': f'Celery error: {str(ce)}'}), 500
 
         return jsonify({
             'success': True,
             'task_id': task.id,
             'message': f'Test email queued for {email}'
         })
+
     except Exception as e:
+        logger.error('test_reminder_error', extra={
+            'extra_data': {
+                'error': str(e),
+                'error_type': type(e).__name__,
+                'traceback': traceback.format_exc(),
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        }, exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 
