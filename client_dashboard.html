@@ -2136,36 +2136,36 @@
 
 // Email Reminder Functions with Celery
         async function loadReminderSettings() {
-            try {
-                const response = await fetch('/api/client/reminders', {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'Accept-Language': i18n.currentLang
-                    }
-                });
+    try {
+        const response = await fetch('/api/client/reminders', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Accept-Language': i18n.currentLang
+            }
+        });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    const reminder = data.reminders.find(r => r.type === 'daily_checkin');
+        if (response.ok) {
+            const data = await response.json();
+            const reminder = data.reminders.find(r => r.type === 'daily_checkin');
 
-                    if (reminder) {
-                        document.getElementById('enableReminder').checked = reminder.is_active !== false;
-                        document.getElementById('reminderTime').value = reminder.time || '09:00';
-                        if (reminder.is_active !== false) {
-                            document.getElementById('reminderTimeSection').style.display = 'block';
-                            updateUTCTimeDisplay();
-                        }
-                    }
+            if (reminder) {
+                document.getElementById('enableReminder').checked = reminder.is_active !== false;
+                document.getElementById('reminderTime').value = reminder.time || '09:00';
+                document.getElementById('reminderEmail').value = reminder.email || '';  // ADD THIS LINE
+                if (reminder.is_active !== false) {
+                    document.getElementById('reminderTimeSection').style.display = 'block';
                 }
-
-                // Check queue status if reminders are enabled
-                if (document.getElementById('enableReminder').checked) {
-                    checkQueueStatus();
-                }
-            } catch (error) {
-                console.error('Error loading reminder settings:', error);
             }
         }
+
+        // Check queue status if reminders are enabled
+        if (document.getElementById('enableReminder').checked) {
+            checkQueueStatus();
+        }
+    } catch (error) {
+        console.error('Error loading reminder settings:', error);
+    }
+}
 
         function toggleReminder() {
             const enabled = document.getElementById('enableReminder').checked;

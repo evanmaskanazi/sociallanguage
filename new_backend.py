@@ -593,6 +593,7 @@ class Reminder(db.Model):
     client_id = db.Column(db.Integer, db.ForeignKey('clients.id'))
     reminder_type = db.Column(db.String(50), nullable=False)
     reminder_time = db.Column(db.Time, nullable=False)
+    reminder_email = db.Column(db.String(255))
     is_active = db.Column(db.Boolean, default=True)
     last_sent = db.Column(db.DateTime)
 
@@ -4368,6 +4369,7 @@ def get_reminders():
                 'id': reminder.id,
                 'type': reminder.reminder_type,
                 'time': reminder.reminder_time.strftime('%H:%M'),
+                'email': reminder.reminder_email,  # ADD THIS LINE
                 'last_sent': reminder.last_sent.isoformat() if reminder.last_sent else None
             })
 
@@ -4390,6 +4392,7 @@ def update_reminder():
 
         reminder_type = data.get('type')
         reminder_time = data.get('time')
+        reminder_email = data.get('email')  # ADD THIS LINE
         is_active = data.get('is_active', True)
 
         # Parse time
@@ -4402,11 +4405,13 @@ def update_reminder():
         if reminder:
             reminder.reminder_time = time_obj
             reminder.is_active = is_active
+            reminder.reminder_email = reminder_email  # ADD THIS LINE
         else:
             reminder = Reminder(
                 client_id=client.id,
                 reminder_type=reminder_type,
                 reminder_time=time_obj,
+                reminder_email=reminder_email,  # ADD THIS LINE
                 is_active=is_active
             )
             db.session.add(reminder)
@@ -5241,6 +5246,15 @@ def send_single_reminder_email_sync(client):
     try:
         base_url = os.environ.get('APP_BASE_URL', 'https://therapy-companion.onrender.com')
 
+        # Get the reminder to check for custom email
+        reminder = client.reminders.filter_by(
+            reminder_type='daily_checkin',
+            is_active=True
+        ).first()
+
+        # Use reminder email if set, otherwise use user email
+        email_to_use = reminder.reminder_email if reminder and reminder.reminder_email else client.user.email
+
         subject = "Daily Check-in Reminder - Therapeutic Companion"
 
         body = f"""Hello,
@@ -5289,7 +5303,7 @@ Your Therapy Team"""
         </html>
         """
 
-        return send_email(client.user.email, subject, body, html_body)
+        return send_email(email_to_use, subject, body, html_body)
 
     except Exception as e:
         logger.error(f"Error sending reminder email: {str(e)}")
