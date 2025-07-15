@@ -5634,8 +5634,13 @@ def test_client_reminder():
 
         # Handle both JSON and non-JSON requests
         email = None
-        if request.is_json and request.json:
-            email = request.json.get('email')
+        if request.content_type == 'application/json':
+            try:
+                json_data = request.get_json(force=True, silent=True)
+                if json_data:
+                    email = json_data.get('email')
+            except:
+                pass
 
         # Use the client's reminder email if configured, otherwise use account email
         if not email:
