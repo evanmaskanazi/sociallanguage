@@ -104,7 +104,7 @@ def fix_reminder_timezone_issue():
             from new_backend import Reminder, Client, User
             from datetime import time
 
-            print("\nChecking for reminder timezone issues...")
+            print("\nChecking and fixing reminder timezone issues...")
 
             # Get all reminders
             reminders = Reminder.query.filter_by(
@@ -115,50 +115,35 @@ def fix_reminder_timezone_issue():
             fixed_count = 0
 
             for reminder in reminders:
-                # Get the client's email to check if it's a test
-                client_email = reminder.client.user.email
+                if reminder.local_reminder_time:
+                    # Parse what the user actually entered
+                    local_hour, local_minute = map(int, reminder.local_reminder_time.split(':'))
 
-                # Skip test emails
-                if client_email.endswith('test.test') or client_email.endswith('example.com'):
-                    continue
+                    # Get what's currently stored as UTC
+                    stored_utc_hour = reminder.reminder_time.hour
+                    stored_utc_minute = reminder.reminder_time.minute
 
-                current_hour = reminder.reminder_time.hour
-                current_minute = reminder.reminder_time.minute
+                    # For Jerusalem (UTC+2 or UTC+3), if local time is 10:00
+                    # UTC should be 07:00 or 08:00 (2-3 hours earlier)
+                    # If stored UTC is later than local time, it's wrong
 
-                print(f"\nClient {reminder.client.client_serial} ({client_email}):")
-                print(f"  Current stored UTC time: {reminder.reminder_time}")
-                print(f"  Current local_reminder_time: {reminder.local_reminder_time}")
+                    # Calculate what UTC should be (assume UTC+3 for summer)
+                    expected_utc_minutes = (local_hour * 60 + local_minute) - 180  # Jerusalem is UTC+3
+                    if expected_utc_minutes < 0:
+                        expected_utc_minutes += 24 * 60
 
-                # Fix missing local_reminder_time
-                if not reminder.local_reminder_time:
-                    # If the UTC hour is between 16-23 (4 PM - 11 PM UTC)
-                    # it's likely this was meant to be morning hours in PDT/PST
-                    if 16 <= current_hour <= 23:
-                        # Convert from UTC to PDT (subtract 7 hours)
-                        local_hour = (current_hour - 7) % 24
-                        reminder.local_reminder_time = f"{local_hour:02d}:{current_minute:02d}"
+                    expected_utc_hour = (expected_utc_minutes // 60) % 24
+                    expected_utc_minute = expected_utc_minutes % 60
+
+                    # Check if it needs fixing
+                    if stored_utc_hour != expected_utc_hour or stored_utc_minute != expected_utc_minute:
+                        # Fix it
+                        reminder.reminder_time = time(expected_utc_hour, expected_utc_minute)
                         fixed_count += 1
-                        print(f"  -> Set local_reminder_time to: {reminder.local_reminder_time}")
-                    elif 0 <= current_hour <= 6:
-                        # Early morning UTC might be evening PDT from previous day
-                        local_hour = (current_hour + 17) % 24  # +17 = -7 + 24
-                        reminder.local_reminder_time = f"{local_hour:02d}:{current_minute:02d}"
-                        fixed_count += 1
-                        print(f"  -> Set local_reminder_time to: {reminder.local_reminder_time}")
-                    else:
-                        # For other hours, assume they might be correct
-                        reminder.local_reminder_time = f"{current_hour:02d}:{current_minute:02d}"
-                        fixed_count += 1
-                        print(f"  -> Set local_reminder_time to: {reminder.local_reminder_time}")
-
-                # Special fix for the specific user
-                if client_email == 'ema9u@virginia.edu' and reminder.local_reminder_time == '09:00':
-                    # You mentioned they want 2 PM, not 9 AM
-                    reminder.local_reminder_time = '14:00'
-                    # Calculate UTC time for 2 PM PDT (add 7 hours)
-                    reminder.reminder_time = time(21, 0)  # 2 PM PDT = 9 PM UTC
-                    fixed_count += 1
-                    print(f"  -> SPECIAL FIX: Set to 14:00 local (21:00 UTC)")
+                        print(f"  Fixed {reminder.client.client_serial}: "
+                              f"{reminder.local_reminder_time} local -> "
+                              f"{expected_utc_hour:02d}:{expected_utc_minute:02d} UTC "
+                              f"(was {stored_utc_hour:02d}:{stored_utc_minute:02d})")
 
             if fixed_count > 0:
                 db.session.commit()

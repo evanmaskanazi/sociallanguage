@@ -4454,18 +4454,20 @@ def update_reminder():
 
         # Create a UTC datetime for today with the local time values
         # This ensures we're working with UTC regardless of server timezone
-        now_utc = datetime.utcnow()
+        now = datetime.now()
+        local_dt = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
 
-        # Create a datetime with the user's local time
-        local_dt = now_utc.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        # Convert to UTC by adding the offset
+        # For Jerusalem (UTC+3): offset is -180, so we add 180 minutes to get UTC
+        # For PDT (UTC-7): offset is 420, so we add 420 minutes to get UTC
+        utc_minutes = (hour * 60 + minute) + timezone_offset
 
-        # Adjust by timezone offset to get actual UTC time
-        # For PDT: if user enters 12:00, and offset is 420 (7 hours)
-        # then UTC time should be 19:00 (12:00 + 7:00)
-        utc_dt = local_dt - timedelta(minutes=timezone_offset)
+        # Handle day wraparound
+        utc_hour = (utc_minutes // 60) % 24
+        utc_minute = utc_minutes % 60
 
-        # Handle day wraparound - we only care about the time, not the date
-        time_obj = utc_dt.time()
+        # Create the time object
+        time_obj = time(utc_hour, utc_minute)
 
         # Log the conversion result
         logger.info('timezone_conversion_result', extra={
@@ -4475,6 +4477,8 @@ def update_reminder():
                 'utc_hour': time_obj.hour,
                 'utc_minute': time_obj.minute,
                 'timezone_offset_minutes': timezone_offset,
+                'expected_offset_sign': 'negative' if timezone_offset < 0 else 'positive',
+                'calculation': f"({hour}*60+{minute})+{timezone_offset} = {utc_hour}:{utc_minute} UTC",
                 'client_serial': client.client_serial,
                 'request_id': g.request_id
             },

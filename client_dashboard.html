@@ -2203,9 +2203,17 @@
         return;
     }
 
+    // Get timezone offset - this is critical for correct conversion
     const tzOffset = new Date().getTimezoneOffset();
-    console.log('Timezone offset detected:', tzOffset);
-    console.log('Expected for PDT:', 420);
+
+    // Log what we're sending for debugging
+    console.log('Saving reminder with:');
+    console.log('  Local time:', time);
+    console.log('  Timezone offset:', tzOffset);
+    console.log('  Expected sign:', tzOffset < 0 ? 'negative (east of UTC)' : 'positive (west of UTC)');
+    console.log('  For Jerusalem Summer Time, expect: -180');
+    console.log('  For Jerusalem Standard Time, expect: -120');
+    console.log('  For PDT, expect: 420');
 
     try {
         const response = await fetch('/api/client/update-reminder', {
@@ -2220,7 +2228,7 @@
                 time: time || '09:00',
                 is_active: enabled,
                 email: email || undefined,
-                timezone_offset: new Date().getTimezoneOffset() || 420
+                timezone_offset: tzOffset  // Send the raw offset from JavaScript
             })
         });
 
