@@ -4470,7 +4470,8 @@ def update_reminder():
         utc_minute = utc_total_minutes % 60
 
         # Create the time object
-        time_obj = time(utc_hour, utc_minute)
+        import datetime
+        time_obj = datetime.time(utc_hour, utc_minute)
 
         # Log the conversion result
         logger.info('timezone_conversion_result', extra={
