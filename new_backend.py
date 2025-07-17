@@ -4462,7 +4462,7 @@ def update_reminder():
         # Adjust by timezone offset to get actual UTC time
         # For PDT: if user enters 12:00, and offset is 420 (7 hours)
         # then UTC time should be 19:00 (12:00 + 7:00)
-        utc_dt = local_dt + timedelta(minutes=timezone_offset)
+        utc_dt = local_dt - timedelta(minutes=timezone_offset)
 
         # Handle day wraparound - we only care about the time, not the date
         time_obj = utc_dt.time()
