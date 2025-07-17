@@ -4454,17 +4454,20 @@ def update_reminder():
 
         # Create a UTC datetime for today with the local time values
         # This ensures we're working with UTC regardless of server timezone
-        now = datetime.now()
-        local_dt = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        local_minutes = hour * 60 + minute
 
-        # Convert to UTC by adding the offset
-        # For Jerusalem (UTC+3): offset is -180, so we add 180 minutes to get UTC
-        # For PDT (UTC-7): offset is 420, so we add 420 minutes to get UTC
-        utc_minutes = (hour * 60 + minute) + timezone_offset
+        # Add the offset to get UTC minutes
+        utc_total_minutes = local_minutes + timezone_offset
 
-        # Handle day wraparound
-        utc_hour = (utc_minutes // 60) % 24
-        utc_minute = utc_minutes % 60
+        # Handle negative wraparound (for times near midnight)
+        if utc_total_minutes < 0:
+            utc_total_minutes += 24 * 60
+        elif utc_total_minutes >= 24 * 60:
+            utc_total_minutes -= 24 * 60
+
+        # Convert back to hours and minutes
+        utc_hour = (utc_total_minutes // 60) % 24
+        utc_minute = utc_total_minutes % 60
 
         # Create the time object
         time_obj = time(utc_hour, utc_minute)
