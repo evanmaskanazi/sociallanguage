@@ -4454,24 +4454,55 @@ def update_reminder():
 
         # Create a UTC datetime for today with the local time values
         # This ensures we're working with UTC regardless of server timezone
-        local_minutes = hour * 60 + minute
+        logger.info('timezone_conversion_input', extra={
+            'extra_data': {
+                'local_time': f"{hour:02d}:{minute:02d}",
+                'timezone_offset': timezone_offset,
+                'offset_sign': 'positive (west of UTC)' if timezone_offset > 0 else 'negative (east of UTC)',
+                'client_serial': client.client_serial,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
 
-        # Add the offset to get UTC minutes
-        utc_total_minutes = local_minutes + timezone_offset
+        # The correct formula is: UTC = LOCAL + offset_minutes
+        # For PDT (offset=420): 9:00 AM + 420 minutes = 4:00 PM UTC
+        # For Jerusalem (offset=-180): 9:00 AM + (-180 minutes) = 6:00 AM UTC
 
-        # Handle negative wraparound (for times near midnight)
-        if utc_total_minutes < 0:
+        # Convert local time to total minutes
+        local_total_minutes = hour * 60 + minute
+
+        # Add the offset to get UTC
+        utc_total_minutes = local_total_minutes + timezone_offset
+
+        # Handle day wraparound
+        while utc_total_minutes < 0:
             utc_total_minutes += 24 * 60
-        elif utc_total_minutes >= 24 * 60:
+        while utc_total_minutes >= 24 * 60:
             utc_total_minutes -= 24 * 60
 
         # Convert back to hours and minutes
-        utc_hour = (utc_total_minutes // 60) % 24
+        utc_hour = utc_total_minutes // 60
         utc_minute = utc_total_minutes % 60
 
-        # Create the time object
+        # Create the time object - use datetime.time to avoid any conflicts
         import datetime
         time_obj = datetime.time(utc_hour, utc_minute)
+
+        # Log the conversion result for debugging
+        logger.info('timezone_conversion_output', extra={
+            'extra_data': {
+                'input_local': f"{hour:02d}:{minute:02d}",
+                'input_offset': timezone_offset,
+                'output_utc': f"{utc_hour:02d}:{utc_minute:02d}",
+                'calculation': f"{local_total_minutes} + {timezone_offset} = {utc_total_minutes} minutes = {utc_hour:02d}:{utc_minute:02d} UTC",
+                'client_serial': client.client_serial,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
 
         # Log the conversion result
         logger.info('timezone_conversion_result', extra={
