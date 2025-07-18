@@ -1195,6 +1195,43 @@
 
         // Global variables
         let authToken = localStorage.getItem('authToken');
+                // CSRF Token Management
+        let csrfToken = null;
+
+        async function getCSRFToken() {
+            if (!csrfToken) {
+                try {
+                    const response = await fetch('/api/csrf-token', {
+                        credentials: 'same-origin'
+                    });
+                    const data = await response.json();
+                    csrfToken = data.csrf_token;
+                } catch (error) {
+                    console.error('Failed to get CSRF token:', error);
+                }
+            }
+            return csrfToken;
+        }
+
+        // Override fetch to include CSRF token
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            const [url, options = {}] = args;
+
+            // Only add CSRF for state-changing methods
+            if (options.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(options.method.toUpperCase())) {
+                const token = await getCSRFToken();
+
+                if (token) {
+                    options.headers = {
+                        ...options.headers,
+                        'X-CSRF-Token': token
+                    };
+                }
+            }
+
+            return originalFetch.apply(this, args);
+        };
         let clientData = null;
         let trackingCategories = [];
         let weeklyGoals = [];

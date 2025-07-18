@@ -26,6 +26,7 @@ import os
 from pathlib import Path
 import secrets
 import jwt
+from sqlalchemy import text
 from datetime import datetime, timedelta, date
 from sqlalchemy import and_, or_, func
 import openpyxl
@@ -118,6 +119,61 @@ app = Flask(__name__)
 BASE_DIR = Path(__file__).resolve().parent
 app.static_folder = BASE_DIR
 app.template_folder = BASE_DIR
+
+# CSRF Protection
+from flask_wtf.csrf import CSRFProtect, generate_csrf
+from functools import wraps
+
+csrf = CSRFProtect()
+csrf.init_app(app)
+
+# Exempt only read-only endpoints
+csrf_exempt_endpoints = [
+    'health_check',
+    'index',
+    'login_page',
+    'therapist_dashboard_page',
+    'client_dashboard_page',
+    'serve_i18n',
+    'favicon',
+    'debug_server_time',
+    'static'
+]
+
+
+@app.before_request
+def csrf_protect():
+    if request.endpoint in csrf_exempt_endpoints:
+        return
+    if request.method in ["POST", "PUT", "DELETE", "PATCH"]:
+        token = None
+        if request.is_json:
+            token = request.json.get('csrf_token')
+        token = token or request.headers.get('X-CSRF-Token') or request.form.get('csrf_token')
+
+        if not token:
+            return jsonify({'error': 'CSRF token missing'}), 403
+
+
+@app.after_request
+def set_csrf_cookie(response):
+    if 'csrf_token' not in session:
+        session['csrf_token'] = generate_csrf()
+    response.set_cookie('csrf_token', session['csrf_token'],
+                        secure=app.config['SESSION_COOKIE_SECURE'],
+                        httponly=False,  # JavaScript needs to read it
+                        samesite='Lax')
+    return response
+
+
+# Add CSRF token endpoint
+@app.route('/api/csrf-token', methods=['GET'])
+def get_csrf_token():
+    return jsonify({'csrf_token': generate_csrf()})
+
+
+
+
 
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
@@ -739,13 +795,47 @@ def require_auth(allowed_roles=None):
 
 
 def generate_client_serial():
-    """Generate unique client serial number"""
-    import random
+    """Generate unique client serial number using UUID"""
+    import uuid
     import string
-    while True:
-        serial = 'C' + ''.join(random.choices(string.digits, k=8))
-        if not Client.query.filter_by(client_serial=serial).first():
-            return serial
+
+    max_attempts = 10
+    for _ in range(max_attempts):
+        # Generate UUID-based serial
+        unique_id = str(uuid.uuid4()).replace('-', '').upper()[:12]
+        serial = f'C{unique_id}'
+
+        # Use database-level unique check with proper locking
+        try:
+            # Try to insert a temporary record to claim this serial
+            db.session.execute(
+                text("INSERT INTO clients (client_serial, user_id, therapist_id, start_date, created_at) "
+                     "VALUES (:serial, 0, 0, CURRENT_DATE, CURRENT_TIMESTAMP) "
+                     "ON CONFLICT (client_serial) DO NOTHING"),
+                {"serial": serial}
+            )
+            db.session.commit()
+
+            # Check if we successfully claimed it
+            result = db.session.execute(
+                text("SELECT client_serial FROM clients WHERE client_serial = :serial AND user_id = 0"),
+                {"serial": serial}
+            ).first()
+
+            if result:
+                # We got it, now delete the temporary record
+                db.session.execute(
+                    text("DELETE FROM clients WHERE client_serial = :serial AND user_id = 0"),
+                    {"serial": serial}
+                )
+                db.session.commit()
+                return serial
+
+        except Exception:
+            db.session.rollback()
+            continue
+
+    raise Exception("Could not generate unique client serial after 10 attempts")
 
 
 class EmailCircuitBreaker:
@@ -1288,6 +1378,7 @@ def login():
 
 
 @app.route('/api/auth/request-reset', methods=['POST'])
+@limiter.limit("3 per hour, 10 per day")
 def request_password_reset():
     """Request password reset"""
     try:
@@ -1555,30 +1646,77 @@ def get_therapist_clients():
         clients = pagination.items
 
         # Build response
-        client_data = []
-        for client in clients:
-            # Get last check-in
-            last_checkin = client.checkins.order_by(DailyCheckin.checkin_date.desc()).first()
+        # Build response with optimized queries
+        from sqlalchemy.orm import joinedload, selectinload
+        from sqlalchemy import and_, func, case
 
-            # Get completion rate for last week
-            week_start = date.today() - timedelta(days=date.today().weekday())
-            week_checkins = client.checkins.filter(
+        # Pre-fetch all related data in one query
+        clients_with_data = db.session.query(Client).filter(
+            Client.id.in_([c.id for c in clients])
+        ).options(
+            selectinload(Client.checkins),
+            selectinload(Client.tracking_plans).selectinload(ClientTrackingPlan.category)
+        ).all()
+
+        # Get last check-ins for all clients in one query
+        week_start = date.today() - timedelta(days=date.today().weekday())
+
+        # Subquery for last checkin dates
+        last_checkin_subquery = db.session.query(
+            DailyCheckin.client_id,
+            func.max(DailyCheckin.checkin_date).label('last_date')
+        ).filter(
+            DailyCheckin.client_id.in_([c.id for c in clients])
+        ).group_by(DailyCheckin.client_id).subquery()
+
+        # Get week checkin counts
+        week_counts = db.session.query(
+            DailyCheckin.client_id,
+            func.count(DailyCheckin.id).label('week_count')
+        ).filter(
+            and_(
+                DailyCheckin.client_id.in_([c.id for c in clients]),
                 DailyCheckin.checkin_date >= week_start
-            ).count()
+            )
+        ).group_by(DailyCheckin.client_id).all()
 
-            # Translate category names
+        week_count_map = {wc.client_id: wc.week_count for wc in week_counts}
+
+        # Get last checkin dates
+        last_checkins = db.session.query(
+            DailyCheckin.client_id,
+            DailyCheckin.checkin_date
+        ).join(
+            last_checkin_subquery,
+            and_(
+                DailyCheckin.client_id == last_checkin_subquery.c.client_id,
+                DailyCheckin.checkin_date == last_checkin_subquery.c.last_date
+            )
+        ).all()
+
+        last_checkin_map = {lc.client_id: lc.checkin_date for lc in last_checkins}
+
+        # Build response with pre-fetched data
+        client_data = []
+        for client in clients_with_data:
+            # Use pre-fetched data
+            last_checkin_date = last_checkin_map.get(client.id)
+            week_checkin_count = week_count_map.get(client.id, 0)
+
+            # Translate category names (already loaded)
             tracking_categories = []
-            for plan in client.tracking_plans.filter_by(is_active=True):
-                translated_name = translate_category_name(plan.category.name, lang)
-                tracking_categories.append(translated_name)
+            for plan in client.tracking_plans:
+                if plan.is_active:
+                    translated_name = translate_category_name(plan.category.name, lang)
+                    tracking_categories.append(translated_name)
 
             client_data.append({
                 'id': client.id,
                 'serial': client.client_serial,
                 'start_date': client.start_date.isoformat(),
                 'is_active': client.is_active,
-                'last_checkin': last_checkin.checkin_date.isoformat() if last_checkin else None,
-                'week_completion': f"{week_checkins}/7",
+                'last_checkin': last_checkin_date.isoformat() if last_checkin_date else None,
+                'week_completion': f"{week_checkin_count}/7",
                 'tracking_categories': tracking_categories
             })
 
@@ -1635,7 +1773,19 @@ def get_client_details(client_id):
         ).first()
 
         if not client:
-            return jsonify({'error': 'Client not found'}), 404
+            # Log potential unauthorized access attempt
+            logger.warning('unauthorized_client_access_attempt', extra={
+                'extra_data': {
+                    'therapist_id': therapist.id,
+                    'requested_client_id': client_id,
+                    'ip_address': request.remote_addr,
+                    'request_id': g.request_id
+                },
+                'request_id': g.request_id,
+                'user_id': request.current_user.id
+            })
+            # Return generic error to prevent enumeration
+            return jsonify({'error': 'Resource not found'}), 404
 
         # Get tracking plans
         tracking_plans = []
@@ -1742,8 +1892,16 @@ def get_client_analytics(client_id):
         if not client:
             return jsonify({'error': 'Client not found'}), 404
 
-        # Get date range from query params
+        # Get date range and pagination from query params
         days = int(request.args.get('days', 30))
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 50))
+
+        # Validate pagination
+        page = max(1, page)
+        per_page = min(max(1, per_page), 100)
+        days = min(max(1, days), 365)
+
         end_date = date.today()
         start_date = end_date - timedelta(days=days)
 
@@ -1755,13 +1913,18 @@ def get_client_analytics(client_id):
         completion_rate = (checkins_count / total_days) * 100
 
         # Get category trends
+        # Get category trends with pagination
         category_trends = {}
         for plan in client.tracking_plans.filter_by(is_active=True):
-            responses = CategoryResponse.query.filter(
+            responses_query = CategoryResponse.query.filter(
                 CategoryResponse.client_id == client_id,
                 CategoryResponse.category_id == plan.category_id,
                 CategoryResponse.response_date.between(start_date, end_date)
-            ).order_by(CategoryResponse.response_date).all()
+            ).order_by(CategoryResponse.response_date)
+
+            # Paginate responses
+            paginated = responses_query.paginate(page=page, per_page=per_page, error_out=False)
+            responses = paginated.items
 
             if responses:
                 translated_name = translate_category_name(plan.category.name, lang)
@@ -1772,7 +1935,9 @@ def get_client_analytics(client_id):
                             'value': resp.value
                         } for resp in responses
                     ],
-                    'average': sum(r.value for r in responses) / len(responses)
+                    'average': sum(r.value for r in responses) / len(responses),
+                    'total_records': paginated.total,
+                    'has_more': paginated.has_next
                 }
 
         # Get goal completion stats
@@ -1870,9 +2035,21 @@ def client_generate_report(week):
         lang = get_language_from_header()
 
         # Parse week
+        import re
+        week_pattern = re.compile(r'^\d{4}-W\d{2}$')
+        if not week_pattern.match(week):
+            return jsonify({'error': 'Invalid week format. Use YYYY-Wnn'}), 400
+
+        # Parse week
         year, week_num = week.split('-W')
         year = int(year)
         week_num = int(week_num)
+
+        # Validate ranges
+        if year < 2020 or year > 2030:
+            return jsonify({'error': 'Invalid year'}), 400
+        if week_num < 1 or week_num > 53:
+            return jsonify({'error': 'Invalid week number'}), 400
 
         # Calculate week dates
         jan1 = datetime(year, 1, 1)
@@ -3025,10 +3202,33 @@ def generate_pdf_report(client_id, week):
             return jsonify({'error': 'Client not found'}), 404
 
         # Parse week
+        import re
+        week_pattern = re.compile(r'^\d{4}-W\d{2}$')
+        if not week_pattern.match(week):
+            return jsonify({'error': 'Invalid week format. Use YYYY-Wnn'}), 400
+
+        # Parse week
+        import re
+        week_pattern = re.compile(r'^\d{4}-W\d{2}$')
+        if not week_pattern.match(week):
+            return jsonify({'error': 'Invalid week format. Use YYYY-Wnn'}), 400
+
+        # Parse week
         year, week_num = week.split('-W')
         year = int(year)
         week_num = int(week_num)
 
+        # Validate ranges
+        if year < 2020 or year > 2030:
+            return jsonify({'error': 'Invalid year'}), 400
+        if week_num < 1 or week_num > 53:
+            return jsonify({'error': 'Invalid week number'}), 400
+
+        # Validate ranges
+        if year < 2020 or year > 2030:
+            return jsonify({'error': 'Invalid year'}), 400
+        if week_num < 1 or week_num > 53:
+            return jsonify({'error': 'Invalid week number'}), 400
         # Calculate week dates
         jan1 = datetime(year, 1, 1)
         days_to_monday = (7 - jan1.weekday()) % 7
@@ -3064,9 +3264,21 @@ def client_generate_pdf(week):
         lang = get_language_from_header()
 
         # Parse week
+        import re
+        week_pattern = re.compile(r'^\d{4}-W\d{2}$')
+        if not week_pattern.match(week):
+            return jsonify({'error': 'Invalid week format. Use YYYY-Wnn'}), 400
+
+        # Parse week
         year, week_num = week.split('-W')
         year = int(year)
         week_num = int(week_num)
+
+        # Validate ranges
+        if year < 2020 or year > 2030:
+            return jsonify({'error': 'Invalid year'}), 400
+        if week_num < 1 or week_num > 53:
+            return jsonify({'error': 'Invalid week number'}), 400
 
         # Calculate week dates
         jan1 = datetime(year, 1, 1)
@@ -3131,12 +3343,25 @@ def email_therapy_report():
             return jsonify({'error': 'Client not found'}), 404
 
         # Parse week
+        # Validate week format
+        import re
+        week_pattern = re.compile(r'^\d{4}-W\d{2}$')
+        if not week_pattern.match(week):
+            return jsonify({'error': 'Invalid week format. Use YYYY-Wnn'}), 400
+
+        # Parse week
         try:
             year, week_num = week.split('-W')
             year = int(year)
             week_num = int(week_num)
         except (ValueError, AttributeError):
             return jsonify({'error': 'Invalid week format'}), 400
+
+        # Validate ranges
+        if year < 2020 or year > 2030:
+            return jsonify({'error': 'Invalid year'}), 400
+        if week_num < 1 or week_num > 53:
+            return jsonify({'error': 'Invalid week number'}), 400
 
         # Calculate week dates
         jan1 = datetime(year, 1, 1)
@@ -3898,7 +4123,34 @@ def submit_checkin():
         data = request.json
 
         checkin_date = data.get('date', date.today().isoformat())
-        checkin_date = datetime.strptime(checkin_date, '%Y-%m-%d').date()
+
+        # Validate date format
+        try:
+            checkin_date = datetime.strptime(checkin_date, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+
+        # Check if future date
+        if checkin_date > date.today():
+            logger.warning('future_checkin_attempt', extra={
+                'extra_data': {
+                    'client_id': client.id,
+                    'attempted_date': checkin_date.isoformat(),
+                    'current_date': date.today().isoformat(),
+                    'request_id': g.request_id
+                },
+                'request_id': g.request_id,
+                'user_id': request.current_user.id
+            })
+            return jsonify({'error': 'Cannot submit check-in for future dates'}), 400
+
+        # Check if date is too old (more than 1 year)
+        if checkin_date < date.today() - timedelta(days=365):
+            return jsonify({'error': 'Cannot submit check-in for dates more than 1 year ago'}), 400
+
+        # Validate client has been active for this date
+        if checkin_date < client.start_date:
+            return jsonify({'error': 'Cannot submit check-in before client start date'}), 400
 
         logger.info('checkin_attempt', extra={
             'extra_data': {
@@ -3935,9 +4187,23 @@ def submit_checkin():
             db.session.flush()
             existing = checkin
 
-        # Process category responses
-        category_responses = data.get('category_responses', {})
         category_notes = data.get('category_notes', {})
+        for cat_id, notes in category_notes.items():
+            if notes and len(notes) > 500:
+                return jsonify({'error': f'Notes too long for category {cat_id}. Maximum 500 characters.'}), 400
+
+        # Validate category responses
+        category_responses = data.get('category_responses', {})
+        for cat_id, value in category_responses.items():
+            try:
+                value_int = int(value)
+                if value_int < 0 or value_int > 5:
+                    return jsonify({'error': f'Invalid value for category {cat_id}. Must be between 0 and 5.'}), 400
+                category_responses[cat_id] = value_int
+            except (ValueError, TypeError):
+                return jsonify({'error': f'Invalid value for category {cat_id}. Must be a number.'}), 400
+
+        # Process category responses
         responses_logged = []
 
         for cat_id, value in category_responses.items():
@@ -4434,10 +4700,14 @@ def update_reminder():
         local_time_str = f"{hour:02d}:{minute:02d}"
 
         # Log the timezone conversion details
+        if abs(timezone_offset) > 840:  # Max UTC+14 or UTC-14
+            return jsonify({'error': 'Invalid timezone offset'}), 400
+
+        # Log without exposing exact timezone
         logger.info('timezone_conversion_start', extra={
             'extra_data': {
                 'local_time': f"{hour:02d}:{minute:02d}",
-                'timezone_offset': timezone_offset,
+                'timezone_offset': 'provided',  # Don't log exact offset
                 'client_serial': client.client_serial,
                 'request_id': g.request_id
             },
@@ -5131,9 +5401,22 @@ def client_email_report():
             return jsonify({'error': 'Week is required'}), 400
 
         # Parse week
+        # Validate week format
+        import re
+        week_pattern = re.compile(r'^\d{4}-W\d{2}$')
+        if not week_pattern.match(week):
+            return jsonify({'error': 'Invalid week format. Use YYYY-Wnn'}), 400
+
+        # Parse week
         year, week_num = week.split('-W')
         year = int(year)
         week_num = int(week_num)
+
+        # Validate ranges
+        if year < 2020 or year > 2030:
+            return jsonify({'error': 'Invalid year'}), 400
+        if week_num < 1 or week_num > 53:
+            return jsonify({'error': 'Invalid week number'}), 400
 
         # Calculate week dates
         jan1 = datetime(year, 1, 1)
@@ -5299,9 +5582,22 @@ def get_client_week_checkins(week):
         client = request.current_user.client
 
         # Parse week
+        # Validate week format
+        import re
+        week_pattern = re.compile(r'^\d{4}-W\d{2}$')
+        if not week_pattern.match(week):
+            return jsonify({'error': 'Invalid week format. Use YYYY-Wnn'}), 400
+
+        # Parse week
         year, week_num = week.split('-W')
         year = int(year)
         week_num = int(week_num)
+
+        # Validate ranges
+        if year < 2020 or year > 2030:
+            return jsonify({'error': 'Invalid year'}), 400
+        if week_num < 1 or week_num > 53:
+            return jsonify({'error': 'Invalid week number'}), 400
 
         # Calculate week dates
         jan1 = datetime(year, 1, 1)
@@ -5349,9 +5645,21 @@ def get_client_week_goals(week):
         client = request.current_user.client
 
         # Parse week
+        import re
+        week_pattern = re.compile(r'^\d{4}-W\d{2}$')
+        if not week_pattern.match(week):
+            return jsonify({'error': 'Invalid week format. Use YYYY-Wnn'}), 400
+
+        # Parse week
         year, week_num = week.split('-W')
         year = int(year)
         week_num = int(week_num)
+
+        # Validate ranges
+        if year < 2020 or year > 2030:
+            return jsonify({'error': 'Invalid year'}), 400
+        if week_num < 1 or week_num > 53:
+            return jsonify({'error': 'Invalid week number'}), 400
 
         # Calculate week start
         jan1 = datetime(year, 1, 1)
