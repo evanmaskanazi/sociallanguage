@@ -846,20 +846,66 @@ def generate_client_serial():
 
 
 class EmailCircuitBreaker:
-    """Simple circuit breaker for email service"""
+    """Circuit breaker for email service with persistent state"""
 
     def __init__(self, failure_threshold=5, recovery_timeout=60):
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
-        self.failure_count = 0
-        self.last_failure_time = None
-        self.is_open = False
+        self._load_state()
+
+    def _load_state(self):
+        """Load state from database"""
+        try:
+            with app.app_context():
+                result = db.session.execute(
+                    text(
+                        "SELECT failure_count, last_failure_time, is_open FROM circuit_breaker_state WHERE service = 'email'")
+                ).first()
+
+                if result:
+                    self.failure_count = result[0]
+                    self.last_failure_time = result[1]
+                    self.is_open = result[2]
+                else:
+                    self.failure_count = 0
+                    self.last_failure_time = None
+                    self.is_open = False
+                    self._save_state()
+        except:
+            # Table might not exist yet
+            self.failure_count = 0
+            self.last_failure_time = None
+            self.is_open = False
+
+    def _save_state(self):
+        """Save state to database"""
+        try:
+            with app.app_context():
+                db.session.execute(
+                    text("""
+                        INSERT INTO circuit_breaker_state (service, failure_count, last_failure_time, is_open)
+                        VALUES ('email', :failure_count, :last_failure, :is_open)
+                        ON CONFLICT (service) DO UPDATE SET
+                            failure_count = :failure_count,
+                            last_failure_time = :last_failure,
+                            is_open = :is_open
+                    """),
+                    {
+                        'failure_count': self.failure_count,
+                        'last_failure': self.last_failure_time,
+                        'is_open': self.is_open
+                    }
+                )
+                db.session.commit()
+        except:
+            pass
 
     def call_succeeded(self):
         """Reset the circuit breaker on success"""
         self.failure_count = 0
         self.is_open = False
         self.last_failure_time = None
+        self._save_state()
 
     def call_failed(self):
         """Record a failure and potentially open the circuit"""
@@ -869,6 +915,8 @@ class EmailCircuitBreaker:
         if self.failure_count >= self.failure_threshold:
             self.is_open = True
             app.logger.error(f"Email circuit breaker opened after {self.failure_count} failures")
+
+        self._save_state()
 
     def can_attempt_call(self):
         """Check if we can attempt to send email"""
@@ -882,6 +930,7 @@ class EmailCircuitBreaker:
                 # Attempt recovery
                 self.is_open = False
                 self.failure_count = 0
+                self._save_state()
                 app.logger.info("Email circuit breaker attempting recovery")
                 return True
 
@@ -892,9 +941,65 @@ class EmailCircuitBreaker:
 email_circuit_breaker = EmailCircuitBreaker()
 
 
+class EmailBounceHandler:
+    """Handle email bounces and invalid addresses"""
+
+    def __init__(self):
+        self.bounce_threshold = 3
+        self.bounced_emails = {}  # In production, use Redis or database
+
+    def record_bounce(self, email):
+        """Record an email bounce"""
+        if email not in self.bounced_emails:
+            self.bounced_emails[email] = 0
+        self.bounced_emails[email] += 1
+
+        # If exceeded threshold, mark email as invalid
+        if self.bounced_emails[email] >= self.bounce_threshold:
+            try:
+                # Mark user email as invalid in database
+                user = User.query.filter_by(email=email).first()
+                if user:
+                    # Add a field to track email validity
+                    db.session.execute(
+                        text("UPDATE users SET email_valid = FALSE WHERE id = :user_id"),
+                        {'user_id': user.id}
+                    )
+                    db.session.commit()
+            except Exception as e:
+                logger.error(f"Error marking email as invalid: {e}")
+
+    def is_valid_email(self, email):
+        """Check if email is valid for sending"""
+        if email in self.bounced_emails and self.bounced_emails[email] >= self.bounce_threshold:
+            return False
+
+        # Check database
+        try:
+            result = db.session.execute(
+                text("SELECT email_valid FROM users WHERE email = :email"),
+                {'email': email}
+            ).first()
+            if result and result[0] is False:
+                return False
+        except:
+            pass
+
+        return True
+
+
+# Create global instance
+email_bounce_handler = EmailBounceHandler()
+
+
 def send_email_async(app, to_email, subject, body, html_body=None):
     """Send email asynchronously in app context with circuit breaker"""
     with app.app_context():
+        # Check if email is valid
+        if not email_bounce_handler.is_valid_email(to_email):
+            app.logger.warning(f"Skipping email to {to_email} - marked as invalid")
+            return
+
         # Check circuit breaker
         if not email_circuit_breaker.can_attempt_call():
             app.logger.warning(f"Email circuit breaker is open, not sending email to {to_email}")
@@ -905,6 +1010,22 @@ def send_email_async(app, to_email, subject, body, html_body=None):
             msg['From'] = app.config['MAIL_USERNAME']
             msg['To'] = to_email
             msg['Subject'] = subject
+
+            # Add unsubscribe link to body if we have user context
+            unsubscribe_url = None
+            if hasattr(request, 'current_user') and request.current_user:
+                unsubscribe_token = generate_unsubscribe_token(request.current_user.id)
+                base_url = os.environ.get('APP_BASE_URL', 'https://therapy-companion.onrender.com')
+                unsubscribe_url = f"{base_url}/api/unsubscribe/{unsubscribe_token}"
+                body += f"\n\n---\nTo unsubscribe from these emails, visit: {unsubscribe_url}"
+
+                if html_body:
+                    html_body += f"""
+                                <hr style="margin-top: 40px; border: none; border-top: 1px solid #ccc;">
+                                <p style="text-align: center; color: #999; font-size: 12px;">
+                                    <a href="{unsubscribe_url}" style="color: #999;">Unsubscribe from these emails</a>
+                                </p>
+                                """
 
             # Add plain text part
             msg.attach(MIMEText(body, 'plain'))
@@ -950,8 +1071,93 @@ def send_email(to_email, subject, body, html_body=None):
     return True
 
 
+def check_client_inactivity():
+    """Check for inactive clients and notify therapists"""
+    with app.app_context():
+        try:
+            # Get all active clients who haven't checked in for 7 days
+            seven_days_ago = date.today() - timedelta(days=7)
+
+            inactive_clients = db.session.query(Client).join(User).filter(
+                Client.is_active == True,
+                User.is_active == True
+            ).all()
+
+            notifications_sent = 0
+
+            for client in inactive_clients:
+                # Get last checkin
+                last_checkin = client.checkins.order_by(
+                    DailyCheckin.checkin_date.desc()
+                ).first()
+
+                if not last_checkin or last_checkin.checkin_date < seven_days_ago:
+                    # Notify therapist
+                    if client.therapist and client.therapist.user:
+                        therapist_email = client.therapist.user.email
+
+                        subject = f"Client Inactivity Alert - {client.client_serial}"
+                        body = f"""Dear {client.therapist.name},
+
+Your client {client.client_serial} has not completed a check-in for over 7 days.
+
+Last check-in: {last_checkin.checkin_date.strftime('%Y-%m-%d') if last_checkin else 'Never'}
+Client start date: {client.start_date.strftime('%Y-%m-%d')}
+
+Please consider reaching out to check on their progress.
+
+Best regards,
+Therapeutic Companion System"""
+
+                        if send_email(therapist_email, subject, body):
+                            notifications_sent += 1
+
+                            # Log notification
+                            logger.info('inactivity_notification_sent', extra={
+                                'extra_data': {
+                                    'client_id': client.id,
+                                    'client_serial': client.client_serial,
+                                    'therapist_id': client.therapist.id,
+                                    'last_checkin': last_checkin.checkin_date.isoformat() if last_checkin else None
+                                }
+                            })
+
+            return notifications_sent
+
+        except Exception as e:
+            logger.error(f"Error checking client inactivity: {e}")
+            return 0
+
+
+# Add scheduled task endpoint
+@app.route('/api/admin/check-inactivity', methods=['POST'])
+@require_auth(['therapist'])  # Could be restricted to admin
+def trigger_inactivity_check():
+    """Manually trigger inactivity check"""
+    try:
+        count = check_client_inactivity()
+        return jsonify({
+            'success': True,
+            'notifications_sent': count
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
+
+
+
+
+
 def get_language_from_header():
     """Get preferred language from Accept-Language header"""
+    # First check cookie
+    lang_cookie = request.cookies.get('preferred_language')
+    if lang_cookie and lang_cookie in ['en', 'he', 'ru', 'ar']:
+        return lang_cookie
+
+    # Then check header
     accept_language = request.headers.get('Accept-Language', 'en')
     print(f"Accept-Language header: {accept_language}")
     # Simple parsing - just get the first language code
@@ -5755,6 +5961,92 @@ def handle_exception(error):
     db.session.rollback()
     app.logger.error(f"Unexpected error: {str(error)}")
     return jsonify({'error': 'An unexpected error occurred'}), 500
+
+
+@app.route('/api/unsubscribe/<token>', methods=['GET', 'POST'])
+def unsubscribe(token):
+    """Handle email unsubscribe requests"""
+    try:
+        # Decode the token
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get('user_id')
+        email_type = payload.get('email_type', 'all')
+
+        if not user_id:
+            return jsonify({'error': 'Invalid unsubscribe link'}), 400
+
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        if request.method == 'POST':
+            # Process unsubscribe
+            if email_type == 'reminders' and user.client:
+                # Disable reminders
+                reminders = user.client.reminders.filter_by(is_active=True).all()
+                for reminder in reminders:
+                    reminder.is_active = False
+                db.session.commit()
+
+                return jsonify({
+                    'success': True,
+                    'message': 'You have been unsubscribed from reminder emails'
+                })
+            else:
+                # Mark email as invalid for all emails
+                user.email_valid = False
+                db.session.commit()
+
+                return jsonify({
+                    'success': True,
+                    'message': 'You have been unsubscribed from all emails'
+                })
+
+        # GET request - show unsubscribe page
+        return f"""
+        <html>
+        <head>
+            <title>Unsubscribe - Therapeutic Companion</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 40px; text-align: center; }}
+                .container {{ max-width: 500px; margin: 0 auto; }}
+                .btn {{ background: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }}
+                .btn:hover {{ background: #c82333; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2>Unsubscribe from Emails</h2>
+                <p>Are you sure you want to unsubscribe from {email_type} emails?</p>
+                <p>Email: {user.email}</p>
+                <form method="POST">
+                    <button type="submit" class="btn">Confirm Unsubscribe</button>
+                </form>
+                <p style="margin-top: 20px;"><a href="/">Return to site</a></p>
+            </div>
+        </body>
+        </html>
+        """
+
+    except jwt.ExpiredSignatureError:
+        return jsonify({'error': 'Unsubscribe link has expired'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+def generate_unsubscribe_token(user_id, email_type='all'):
+    """Generate unsubscribe token"""
+    payload = {
+        'user_id': user_id,
+        'email_type': email_type,
+        'exp': datetime.utcnow() + timedelta(days=30)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+
+
+
 
 
 # ============= CELERY INTEGRATION =============

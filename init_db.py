@@ -67,6 +67,59 @@ def add_local_reminder_time_column():
             db.session.rollback()
 
 
+def create_circuit_breaker_table():
+    """Create table for circuit breaker state"""
+    with app.app_context():
+        try:
+            db.session.execute(text("""
+                CREATE TABLE IF NOT EXISTS circuit_breaker_state (
+                    service VARCHAR(50) PRIMARY KEY,
+                    failure_count INTEGER DEFAULT 0,
+                    last_failure_time TIMESTAMP,
+                    is_open BOOLEAN DEFAULT FALSE
+                )
+            """))
+            db.session.commit()
+            print("Successfully created circuit_breaker_state table")
+        except Exception as e:
+            print(f"Error creating circuit_breaker_state table: {e}")
+            db.session.rollback()
+
+
+def add_email_valid_column():
+    """Add email_valid column to users table"""
+    with app.app_context():
+        try:
+            # Check if column exists
+            result = db.session.execute(text("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name='users'
+                AND column_name='email_valid'
+            """))
+
+            if not result.fetchone():
+                # Column doesn't exist, add it
+                db.session.execute(text("""
+                    ALTER TABLE users
+                    ADD COLUMN email_valid BOOLEAN DEFAULT TRUE
+                """))
+                db.session.commit()
+                print("Successfully added email_valid column to users table")
+            else:
+                print("email_valid column already exists - skipping")
+
+        except Exception as e:
+            print(f"Error checking/adding email_valid column: {e}")
+            db.session.rollback()
+
+
+
+
+
+
+
+
 def fix_existing_reminder_times():
     """Convert existing reminder times to UTC if they seem to be in local time"""
     with app.app_context():
@@ -174,6 +227,8 @@ def initialize_database():
         # Add new columns safely
         safe_add_column()
         add_local_reminder_time_column()  # ADD THIS LINE - This is the new function call
+        create_circuit_breaker_table()
+        add_email_valid_column()
         fix_existing_reminder_times()
         # Ensure all default tracking categories exist
         categories = ensure_default_categories()

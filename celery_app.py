@@ -169,3 +169,19 @@ def send_single_reminder(client_id, reminder_type):
     """Send a single reminder to a specific client"""
     # Placeholder for sending individual reminders
     return {'message': f'Reminder sent to client {client_id}'}
+
+
+@celery.task
+def check_inactive_clients():
+    """Check for inactive clients and notify therapists"""
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+    from new_backend import check_client_inactivity
+
+    try:
+        count = check_client_inactivity()
+        return {'success': True, 'notifications_sent': count}
+    except Exception as e:
+        return {'error': str(e)}

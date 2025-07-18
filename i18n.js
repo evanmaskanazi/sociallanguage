@@ -1378,32 +1378,35 @@ translations: {
 
     // Initialize i18n
     init() {
-        console.log('i18n.init() called');
+    console.log('i18n.init() called');
 
-        // Set initial language from localStorage or browser
-        const savedLang = localStorage.getItem('userLanguage');
-        const browserLang = navigator.language.split('-')[0];
+    // Set initial language from localStorage or browser
+    const savedLang = localStorage.getItem('userLanguage');
+    const browserLang = navigator.language.split('-')[0];
 
-        if (savedLang && this.translations[savedLang]) {
-            this.currentLang = savedLang;
-        } else if (this.translations[browserLang]) {
-            this.currentLang = browserLang;
-        }
+    if (savedLang && this.translations[savedLang]) {
+        this.currentLang = savedLang;
+    } else if (this.translations[browserLang]) {
+        this.currentLang = browserLang;
+    } else {
+        // Fallback to English if no match
+        this.currentLang = 'en';
+    }
 
-        console.log('Current language set to:', this.currentLang);
+    console.log('Current language set to:', this.currentLang);
 
-        // Apply RTL if needed
-        this.applyRTL();
+    // Apply RTL if needed
+    this.applyRTL();
 
-        // Force initialize language switcher after a short delay to ensure DOM is ready
-        setTimeout(() => {
-            console.log('Attempting to initialize language switcher...');
-            this.initLanguageSwitcher();
-        }, 100);
+    // Force initialize language switcher after a short delay to ensure DOM is ready
+    setTimeout(() => {
+        console.log('Attempting to initialize language switcher...');
+        this.initLanguageSwitcher();
+    }, 100);
 
-        // Translate page
-        this.translatePage();
-    },
+    // Translate page
+    this.translatePage();
+},
 
     // Get translation
     t(key, replacements = {}) {
@@ -1428,22 +1431,25 @@ translations: {
         return result;
     },
 
-    // Change language
-    setLanguage(lang) {
-        if (this.translations[lang]) {
-            this.currentLang = lang;
-            localStorage.setItem('userLanguage', lang);
-            this.applyRTL();
-            this.translatePage();
+        setLanguage(lang) {
+    if (this.translations[lang]) {
+        this.currentLang = lang;
+        localStorage.setItem('userLanguage', lang);
+        this.applyRTL();
+        this.translatePage();
 
-            // Update language switcher
-            const switcher = document.getElementById('languageSwitcher');
-            if (switcher) {
-                switcher.value = lang;
-            }
-            window.dispatchEvent(new Event('languageChanged'));
+        // Update language switcher
+        const switcher = document.getElementById('languageSwitcher');
+        if (switcher) {
+            switcher.value = lang;
         }
-    },
+
+        // Reinitialize language switcher to update position for RTL
+        this.initLanguageSwitcher();
+
+        window.dispatchEvent(new Event('languageChanged'));
+    }
+},
 
     // Apply RTL
     applyRTL() {
@@ -1528,24 +1534,29 @@ translations: {
             this.setLanguage(e.target.value);
         });
 
-        // Add styles if they don't exist
-        if (!document.getElementById('i18n-styles')) {
-            const style = document.createElement('style');
-            style.id = 'i18n-styles';
-            style.textContent = `
-                .language-switcher {
-                    position: fixed;
-                    top: 1rem;
-                    ${this.rtlLanguages.includes(this.currentLang) ? 'left' : 'right'}: 1rem;
-                    z-index: 9999;
-                    padding: 0.5rem 1rem;
-                    border-radius: 8px;
-                    border: 1px solid #e0e0e0;
-                    background: white;
-                    font-size: 0.875rem;
-                    cursor: pointer;
-                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                }
+        // Add or update styles
+        let styleElement = document.getElementById('i18n-styles');
+if (!styleElement) {
+    styleElement = document.createElement('style');
+    styleElement.id = 'i18n-styles';
+    document.head.appendChild(styleElement);
+}
+
+// Update styles with current language direction
+styleElement.textContent = `
+    .language-switcher {
+        position: fixed;
+        top: 1rem;
+        ${this.rtlLanguages.includes(this.currentLang) ? 'left' : 'right'}: 1rem;
+        z-index: 9999;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        background: white;
+        font-size: 0.875rem;
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
 
                 .rtl .language-switcher {
                     left: 1rem;
