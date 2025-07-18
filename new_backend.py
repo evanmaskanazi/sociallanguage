@@ -1660,20 +1660,24 @@ def get_therapist_clients():
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         clients = pagination.items
 
-        # Build response
         # Build response with optimized queries
-        # Pre-fetch all related data in one query
         from sqlalchemy.orm import joinedload, selectinload
         from sqlalchemy import and_, func, case
 
-        # Pre-fetch tracking plans but not checkins (since it's dynamic)
-        clients_with_data = db.session.query(Client).filter(
-            Client.id.in_([c.id for c in clients])
+        # Get all client IDs
+        client_ids = [c.id for c in clients]
+
+        # Pre-fetch tracking plans with categories in one query
+        clients_with_plans = db.session.query(Client).filter(
+            Client.id.in_(client_ids)
         ).options(
             selectinload(Client.tracking_plans).selectinload(ClientTrackingPlan.category)
         ).all()
 
-        # Get last check-ins for all clients in one query
+        # Create a map for quick lookup
+        client_map = {c.id: c for c in clients_with_plans}
+
+        # Get last check-in dates for all clients in one query
         week_start = date.today() - timedelta(days=date.today().weekday())
 
         # Subquery for last checkin dates
@@ -1681,7 +1685,7 @@ def get_therapist_clients():
             DailyCheckin.client_id,
             func.max(DailyCheckin.checkin_date).label('last_date')
         ).filter(
-            DailyCheckin.client_id.in_([c.id for c in clients])
+            DailyCheckin.client_id.in_(client_ids)
         ).group_by(DailyCheckin.client_id).subquery()
 
         # Get week checkin counts
@@ -1690,7 +1694,7 @@ def get_therapist_clients():
             func.count(DailyCheckin.id).label('week_count')
         ).filter(
             and_(
-                DailyCheckin.client_id.in_([c.id for c in clients]),
+                DailyCheckin.client_id.in_(client_ids),
                 DailyCheckin.checkin_date >= week_start
             )
         ).group_by(DailyCheckin.client_id).all()
@@ -1711,16 +1715,19 @@ def get_therapist_clients():
 
         last_checkin_map = {lc.client_id: lc.checkin_date for lc in last_checkins}
 
-        # Build response with pre-fetched data
+        # Build response
         client_data = []
-        for client in clients_with_data:
+        for client in clients:
+            # Get the client with pre-loaded plans from our map
+            client_with_plans = client_map.get(client.id, client)
+
             # Use pre-fetched data
             last_checkin_date = last_checkin_map.get(client.id)
             week_checkin_count = week_count_map.get(client.id, 0)
 
             # Translate category names (already loaded)
             tracking_categories = []
-            for plan in client.tracking_plans:
+            for plan in client_with_plans.tracking_plans:
                 if plan.is_active:
                     translated_name = translate_category_name(plan.category.name, lang)
                     tracking_categories.append(translated_name)
