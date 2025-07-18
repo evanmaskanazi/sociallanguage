@@ -4150,6 +4150,7 @@ def submit_checkin():
         })
 
         # Check if future date
+        # Check if future date
         if checkin_date > date.today():
             logger.warning('future_checkin_attempt', extra={
                 'extra_data': {
@@ -4166,10 +4167,6 @@ def submit_checkin():
         # Check if date is too old (more than 1 year)
         if checkin_date < date.today() - timedelta(days=365):
             return jsonify({'error': 'Cannot submit check-in for dates more than 1 year ago'}), 400
-
-        # Validate client has been active for this date
-        if checkin_date < client.start_date:
-            return jsonify({'error': 'Cannot submit check-in before client start date'}), 400
 
         logger.info('checkin_attempt', extra={
             'extra_data': {
