@@ -1661,76 +1661,56 @@ def get_therapist_clients():
         clients = pagination.items
 
         # Build response with optimized queries
-        from sqlalchemy.orm import joinedload, selectinload
-        from sqlalchemy import and_, func, case
-
+        # Build response - simplified approach without complex eager loading
         # Get all client IDs
         client_ids = [c.id for c in clients]
 
-        # Pre-fetch tracking plans with categories in one query
-        clients_with_plans = db.session.query(Client).filter(
-            Client.id.in_(client_ids)
-        ).options(
-            selectinload(Client.tracking_plans).selectinload(ClientTrackingPlan.category)
-        ).all()
+        # Get tracking plans for all clients
+        tracking_plans_data = {}
+        for client_id in client_ids:
+            plans = ClientTrackingPlan.query.filter_by(
+                client_id=client_id,
+                is_active=True
+            ).join(TrackingCategory).all()
+            tracking_plans_data[client_id] = plans
 
-        # Create a map for quick lookup
-        client_map = {c.id: c for c in clients_with_plans}
-
-        # Get last check-in dates for all clients in one query
+        # Get last check-in dates for all clients
         week_start = date.today() - timedelta(days=date.today().weekday())
 
-        # Subquery for last checkin dates
-        last_checkin_subquery = db.session.query(
-            DailyCheckin.client_id,
-            func.max(DailyCheckin.checkin_date).label('last_date')
-        ).filter(
-            DailyCheckin.client_id.in_(client_ids)
-        ).group_by(DailyCheckin.client_id).subquery()
+        # Get last checkin dates and week counts
+        last_checkins = {}
+        week_counts = {}
 
-        # Get week checkin counts
-        week_counts = db.session.query(
-            DailyCheckin.client_id,
-            func.count(DailyCheckin.id).label('week_count')
-        ).filter(
-            and_(
-                DailyCheckin.client_id.in_(client_ids),
+        for client_id in client_ids:
+            # Last checkin
+            last_checkin = DailyCheckin.query.filter_by(
+                client_id=client_id
+            ).order_by(DailyCheckin.checkin_date.desc()).first()
+
+            if last_checkin:
+                last_checkins[client_id] = last_checkin.checkin_date
+
+            # Week count
+            week_count = DailyCheckin.query.filter(
+                DailyCheckin.client_id == client_id,
                 DailyCheckin.checkin_date >= week_start
-            )
-        ).group_by(DailyCheckin.client_id).all()
-
-        week_count_map = {wc.client_id: wc.week_count for wc in week_counts}
-
-        # Get last checkin dates
-        last_checkins = db.session.query(
-            DailyCheckin.client_id,
-            DailyCheckin.checkin_date
-        ).join(
-            last_checkin_subquery,
-            and_(
-                DailyCheckin.client_id == last_checkin_subquery.c.client_id,
-                DailyCheckin.checkin_date == last_checkin_subquery.c.last_date
-            )
-        ).all()
-
-        last_checkin_map = {lc.client_id: lc.checkin_date for lc in last_checkins}
+            ).count()
+            week_counts[client_id] = week_count
 
         # Build response
         client_data = []
         for client in clients:
-            # Get the client with pre-loaded plans from our map
-            client_with_plans = client_map.get(client.id, client)
-
-            # Use pre-fetched data
-            last_checkin_date = last_checkin_map.get(client.id)
-            week_checkin_count = week_count_map.get(client.id, 0)
-
-            # Translate category names (already loaded)
+            # Get tracking categories
             tracking_categories = []
-            for plan in client_with_plans.tracking_plans:
-                if plan.is_active:
+            plans = tracking_plans_data.get(client.id, [])
+            for plan in plans:
+                if plan.is_active and plan.category:
                     translated_name = translate_category_name(plan.category.name, lang)
                     tracking_categories.append(translated_name)
+
+            # Get stats
+            last_checkin_date = last_checkins.get(client.id)
+            week_checkin_count = week_counts.get(client.id, 0)
 
             client_data.append({
                 'id': client.id,
