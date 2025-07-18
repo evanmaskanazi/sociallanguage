@@ -3127,21 +3127,13 @@ def generate_report(client_id, week):
         generation_start = time.time()
 
         # Stream the file generation
-        def generate():
-            # Create Excel workbook
-            wb = create_weekly_report_excel(client, therapist, week_start, week_end, week_num, year, lang)
+        # Create Excel workbook
+        wb = create_weekly_report_excel(client, therapist, week_start, week_end, week_num, year, lang)
 
-            # Save to temporary buffer
-            with BytesIO() as buffer:
-                wb.save(buffer)
-                buffer.seek(0)
-                yield buffer.read()
-
-        response = Response(
-            generate(),
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            headers={'Content-Disposition': f'attachment; filename={filename}'}
-        )
+        # Save to BytesIO buffer
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
 
         # Log successful generation
         generation_time = time.time() - generation_start
@@ -3160,7 +3152,13 @@ def generate_report(client_id, week):
             'user_id': request.current_user.id
         })
 
-        return response
+        # Return file directly
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
 
     except Exception as e:
         logger.error('report_generation_error', extra={
@@ -4116,6 +4114,19 @@ def submit_checkin():
         data = request.json
 
         checkin_date = data.get('date', date.today().isoformat())
+
+        logger.info('checkin_data_received', extra={
+            'extra_data': {
+                'client_id': client.id,
+                'date': data.get('date'),
+                'category_responses': data.get('category_responses'),
+                'has_responses': bool(data.get('category_responses')),
+                'response_count': len(data.get('category_responses', {})),
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
 
         # Validate date format
         try:
