@@ -2449,8 +2449,11 @@ async function checkQueueStatus() {
                     headers: {
                         'Authorization': `Bearer ${authToken}`,
                         'Content-Type': 'application/json',
-                        'Accept-Language': i18n.currentLang
-                    }
+                        'Accept-Language': i18n.currentLang,
+                        'X-CSRF-Token': await getCSRFToken()
+                    },
+                    credentials: 'same-origin',  // Add this
+                     body: JSON.stringify({})
                 });
 
                 if (response.ok) {
