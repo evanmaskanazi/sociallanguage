@@ -4134,6 +4134,21 @@ def submit_checkin():
         except ValueError:
             return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
 
+        # Log the parsed date and validation checks
+        logger.info('checkin_validation_details', extra={
+            'extra_data': {
+                'client_id': client.id,
+                'checkin_date': checkin_date.isoformat(),
+                'today_date': date.today().isoformat(),
+                'is_future': checkin_date > date.today(),
+                'client_start_date': client.start_date.isoformat(),
+                'is_before_start': checkin_date < client.start_date,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
+
         # Check if future date
         if checkin_date > date.today():
             logger.warning('future_checkin_attempt', extra={
@@ -4198,14 +4213,20 @@ def submit_checkin():
 
         # Validate category responses
         category_responses = data.get('category_responses', {})
+        validated_responses = {}
         for cat_id, value in category_responses.items():
             try:
                 value_int = int(value)
+                # Accept 0-5 for medication category (0 = N/A), 1-5 for others
+                cat_id_int = int(cat_id)
                 if value_int < 0 or value_int > 5:
                     return jsonify({'error': f'Invalid value for category {cat_id}. Must be between 0 and 5.'}), 400
-                category_responses[cat_id] = value_int
+                validated_responses[cat_id_int] = value_int
             except (ValueError, TypeError):
                 return jsonify({'error': f'Invalid value for category {cat_id}. Must be a number.'}), 400
+
+        # Use validated responses
+        category_responses = validated_responses
 
         # Process category responses
         responses_logged = []
