@@ -1662,14 +1662,14 @@ def get_therapist_clients():
 
         # Build response
         # Build response with optimized queries
+        # Pre-fetch all related data in one query
         from sqlalchemy.orm import joinedload, selectinload
         from sqlalchemy import and_, func, case
 
-        # Pre-fetch all related data in one query
+        # Pre-fetch tracking plans but not checkins (since it's dynamic)
         clients_with_data = db.session.query(Client).filter(
             Client.id.in_([c.id for c in clients])
         ).options(
-            selectinload(Client.checkins),
             selectinload(Client.tracking_plans).selectinload(ClientTrackingPlan.category)
         ).all()
 
