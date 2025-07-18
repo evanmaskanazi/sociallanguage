@@ -491,179 +491,207 @@
         clearMessages();
     }
 
-    // Handle login
-    async function handleLogin(event) {
-        event.preventDefault();
-        
-        const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPassword').value;
-        
-        // Show loading
-        const loginBtn = document.getElementById('loginBtn');
-        const loginBtnText = document.getElementById('loginBtnText');
-        loginBtn.disabled = true;
-        loginBtnText.innerHTML = `<span class="loading"></span> ${i18n.t('msg.loading')}`;
-        
-        try {
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email, password })
-            });
-            
-            const data = await response.json();
-            
-            if (response.ok) {
-                // Save token
-                localStorage.setItem('authToken', data.token);
-                localStorage.setItem('userRole', data.user.role);
-                
-                showMessage(i18n.t('msg.login_success'), 'success');
-                
-                // Redirect based on role
-                setTimeout(() => {
-                    if (data.user.role === 'therapist') {
-                        window.location.href = '/therapist-dashboard.html';
-                    } else {
-                        window.location.href = '/client-dashboard.html';
-                    }
-                }, 1000);
-            } else {
-                showMessage(data.error || i18n.t('login.error'), 'error');
-            }
-        } catch (error) {
-            showMessage(i18n.t('msg.network_error'), 'error');
-        } finally {
-            loginBtn.disabled = false;
-            loginBtnText.textContent = i18n.t('btn.login');
-        }
-    }
+// Replace the handleLogin function (around line 470) with:
+async function handleLogin(event) {
+    event.preventDefault();
 
-    // Handle registration (therapists only)
-    async function handleRegister(event) {
-        event.preventDefault();
-        
-        const email = document.getElementById('registerEmail').value;
-        const password = document.getElementById('registerPassword').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
-        
-        if (password !== confirmPassword) {
-            showMessage(i18n.t('register.passwords_mismatch'), 'error');
-            return;
-        }
-        
-        if (password.length < 8) {
-            showMessage(i18n.t('register.password_length'), 'error');
-            return;
-        }
-        
-        // Prepare therapist data
-        const data = {
-            email,
-            password,
-            role: 'therapist',
-            name: document.getElementById('therapistName').value,
-            license_number: document.getElementById('licenseNumber').value,
-            organization: document.getElementById('organization').value || ''
-        };
-        
-        // Show loading
-        const registerBtn = document.getElementById('registerBtn');
-        const registerBtnText = document.getElementById('registerBtnText');
-        registerBtn.disabled = true;
-        registerBtnText.innerHTML = `<span class="loading"></span> ${i18n.t('msg.loading')}`;
-        
-        try {
-            const response = await fetch('/api/auth/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-            
-            const result = await response.json();
-            
-            if (response.ok) {
-                showMessage(i18n.t('msg.registration_success'), 'success');
-                
-                // Save token
-                localStorage.setItem('authToken', result.token);
-                localStorage.setItem('userRole', result.user.role);
-                
-                // Redirect to therapist dashboard
-                setTimeout(() => {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+
+    // Show loading
+    const loginBtn = document.getElementById('loginBtn');
+    const loginBtnText = document.getElementById('loginBtnText');
+    loginBtn.disabled = true;
+    loginBtnText.innerHTML = `<span class="loading"></span> ${i18n.t('msg.loading')}`;
+
+    try {
+        // First, get CSRF token
+        const csrfResponse = await fetch('/api/csrf-token', {
+            credentials: 'same-origin'
+        });
+        const csrfData = await csrfResponse.json();
+        const csrfToken = csrfData.csrf_token;
+
+        // Then make login request with CSRF token
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // Save token
+            localStorage.setItem('authToken', data.token);
+            localStorage.setItem('userRole', data.user.role);
+
+            showMessage(i18n.t('msg.login_success'), 'success');
+
+            // Redirect based on role
+            setTimeout(() => {
+                if (data.user.role === 'therapist') {
                     window.location.href = '/therapist-dashboard.html';
-                }, 1500);
-            } else {
-                if (result.error && result.error.includes('license_number')) {
-                    showMessage(i18n.t('register.license_exists'), 'error');
-                } else if (result.error && result.error.includes('Email already registered')) {
-                    showMessage(i18n.t('register.email_exists'), 'error');
                 } else {
-                    showMessage(result.error || i18n.t('msg.error'), 'error');
+                    window.location.href = '/client-dashboard.html';
                 }
-            }
-        } catch (error) {
-            showMessage(i18n.t('msg.network_error'), 'error');
-        } finally {
-            registerBtn.disabled = false;
-            registerBtnText.textContent = i18n.t('register.create_account');
+            }, 1000);
+        } else {
+            showMessage(data.error || i18n.t('login.error'), 'error');
         }
+    } catch (error) {
+        showMessage(i18n.t('msg.network_error'), 'error');
+    } finally {
+        loginBtn.disabled = false;
+        loginBtnText.textContent = i18n.t('btn.login');
+    }
+}
+
+// Around line 522, update handleRegister to include CSRF:
+async function handleRegister(event) {
+    event.preventDefault();
+
+    const email = document.getElementById('registerEmail').value;
+    const password = document.getElementById('registerPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    if (password !== confirmPassword) {
+        showMessage(i18n.t('register.passwords_mismatch'), 'error');
+        return;
     }
 
-    // Handle password reset
-    async function handleResetPassword(event) {
-        event.preventDefault();
-        
-        const email = document.getElementById('resetEmail').value;
-        
-        if (!email) {
-            showMessage(i18n.t('reset.invalid_email'), 'error');
-            return;
-        }
-        
-        // Show loading
-        const resetBtn = document.getElementById('resetBtn');
-        const resetBtnText = document.getElementById('resetBtnText');
-        resetBtn.disabled = true;
-        resetBtnText.innerHTML = `<span class="loading"></span> ${i18n.t('msg.loading')}`;
-        
-        try {
-            const response = await fetch('/api/auth/request-reset', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email })
-            });
-            
-            const result = await response.json();
-            
-            if (response.ok) {
-                showMessage(i18n.t('reset.success'), 'success');
-                
-                // Clear form and show login after delay
-                document.getElementById('resetEmail').value = '';
-                setTimeout(() => {
-                    showLogin();
-                }, 3000);
-            } else {
-                if (result.error === 'Email not found') {
-                    showMessage(i18n.t('reset.email_not_found'), 'error');
-                } else {
-                    showMessage(result.error || i18n.t('reset.error'), 'error');
-                }
-            }
-        } catch (error) {
-            showMessage(i18n.t('msg.network_error'), 'error');
-        } finally {
-            resetBtn.disabled = false;
-            resetBtnText.textContent = i18n.t('reset.send_link');
-        }
+    if (password.length < 8) {
+        showMessage(i18n.t('register.password_length'), 'error');
+        return;
     }
+
+    // Prepare therapist data
+    const data = {
+        email,
+        password,
+        role: 'therapist',
+        name: document.getElementById('therapistName').value,
+        license_number: document.getElementById('licenseNumber').value,
+        organization: document.getElementById('organization').value || ''
+    };
+
+    // Show loading
+    const registerBtn = document.getElementById('registerBtn');
+    const registerBtnText = document.getElementById('registerBtnText');
+    registerBtn.disabled = true;
+    registerBtnText.innerHTML = `<span class="loading"></span> ${i18n.t('msg.loading')}`;
+
+    try {
+        // Get CSRF token first
+        const csrfResponse = await fetch('/api/csrf-token', {
+            credentials: 'same-origin'
+        });
+        const csrfData = await csrfResponse.json();
+        const csrfToken = csrfData.csrf_token;
+
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            showMessage(i18n.t('msg.registration_success'), 'success');
+
+            // Save token
+            localStorage.setItem('authToken', result.token);
+            localStorage.setItem('userRole', result.user.role);
+
+            // Redirect to therapist dashboard
+            setTimeout(() => {
+                window.location.href = '/therapist-dashboard.html';
+            }, 1500);
+        } else {
+            if (result.error && result.error.includes('license_number')) {
+                showMessage(i18n.t('register.license_exists'), 'error');
+            } else if (result.error && result.error.includes('Email already registered')) {
+                showMessage(i18n.t('register.email_exists'), 'error');
+            } else {
+                showMessage(result.error || i18n.t('msg.error'), 'error');
+            }
+        }
+    } catch (error) {
+        showMessage(i18n.t('msg.network_error'), 'error');
+    } finally {
+        registerBtn.disabled = false;
+        registerBtnText.textContent = i18n.t('register.create_account');
+    }
+}
+
+// Around line 613, update handleResetPassword:
+async function handleResetPassword(event) {
+    event.preventDefault();
+
+    const email = document.getElementById('resetEmail').value;
+
+    if (!email) {
+        showMessage(i18n.t('reset.invalid_email'), 'error');
+        return;
+    }
+
+    // Show loading
+    const resetBtn = document.getElementById('resetBtn');
+    const resetBtnText = document.getElementById('resetBtnText');
+    resetBtn.disabled = true;
+    resetBtnText.innerHTML = `<span class="loading"></span> ${i18n.t('msg.loading')}`;
+
+    try {
+        // Get CSRF token first
+        const csrfResponse = await fetch('/api/csrf-token', {
+            credentials: 'same-origin'
+        });
+        const csrfData = await csrfResponse.json();
+        const csrfToken = csrfData.csrf_token;
+
+        const response = await fetch('/api/auth/request-reset', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ email })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            showMessage(i18n.t('reset.success'), 'success');
+
+            // Clear form and show login after delay
+            document.getElementById('resetEmail').value = '';
+            setTimeout(() => {
+                showLogin();
+            }, 3000);
+        } else {
+            if (result.error === 'Email not found') {
+                showMessage(i18n.t('reset.email_not_found'), 'error');
+            } else {
+                showMessage(result.error || i18n.t('reset.error'), 'error');
+            }
+        }
+    } catch (error) {
+        showMessage(i18n.t('msg.network_error'), 'error');
+    } finally {
+        resetBtn.disabled = false;
+        resetBtnText.textContent = i18n.t('reset.send_link');
+    }
+}
 
     // Show message
     function showMessage(text, type = 'success') {

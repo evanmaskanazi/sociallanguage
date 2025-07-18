@@ -137,7 +137,8 @@ csrf_exempt_endpoints = [
     'serve_i18n',
     'favicon',
     'debug_server_time',
-    'static'
+    'static',
+    'login'
 ]
 
 
