@@ -812,45 +812,37 @@ def require_auth(allowed_roles=None):
 def generate_client_serial():
     """Generate unique client serial number using UUID"""
     import uuid
-    import string
+    import time
 
-    max_attempts = 10
-    for _ in range(max_attempts):
+    max_attempts = 100  # Increased from 10
+    for attempt in range(max_attempts):
         # Generate UUID-based serial
         unique_id = str(uuid.uuid4()).replace('-', '').upper()[:12]
         serial = f'C{unique_id}'
 
-        # Use database-level unique check with proper locking
         try:
-            # Try to insert a temporary record to claim this serial
-            db.session.execute(
-                text("INSERT INTO clients (client_serial, user_id, therapist_id, start_date, created_at) "
-                     "VALUES (:serial, 0, 0, CURRENT_DATE, CURRENT_TIMESTAMP) "
-                     "ON CONFLICT (client_serial) DO NOTHING"),
-                {"serial": serial}
-            )
-            db.session.commit()
-
-            # Check if we successfully claimed it
-            result = db.session.execute(
-                text("SELECT client_serial FROM clients WHERE client_serial = :serial AND user_id = 0"),
-                {"serial": serial}
-            ).first()
-
-            if result:
-                # We got it, now delete the temporary record
-                db.session.execute(
-                    text("DELETE FROM clients WHERE client_serial = :serial AND user_id = 0"),
-                    {"serial": serial}
-                )
-                db.session.commit()
+            # Simple check if exists
+            existing = Client.query.filter_by(client_serial=serial).first()
+            if not existing:
                 return serial
-
         except Exception:
             db.session.rollback()
             continue
 
-    raise Exception("Could not generate unique client serial after 10 attempts")
+    # If still failing after 100 attempts, add timestamp to ensure uniqueness
+    try:
+        timestamp = str(int(time.time() * 1000))[-6:]
+        unique_id = str(uuid.uuid4()).replace('-', '').upper()[:6]
+        serial = f'C{unique_id}{timestamp}'
+
+        # Final check
+        existing = Client.query.filter_by(client_serial=serial).first()
+        if not existing:
+            return serial
+    except Exception:
+        db.session.rollback()
+
+    raise Exception("Could not generate unique client serial after 100 attempts")
 
 
 class EmailCircuitBreaker:
@@ -3076,7 +3068,6 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
 @app.route('/api/reports/generate/<int:client_id>/<week>', methods=['GET'])
 @require_auth(['therapist'])
 @limiter.limit("10 per hour")
-@timeout(60)
 def generate_report(client_id, week):
     """Generate comprehensive weekly Excel report with streaming"""
     try:
