@@ -1013,19 +1013,24 @@ def send_email_async(app, to_email, subject, body, html_body=None):
 
             # Add unsubscribe link to body if we have user context
             unsubscribe_url = None
-            if hasattr(request, 'current_user') and request.current_user:
-                unsubscribe_token = generate_unsubscribe_token(request.current_user.id)
-                base_url = os.environ.get('APP_BASE_URL', 'https://therapy-companion.onrender.com')
-                unsubscribe_url = f"{base_url}/api/unsubscribe/{unsubscribe_token}"
-                body += f"\n\n---\nTo unsubscribe from these emails, visit: {unsubscribe_url}"
+            try:
+                if hasattr(request, 'current_user') and request.current_user:
+                    unsubscribe_token = generate_unsubscribe_token(request.current_user.id)
+                    base_url = os.environ.get('APP_BASE_URL', 'https://therapy-companion.onrender.com')
+                    unsubscribe_url = f"{base_url}/api/unsubscribe/{unsubscribe_token}"
+                    body += f"\n\n---\nTo unsubscribe from these emails, visit: {unsubscribe_url}"
 
-                if html_body:
-                    html_body += f"""
-                                <hr style="margin-top: 40px; border: none; border-top: 1px solid #ccc;">
-                                <p style="text-align: center; color: #999; font-size: 12px;">
-                                    <a href="{unsubscribe_url}" style="color: #999;">Unsubscribe from these emails</a>
-                                </p>
-                                """
+                    if html_body:
+                        html_body += f"""
+                                           <hr style="margin-top: 40px; border: none; border-top: 1px solid #ccc;">
+                                           <p style="text-align: center; color: #999; font-size: 12px;">
+                                               <a href="{unsubscribe_url}" style="color: #999;">Unsubscribe from these emails</a>
+                                           </p>
+                                           """
+            except RuntimeError:
+                # We're not in a request context (e.g., running from Celery)
+                # Skip unsubscribe link for system-generated emails
+                pass
 
             # Add plain text part
             msg.attach(MIMEText(body, 'plain'))
