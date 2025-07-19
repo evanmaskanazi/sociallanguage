@@ -2305,7 +2305,26 @@
     }
 
     // Get timezone offset - this is critical for correct conversion
-    const tzOffset = new Date().getTimezoneOffset();
+    let tzOffset = new Date().getTimezoneOffset();
+
+    // CRITICAL FIX: Validate timezone offset for Jerusalem
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    console.log('Detected timezone:', userTimezone);
+
+    // Jerusalem should ALWAYS have negative offset (east of UTC)
+    if (userTimezone.includes('Jerusalem') || userTimezone.includes('Israel')) {
+        // Force correct offset for Jerusalem based on current date
+        const now = new Date();
+        const jan = new Date(now.getFullYear(), 0, 1);
+        const jul = new Date(now.getFullYear(), 6, 1);
+        const janOffset = jan.getTimezoneOffset();
+        const julOffset = jul.getTimezoneOffset();
+        const isDST = Math.min(janOffset, julOffset) === now.getTimezoneOffset();
+
+        // Israel uses UTC+2 (winter) or UTC+3 (summer)
+        tzOffset = isDST ? -180 : -120;
+        console.log('Forcing Jerusalem timezone offset to:', tzOffset, isDST ? '(Summer Time)' : '(Winter Time)');
+    }
 
     // Log what we're sending for debugging
     console.log('Saving reminder with:');
@@ -2329,7 +2348,7 @@
                 time: time || '09:00',
                 is_active: enabled,
                 email: email || undefined,
-                timezone_offset: tzOffset  // Send the raw offset from JavaScript
+                timezone_offset: tzOffset  // Send the validated offset
             })
         });
 
@@ -2356,6 +2375,32 @@
         showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
     }
 }
+
+function diagnoseTimezone() {
+    const now = new Date();
+    const offset = now.getTimezoneOffset();
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    console.log('=== TIMEZONE DIAGNOSIS ===');
+    console.log('Current local time:', now.toString());
+    console.log('Timezone offset (minutes):', offset);
+    console.log('Timezone name:', timezone);
+    console.log('Expected for Jerusalem: -180 (summer) or -120 (winter)');
+    console.log('Is Jerusalem?', timezone.includes('Jerusalem') || timezone.includes('Israel'));
+
+    if (offset > 0 && (timezone.includes('Jerusalem') || timezone.includes('Israel'))) {
+        console.error('ERROR: Positive offset for Jerusalem timezone!');
+        console.error('This will cause incorrect reminder times!');
+    }
+
+    return {
+        offset: offset,
+        timezone: timezone,
+        isJerusalem: timezone.includes('Jerusalem') || timezone.includes('Israel'),
+        isCorrect: offset < 0 || !(timezone.includes('Jerusalem') || timezone.includes('Israel'))
+    };
+}
+
 
 async function checkQueueStatus() {
     try {
