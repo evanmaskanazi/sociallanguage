@@ -4953,7 +4953,8 @@ def update_reminder():
 
         # JavaScript's getTimezoneOffset() returns minutes to SUBTRACT from local time to get UTC
         # For PDT (UTC-7), it returns 420
-        # So to convert local time to UTC, we need to ADD the offset
+        # For Jerusalem (UTC+3), it returns -180
+        # So to convert local time to UTC, we need to SUBTRACT the offset
 
         # Create a UTC datetime for today with the local time values
         # This ensures we're working with UTC regardless of server timezone
@@ -4969,14 +4970,14 @@ def update_reminder():
             'user_id': request.current_user.id
         })
 
-        # The correct formula is: UTC = LOCAL + offset_minutes
-        # For PDT (offset=420): 9:00 AM + 420 minutes = 4:00 PM UTC
-        # For Jerusalem (offset=-180): 9:00 AM + (-180 minutes) = 6:00 AM UTC
+        # The correct formula is: UTC = LOCAL - offset_minutes
+        # For PDT (offset=420): 7:00 AM - 420 minutes = 0:00 AM UTC (previous day, so +24 hours = midnight UTC)
+        # For Jerusalem (offset=-180): 9:00 AM - (-180 minutes) = 9:00 AM + 180 minutes = 12:00 PM UTC
 
         # Convert local time to total minutes
         local_total_minutes = hour * 60 + minute
 
-        # Add the offset to get UTC
+        # Subtract the offset to get UTC
         utc_total_minutes = local_total_minutes - timezone_offset
 
         # Handle day wraparound
@@ -4993,13 +4994,13 @@ def update_reminder():
         import datetime
         time_obj = datetime.time(utc_hour, utc_minute)
 
-        # Log the conversion result for debugging
+        # Log the conversion result for debugging - FIX THE CALCULATION STRING
         logger.info('timezone_conversion_output', extra={
             'extra_data': {
                 'input_local': f"{hour:02d}:{minute:02d}",
                 'input_offset': timezone_offset,
                 'output_utc': f"{utc_hour:02d}:{utc_minute:02d}",
-                'calculation': f"{local_total_minutes} + {timezone_offset} = {utc_total_minutes} minutes = {utc_hour:02d}:{utc_minute:02d} UTC",
+                'calculation': f"{local_total_minutes} - {timezone_offset} = {utc_total_minutes} minutes = {utc_hour:02d}:{utc_minute:02d} UTC",
                 'client_serial': client.client_serial,
                 'request_id': g.request_id
             },
@@ -5007,7 +5008,7 @@ def update_reminder():
             'user_id': request.current_user.id
         })
 
-        # Log the conversion result
+        # Log the conversion result - FIX THE CALCULATION STRING
         logger.info('timezone_conversion_result', extra={
             'extra_data': {
                 'input_local_time': f"{hour:02d}:{minute:02d}",
@@ -5016,7 +5017,7 @@ def update_reminder():
                 'utc_minute': time_obj.minute,
                 'timezone_offset_minutes': timezone_offset,
                 'expected_offset_sign': 'negative' if timezone_offset < 0 else 'positive',
-                'calculation': f"({hour}*60+{minute})+{timezone_offset} = {utc_hour}:{utc_minute} UTC",
+                'calculation': f"({hour}*60+{minute})-{timezone_offset} = {utc_hour}:{utc_minute} UTC",
                 'client_serial': client.client_serial,
                 'request_id': g.request_id
             },
