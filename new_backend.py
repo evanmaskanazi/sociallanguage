@@ -669,6 +669,25 @@ class Reminder(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     last_sent = db.Column(db.DateTime)
 
+class EmailQueue(db.Model):
+    """Queue for email sending with retry logic"""
+    __tablename__ = 'email_queue'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    to_email = db.Column(db.String(255), nullable=False)
+    subject = db.Column(db.String(500), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    html_body = db.Column(db.Text)
+    status = db.Column(db.String(50), default='pending')  # pending, processing, sent, failed
+    attempts = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    sent_at = db.Column(db.DateTime)
+    last_attempt_at = db.Column(db.DateTime)
+    error_message = db.Column(db.Text)
+    
+    def __repr__(self):
+        return f'<EmailQueue {self.id}: {self.to_email} - {self.status}>'
+
 
 class Report(db.Model):
     __tablename__ = 'reports'
