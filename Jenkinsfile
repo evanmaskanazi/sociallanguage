@@ -2,12 +2,12 @@ pipeline {
     agent any
     
     environment {
-        // Set Node.js path
+        // Set Node.js path - Windows uses backslashes and no /bin
         NODEJS_HOME = "${tool 'NodeJS-18'}"
-        PATH = "${env.NODEJS_HOME}/bin:${env.PATH}"
+        PATH = "${env.NODEJS_HOME};${env.PATH}"
         
         // Cypress environment variables
-        CYPRESS_CACHE_FOLDER = "${WORKSPACE}/.cypress-cache"
+        CYPRESS_CACHE_FOLDER = "${WORKSPACE}\\.cypress-cache"
         CYPRESS_BASE_URL = credentials('cypress-base-url')
         CYPRESS_TEST_USER_EMAIL = credentials('cypress-test-email')
         CYPRESS_TEST_USER_PASSWORD = credentials('cypress-test-password')
@@ -23,11 +23,15 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
-                    // Clean install
-                    bat 'npm ci'
+                    // Check if npm is accessible
+                    bat 'echo %PATH%'
+                    bat 'where npm || echo npm not found in PATH'
+                    
+                    // Clean install - use call for npm on Windows
+                    bat 'call npm ci'
                     
                     // Verify Cypress installation
-                    bat 'npx cypress verify'
+                    bat 'call npx cypress verify'
                 }
             }
         }
@@ -36,7 +40,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        bat 'npm run cypress:run:chrome'
+                        bat 'call npm run cypress:run:chrome'
                     } catch (Exception e) {
                         currentBuild.result = 'UNSTABLE'
                     }
@@ -46,12 +50,12 @@ pipeline {
         
         stage('Run Tests - Edge') {
             when {
-                expression { isUnix() }
+                expression { !isUnix() }  // Changed to !isUnix() for Windows
             }
             steps {
                 script {
                     try {
-                        bat 'npm run cypress:run:edge'
+                        bat 'call npm run cypress:run:edge'
                     } catch (Exception e) {
                         currentBuild.result = 'UNSTABLE'
                     }
@@ -63,23 +67,23 @@ pipeline {
             steps {
                 script {
                     // Merge JSON reports
-                    bat 'npm run report:merge'
+                    bat 'call npm run report:merge'
                     
                     // Generate HTML report
-                    bat 'npm run report:generate'
+                    bat 'call npm run report:generate'
                 }
             }
         }
         
         stage('Archive Results') {
             steps {
-                // Archive test results
+                // Archive test results - fixed typos
                 archiveArtifacts artifacts: 'cypress/results/*.html', allowEmptyArchive: true
-                archiveArtifacts artifacts: 'cypress/screenbatots/**/*.png', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'cypress/screenshots/**/*.png', allowEmptyArchive: true
                 archiveArtifacts artifacts: 'cypress/videos/**/*.mp4', allowEmptyArchive: true
                 
-                // Publibat HTML report
-                publibatHTML([
+                // Publish HTML report - fixed typo from 'publibat' to 'publishHTML'
+                publishHTML([
                     allowMissing: false,
                     alwaysLinkToLastBuild: true,
                     keepAll: true,
@@ -89,7 +93,7 @@ pipeline {
                     reportTitles: 'E2E Test Results'
                 ])
                 
-                // Publibat test results for trends
+                // Publish test results for trends
                 junit 'cypress/results/*.xml'
             }
         }
