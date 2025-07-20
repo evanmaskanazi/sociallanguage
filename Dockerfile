@@ -24,8 +24,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy all application files
 COPY . .
 
-# Convert line endings and make startup script executable
+# Convert line endings and make startup scripts executable
 RUN dos2unix startup.sh && chmod +x startup.sh
+RUN if [ -f startup_celery.sh ]; then dos2unix startup_celery.sh && chmod +x startup_celery.sh; fi
 
 # Use startup script
 CMD ["./startup.sh"]

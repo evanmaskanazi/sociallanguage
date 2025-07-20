@@ -3,7 +3,7 @@ services:
   - type: web
     name: therapy-companion
     runtime: docker
-    plan: Starter  # or 'starter' for paid web service
+    plan: Starter
     dockerfilePath: ./Dockerfile
     envVars:
       - key: PRODUCTION
@@ -35,14 +35,14 @@ services:
   - type: worker
     name: therapy-companion-celery
     runtime: docker
-    plan: Starter  # or 'starter' for paid worker
+    plan: Starter
     dockerfilePath: ./Dockerfile
-    dockerCommand: celery -A celery_app worker --loglevel=INFO --max-tasks-per-child=50 --concurrency=1 --without-gossip --without-mingle --without-heartbeat
+    dockerCommand: ./startup_celery.sh
     envVars:
       - key: PYTHONUNBUFFERED
-        value: 1
+        value: "1"
       - key: C_FORCE_ROOT
-        value: 1
+        value: "1"
       - key: PRODUCTION
         value: "true"
       - key: DATABASE_URL
@@ -61,6 +61,8 @@ services:
         value: "smtp.gmail.com"
       - key: SMTP_PORT
         value: "587"
+      - key: APP_BASE_URL
+        value: "https://therapy-companion.onrender.com"
       - key: REDIS_URL
         value: "redis://red-d1qd17je5dus73e50pr0:HVsZ3KO84jUqRaYFwbMy2Kw9DbGf8ISK@red-d1qd17je5dus73e50pr0:6379"
 
@@ -68,12 +70,12 @@ services:
   - type: worker
     name: therapy-companion-celery-beat
     runtime: docker
-    plan: Starter  # or 'starter' for paid worker
+    plan: Starter
     dockerfilePath: ./Dockerfile
     dockerCommand: celery -A celery_app beat --loglevel=INFO --logfile=-
     envVars:
       - key: PYTHONUNBUFFERED
-        value: 1
+        value: "1"
       - key: PRODUCTION
         value: "true"
       - key: DATABASE_URL
@@ -91,8 +93,4 @@ databases:
   - name: therapy-companion-db
     databaseName: therapy_companion
     user: therapy_user
-    # plan: Free  # CHANGED: Use 'free' for free tier
-    # For paid PostgreSQL, use one of these instead:
     plan: Basic-256mb   # 4GB storage, $7/month
-    # plan: Basic-1gb  # 4GB storage, $17/month
-    # plan: Basic-4gb  # 4GB storage, $57/month

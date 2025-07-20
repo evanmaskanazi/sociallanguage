@@ -7,7 +7,7 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from new_backend import app, db, TrackingCategory, ensure_default_categories, fix_existing_clients
+from new_backend import app, db, TrackingCategory, ensure_default_categories, fix_existing_clients, EmailQueue
 from sqlalchemy import text
 
 

@@ -1055,25 +1055,46 @@ def send_email_async(app, to_email, subject, body, html_body=None):
 
 
 def send_email(to_email, subject, body, html_body=None):
-    """Send email using configured SMTP settings (async)"""
+    """Send email using Celery if available, otherwise use thread"""
     if not app.config.get('MAIL_USERNAME'):
         # Email not configured, return silently
         return False
 
-    # Check circuit breaker before creating thread
-    if not email_circuit_breaker.can_attempt_call():
-        app.logger.warning(f"Email circuit breaker is open, skipping email to {to_email}")
-        return False
+    # Check if Celery is available and configured
+    try:
+        from celery_app import send_email_task
+        # Use Celery to send email asynchronously
+        task = send_email_task.delay(to_email, subject, body, html_body)
+        logger.info(f"Email queued via Celery: {task.id}")
+        return True
+    except ImportError:
+        # Celery not available, fall back to thread-based sending
+        logger.info("Celery not available, using thread-based email sending")
 
-    # Send email in background thread
-    thread = Thread(
-        target=send_email_async,
-        args=(app, to_email, subject, body, html_body)
-    )
-    thread.daemon = True
-    thread.start()
+        # Check circuit breaker before creating thread
+        if not email_circuit_breaker.can_attempt_call():
+            app.logger.warning(f"Email circuit breaker is open, skipping email to {to_email}")
+            return False
 
-    return True
+        # Send email in background thread
+        thread = Thread(
+            target=send_email_async,
+            args=(app, to_email, subject, body, html_body)
+        )
+        thread.daemon = True
+        thread.start()
+
+        return True
+    except Exception as e:
+        logger.error(f"Error queueing email with Celery: {e}")
+        # Fall back to thread-based sending
+        thread = Thread(
+            target=send_email_async,
+            args=(app, to_email, subject, body, html_body)
+        )
+        thread.daemon = True
+        thread.start()
+        return True
 
 
 def check_client_inactivity():
@@ -6050,18 +6071,28 @@ def generate_unsubscribe_token(user_id, email_type='all'):
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
-
-
-
-
-
-# ============= CELERY INTEGRATION =============
-
 # Import and configure Celery
+celery = None
 try:
-    from celery_app import celery
-    from celery import Celery
-    from celery_app import celery, send_reminder_test
+    from celery_app import celery, send_reminder_test, send_email_task, process_email_queue_task
+
+    # Log Celery availability
+    if celery:
+        logger.info("Celery successfully imported and configured")
+
+        # Test Redis connection
+        try:
+            celery.backend.get('test')
+            logger.info("Redis connection successful")
+        except Exception as e:
+            logger.warning(f"Redis connection test failed: {e}")
+
+except ImportError as e:
+    logger.warning(f"Celery not available: {e}")
+    celery = None
+except Exception as e:
+    logger.error(f"Error initializing Celery: {e}")
+    celery = None
 
 
     # Add Celery context to Flask
