@@ -1,0 +1,536 @@
+{
+  "stats": {
+    "suites": 9,
+    "tests": 14,
+    "passes": 8,
+    "pending": 0,
+    "failures": 6,
+    "start": "2025-07-20T16:51:40.062Z",
+    "end": "2025-07-20T16:53:46.410Z",
+    "duration": 126348,
+    "testsRegistered": 14,
+    "passPercent": 57.14285714285714,
+    "pendingPercent": 0,
+    "other": 0,
+    "hasOther": false,
+    "skipped": 0,
+    "hasSkipped": false
+  },
+  "results": [
+    {
+      "uuid": "133663d1-4332-49a0-9661-50256bc05da4",
+      "title": "",
+      "fullFile": "cypress\\e2e\\full-integration.cy.js",
+      "file": "cypress\\e2e\\full-integration.cy.js",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "745a6ed3-e671-4ea1-9cb0-70eaa7a1793b",
+          "title": "Full Client Dashboard Integration Tests",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [],
+          "suites": [
+            {
+              "uuid": "4c5affee-3ec1-41e1-824a-adce6f7bb003",
+              "title": "Authentication and Navigation",
+              "fullFile": "",
+              "file": "",
+              "beforeHooks": [],
+              "afterHooks": [],
+              "tests": [
+                {
+                  "title": "should complete full login flow from homepage",
+                  "fullTitle": "Full Client Dashboard Integration Tests Authentication and Navigation should complete full login flow from homepage",
+                  "timedOut": null,
+                  "duration": 5363,
+                  "state": "passed",
+                  "speed": "medium",
+                  "pass": true,
+                  "fail": false,
+                  "pending": false,
+                  "context": null,
+                  "code": "// Start at homepage\ncy.visit('https://therapy-companion.onrender.com');\n// Click Get Started\ncy.contains('a', 'Get Started').click();\ncy.url().should('include', '/login.html');\n// Login\ncy.get('#loginEmail').type(credentials.email);\ncy.get('#loginPassword').type(credentials.password);\ncy.get('button[type=\"submit\"]').contains('Login').click();\n// Verify dashboard loads\ncy.url().should('include', '/client-dashboard.html');\ncy.contains('My Therapy Journey').should('be.visible');",
+                  "err": {},
+                  "uuid": "a363d8e3-cc3c-4a91-9bbe-0ca3a715068a",
+                  "parentUUID": "4c5affee-3ec1-41e1-824a-adce6f7bb003",
+                  "isHook": false,
+                  "skipped": false
+                }
+              ],
+              "suites": [],
+              "passes": [
+                "a363d8e3-cc3c-4a91-9bbe-0ca3a715068a"
+              ],
+              "failures": [],
+              "pending": [],
+              "skipped": [],
+              "duration": 5363,
+              "root": false,
+              "rootEmpty": false,
+              "_timeout": 2000
+            },
+            {
+              "uuid": "a191501c-3d02-4a81-be37-92d1ebb38257",
+              "title": "Daily Check-in Functionality",
+              "fullFile": "",
+              "file": "",
+              "beforeHooks": [],
+              "afterHooks": [],
+              "tests": [
+                {
+                  "title": "should complete a full daily check-in",
+                  "fullTitle": "Full Client Dashboard Integration Tests Daily Check-in Functionality should complete a full daily check-in",
+                  "timedOut": null,
+                  "duration": 9689,
+                  "state": "passed",
+                  "speed": "medium",
+                  "pass": true,
+                  "fail": false,
+                  "pending": false,
+                  "context": null,
+                  "code": "// Navigate to Check-in tab\ncy.contains('.nav-tab', 'Check-in').click();\n// Verify check-in form is visible\ncy.contains('Daily Check-in').should('be.visible');\n// Set today's date (should be default)\ncy.contains('button', 'Today').click();\n// Fill out all 8 tracking categories\n// Based on the HTML, we need to interact with rating buttons\n// Emotion Level (1-5 scale)\ncy.contains('.form-section', 'Emotion Level').find('.rating-button[data-value=\"4\"]').click();\n// Energy (1-5 scale)\ncy.contains('.form-section', 'Energy').find('.rating-button[data-value=\"3\"]').click();\n// Social Activity\ncy.contains('.form-section', 'Social Activity').find('.rating-button[data-value=\"3\"]').click();\n// Sleep Quality\ncy.contains('.form-section', 'Sleep Quality').find('.rating-button[data-value=\"4\"]').click();\n// Anxiety Level\ncy.contains('.form-section', 'Anxiety Level').find('.rating-button[data-value=\"2\"]').click();\n// Motivation\ncy.contains('.form-section', 'Motivation').find('.rating-button[data-value=\"4\"]').click();\n// Medication (special scale: N/A, No, Partial, Yes)\ncy.contains('.form-section', 'Medication').find('.rating-button[data-value=\"5\"]') // Yes\n.click();\n// Physical Activity\ncy.contains('.form-section', 'Physical Activity').find('.rating-button[data-value=\"3\"]').click();\n// Add optional notes for one category\ncy.get('textarea[id^=\"category-\"]').first().type('Feeling good today, had a productive morning.');\n// Submit the check-in\ncy.contains('button', 'Submit Check-in').click();\n// Verify success message\ncy.contains('Check-in submitted successfully').should('be.visible');",
+                  "err": {},
+                  "uuid": "cb5fbd83-bc26-45e9-8988-ed54fe919d10",
+                  "parentUUID": "a191501c-3d02-4a81-be37-92d1ebb38257",
+                  "isHook": false,
+                  "skipped": false
+                },
+                {
+                  "title": "should validate required fields before submission",
+                  "fullTitle": "Full Client Dashboard Integration Tests Daily Check-in Functionality should validate required fields before submission",
+                  "timedOut": null,
+                  "duration": 6442,
+                  "state": "passed",
+                  "speed": "medium",
+                  "pass": true,
+                  "fail": false,
+                  "pending": false,
+                  "context": null,
+                  "code": "// Navigate to Check-in tab\ncy.contains('.nav-tab', 'Check-in').click();\n// Try to submit without filling anything\ncy.contains('button', 'Submit Check-in').click();\n// Should show error message\ncy.contains('Please complete all required ratings').should('be.visible');",
+                  "err": {},
+                  "uuid": "238717c4-f712-463f-ac50-c999f74f9c9f",
+                  "parentUUID": "a191501c-3d02-4a81-be37-92d1ebb38257",
+                  "isHook": false,
+                  "skipped": false
+                },
+                {
+                  "title": "should clear form when Clear button is clicked",
+                  "fullTitle": "Full Client Dashboard Integration Tests Daily Check-in Functionality should clear form when Clear button is clicked",
+                  "timedOut": null,
+                  "duration": 6478,
+                  "state": "passed",
+                  "speed": "medium",
+                  "pass": true,
+                  "fail": false,
+                  "pending": false,
+                  "context": null,
+                  "code": "// Navigate to Check-in tab\ncy.contains('.nav-tab', 'Check-in').click();\n// Select some ratings\ncy.get('.rating-button[data-value=\"3\"]').first().click();\ncy.get('textarea[id^=\"category-\"]').first().type('Test note');\n// Click Clear\ncy.contains('button', 'Clear').click();\n// Verify form is cleared\ncy.get('.rating-button.selected').should('not.exist');\ncy.get('textarea[id^=\"category-\"]').first().should('have.value', '');",
+                  "err": {},
+                  "uuid": "36772faf-d465-4786-bb94-dc6b40de9422",
+                  "parentUUID": "a191501c-3d02-4a81-be37-92d1ebb38257",
+                  "isHook": false,
+                  "skipped": false
+                }
+              ],
+              "suites": [],
+              "passes": [
+                "cb5fbd83-bc26-45e9-8988-ed54fe919d10",
+                "238717c4-f712-463f-ac50-c999f74f9c9f",
+                "36772faf-d465-4786-bb94-dc6b40de9422"
+              ],
+              "failures": [],
+              "pending": [],
+              "skipped": [],
+              "duration": 22609,
+              "root": false,
+              "rootEmpty": false,
+              "_timeout": 2000
+            },
+            {
+              "uuid": "84a88d0f-1d61-4c80-a6e0-19b8fcd01560",
+              "title": "Weekly Calendar View",
+              "fullFile": "",
+              "file": "",
+              "beforeHooks": [],
+              "afterHooks": [],
+              "tests": [
+                {
+                  "title": "should navigate through weeks",
+                  "fullTitle": "Full Client Dashboard Integration Tests Weekly Calendar View should navigate through weeks",
+                  "timedOut": null,
+                  "duration": 6354,
+                  "state": "passed",
+                  "speed": "medium",
+                  "pass": true,
+                  "fail": false,
+                  "pending": false,
+                  "context": null,
+                  "code": "// Should show current week by default\ncy.contains('This Week').should('be.visible');\n// Navigate to previous week\ncy.contains('button', 'Previous Week').click();\ncy.get('.week-grid .day-cell').should('have.length', 7);\n// Navigate to next week\ncy.contains('button', 'Next Week').click();\ncy.contains('button', 'Next Week').click(); // Go forward one more\ncy.get('.week-grid .day-cell').should('have.length', 7);",
+                  "err": {},
+                  "uuid": "ef5edf75-9558-464f-9036-05e00f1f426f",
+                  "parentUUID": "84a88d0f-1d61-4c80-a6e0-19b8fcd01560",
+                  "isHook": false,
+                  "skipped": false
+                },
+                {
+                  "title": "should allow selecting dates from calendar",
+                  "fullTitle": "Full Client Dashboard Integration Tests Weekly Calendar View should allow selecting dates from calendar",
+                  "timedOut": null,
+                  "duration": 10319,
+                  "state": "failed",
+                  "speed": null,
+                  "pass": false,
+                  "fail": true,
+                  "pending": false,
+                  "context": null,
+                  "code": "// Click on a day cell\ncy.get('.day-cell').first().click();\n// Should navigate to check-in tab with selected date\ncy.get('.nav-tab.active').should('contain', 'Check-in');\ncy.get('#checkinDate').should('not.have.value', '');",
+                  "err": {
+                    "message": "AssertionError: Timed out retrying after 4000ms: Expected to find element: `.nav-tab.active`, but never found it.",
+                    "estack": "AssertionError: Timed out retrying after 4000ms: Expected to find element: `.nav-tab.active`, but never found it.\n    at Context.eval (webpack://cypresstests/./cypress/e2e/full-integration.cy.js:165:32)",
+                    "diff": null
+                  },
+                  "uuid": "c8baf925-5dcc-47e8-b0a8-a186d3b1a213",
+                  "parentUUID": "84a88d0f-1d61-4c80-a6e0-19b8fcd01560",
+                  "isHook": false,
+                  "skipped": false
+                }
+              ],
+              "suites": [],
+              "passes": [
+                "ef5edf75-9558-464f-9036-05e00f1f426f"
+              ],
+              "failures": [
+                "c8baf925-5dcc-47e8-b0a8-a186d3b1a213"
+              ],
+              "pending": [],
+              "skipped": [],
+              "duration": 16673,
+              "root": false,
+              "rootEmpty": false,
+              "_timeout": 2000
+            },
+            {
+              "uuid": "f1481772-161b-4e08-ae5e-baa919a4e9fd",
+              "title": "Reports Generation",
+              "fullFile": "",
+              "file": "",
+              "beforeHooks": [],
+              "afterHooks": [],
+              "tests": [
+                {
+                  "title": "should generate Excel report",
+                  "fullTitle": "Full Client Dashboard Integration Tests Reports Generation should generate Excel report",
+                  "timedOut": null,
+                  "duration": 6896,
+                  "state": "failed",
+                  "speed": null,
+                  "pass": false,
+                  "fail": true,
+                  "pending": false,
+                  "context": null,
+                  "code": "// Navigate to Reports tab\ncy.contains('.nav-tab', 'Reports').click();\n// Select current week\nconst currentWeek = new Date().toISOString().slice(0, 10).replace(/\\d{2}$/, 'W' + Math.ceil(new Date().getDate() / 7));\ncy.get('#reportWeek').type(currentWeek);\n// Intercept the download request\ncy.intercept('GET', '/api/client/generate-report/*', {\n  statusCode: 200,\n  headers: {\n    'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',\n    'content-disposition': 'attachment; filename=\"report.xlsx\"'\n  },\n  body: 'mock-excel-data'\n}).as('excelDownload');\n// Click Generate Excel Report\ncy.contains('button', 'Generate Excel Report').click();\n// Verify download was triggered\ncy.wait('@excelDownload');\ncy.contains('Report generated and downloaded successfully').should('be.visible');",
+                  "err": {
+                    "message": "CypressError: Typing into a `week` input with `cy.type()` requires a valid week with the format `YYYY-Www`, where `W` is the literal character `W` and `ww` is the week number (00-53). You passed: `2025-07-W3`\n\nhttps://on.cypress.io/type",
+                    "estack": "CypressError: Typing into a `week` input with `cy.type()` requires a valid week with the format `YYYY-Www`, where `W` is the literal character `W` and `ww` is the week number (00-53). You passed: `2025-07-W3`\n\nhttps://on.cypress.io/type\n    at validateTyping (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:117692:66)\n    at <unknown> (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:117885:15)\n    at tryCatcher (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1777:23)\n    at Promise.attempt.Promise.try (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:4285:29)\n    at <unknown> (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:117927:70)\n    at tryCatcher (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1777:23)\n    at Object.gotValue (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:6446:18)\n    at Object.gotAccum (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:6435:25)\n    at Object.tryCatcher (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1777:23)\n    at Promise._settlePromiseFromHandler (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1489:31)\n    at Promise._settlePromise (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1546:18)\n    at Promise._settlePromiseCtx (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1583:10)\n    at _drainQueueStep (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:2381:12)\n    at _drainQueue (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:2370:9)\n    at Async._drainQueues (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:2386:5)\n    at Async.drainQueues (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:2256:14)",
+                    "diff": null
+                  },
+                  "uuid": "576df448-652d-48ae-b2de-b99c49808bd4",
+                  "parentUUID": "f1481772-161b-4e08-ae5e-baa919a4e9fd",
+                  "isHook": false,
+                  "skipped": false
+                },
+                {
+                  "title": "should generate PDF report",
+                  "fullTitle": "Full Client Dashboard Integration Tests Reports Generation should generate PDF report",
+                  "timedOut": null,
+                  "duration": 6679,
+                  "state": "failed",
+                  "speed": null,
+                  "pass": false,
+                  "fail": true,
+                  "pending": false,
+                  "context": null,
+                  "code": "// Navigate to Reports tab\ncy.contains('.nav-tab', 'Reports').click();\n// Select current week\nconst currentWeek = new Date().toISOString().slice(0, 10).replace(/\\d{2}$/, 'W' + Math.ceil(new Date().getDate() / 7));\ncy.get('#reportWeek').type(currentWeek);\n// Intercept the PDF request\ncy.intercept('GET', '/api/client/generate-pdf/*', {\n  statusCode: 200,\n  headers: {\n    'content-type': 'application/pdf',\n    'content-disposition': 'attachment; filename=\"report.pdf\"'\n  },\n  body: 'mock-pdf-data'\n}).as('pdfDownload');\n// Click Generate PDF Report\ncy.contains('button', 'Generate PDF Report').click();\n// Verify download was triggered\ncy.wait('@pdfDownload');\ncy.contains('Report generated and downloaded successfully').should('be.visible');",
+                  "err": {
+                    "message": "CypressError: Typing into a `week` input with `cy.type()` requires a valid week with the format `YYYY-Www`, where `W` is the literal character `W` and `ww` is the week number (00-53). You passed: `2025-07-W3`\n\nhttps://on.cypress.io/type",
+                    "estack": "CypressError: Typing into a `week` input with `cy.type()` requires a valid week with the format `YYYY-Www`, where `W` is the literal character `W` and `ww` is the week number (00-53). You passed: `2025-07-W3`\n\nhttps://on.cypress.io/type\n    at validateTyping (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:117692:66)\n    at <unknown> (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:117885:15)\n    at tryCatcher (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1777:23)\n    at Promise.attempt.Promise.try (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:4285:29)\n    at <unknown> (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:117927:70)\n    at tryCatcher (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1777:23)\n    at Object.gotValue (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:6446:18)\n    at Object.gotAccum (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:6435:25)\n    at Object.tryCatcher (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1777:23)\n    at Promise._settlePromiseFromHandler (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1489:31)\n    at Promise._settlePromise (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1546:18)\n    at Promise._settlePromiseCtx (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1583:10)\n    at _drainQueueStep (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:2381:12)\n    at _drainQueue (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:2370:9)\n    at Async._drainQueues (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:2386:5)\n    at Async.drainQueues (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:2256:14)",
+                    "diff": null
+                  },
+                  "uuid": "55ed4479-6e91-42ca-b04e-40f68259c081",
+                  "parentUUID": "f1481772-161b-4e08-ae5e-baa919a4e9fd",
+                  "isHook": false,
+                  "skipped": false
+                },
+                {
+                  "title": "should prepare email report",
+                  "fullTitle": "Full Client Dashboard Integration Tests Reports Generation should prepare email report",
+                  "timedOut": null,
+                  "duration": 6638,
+                  "state": "failed",
+                  "speed": null,
+                  "pass": false,
+                  "fail": true,
+                  "pending": false,
+                  "context": null,
+                  "code": "// Navigate to Reports tab\ncy.contains('.nav-tab', 'Reports').click();\n// Select current week\nconst currentWeek = new Date().toISOString().slice(0, 10).replace(/\\d{2}$/, 'W' + Math.ceil(new Date().getDate() / 7));\ncy.get('#reportWeek').type(currentWeek);\n// Mock the API responses\ncy.intercept('GET', '/api/client/week-checkins/*', {\n  statusCode: 200,\n  body: {\n    checkins: {\n      '2024-07-20': {\n        time: '10:30 AM',\n        emotional: 4,\n        medication: 5,\n        activity: 3\n      }\n    }\n  }\n}).as('weekCheckins');\ncy.intercept('GET', '/api/client/goals/*', {\n  statusCode: 200,\n  body: {\n    goals: []\n  }\n}).as('weekGoals');\n// Click Prepare Email Report\ncy.contains('button', 'Prepare Email Report').click();\n// Wait for API calls\ncy.wait(['@weekCheckins', '@weekGoals']);\n// Verify email preview is shown\ncy.contains('Email Report Preview').should('be.visible');\ncy.contains('Copy this email content to send to your therapist').should('be.visible');",
+                  "err": {
+                    "message": "CypressError: Typing into a `week` input with `cy.type()` requires a valid week with the format `YYYY-Www`, where `W` is the literal character `W` and `ww` is the week number (00-53). You passed: `2025-07-W3`\n\nhttps://on.cypress.io/type",
+                    "estack": "CypressError: Typing into a `week` input with `cy.type()` requires a valid week with the format `YYYY-Www`, where `W` is the literal character `W` and `ww` is the week number (00-53). You passed: `2025-07-W3`\n\nhttps://on.cypress.io/type\n    at validateTyping (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:117692:66)\n    at <unknown> (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:117885:15)\n    at tryCatcher (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1777:23)\n    at Promise.attempt.Promise.try (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:4285:29)\n    at <unknown> (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:117927:70)\n    at tryCatcher (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1777:23)\n    at Object.gotValue (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:6446:18)\n    at Object.gotAccum (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:6435:25)\n    at Object.tryCatcher (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1777:23)\n    at Promise._settlePromiseFromHandler (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1489:31)\n    at Promise._settlePromise (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1546:18)\n    at Promise._settlePromiseCtx (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1583:10)\n    at _drainQueueStep (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:2381:12)\n    at _drainQueue (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:2370:9)\n    at Async._drainQueues (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:2386:5)\n    at Async.drainQueues (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:2256:14)",
+                    "diff": null
+                  },
+                  "uuid": "3ad27fe9-8cfd-4379-a701-1b4102f3b787",
+                  "parentUUID": "f1481772-161b-4e08-ae5e-baa919a4e9fd",
+                  "isHook": false,
+                  "skipped": false
+                }
+              ],
+              "suites": [],
+              "passes": [],
+              "failures": [
+                "576df448-652d-48ae-b2de-b99c49808bd4",
+                "55ed4479-6e91-42ca-b04e-40f68259c081",
+                "3ad27fe9-8cfd-4379-a701-1b4102f3b787"
+              ],
+              "pending": [],
+              "skipped": [],
+              "duration": 20213,
+              "root": false,
+              "rootEmpty": false,
+              "_timeout": 2000
+            },
+            {
+              "uuid": "1f66fa26-797e-4162-9080-fe09c9329ea2",
+              "title": "Goals Management",
+              "fullFile": "",
+              "file": "",
+              "beforeHooks": [],
+              "afterHooks": [],
+              "tests": [
+                {
+                  "title": "should display and interact with weekly goals",
+                  "fullTitle": "Full Client Dashboard Integration Tests Goals Management should display and interact with weekly goals",
+                  "timedOut": null,
+                  "duration": 13434,
+                  "state": "failed",
+                  "speed": null,
+                  "pass": false,
+                  "fail": true,
+                  "pending": false,
+                  "context": null,
+                  "code": "// Navigate to Goals tab\ncy.contains('.nav-tab', 'Goals').click();\n// Should show goals section\ncy.contains('Weekly Goals').should('be.visible');\n// Select current week\ncy.contains('button', 'Load Goals').click();\n// Check if goals are displayed or no goals message\ncy.get('body').then($body => {\n  if ($body.find('.goal-item').length > 0) {\n    // If goals exist, try to check one\n    cy.get('.goal-checkbox').first().check();\n  } else {\n    // Verify no goals message\n    cy.contains('No goals set for this week').should('be.visible');\n  }\n});",
+                  "err": {
+                    "message": "AssertionError: Timed out retrying after 4000ms: expected '<li>' to be 'visible'\n\nThis element `<li>` is not visible because its parent `<div#overview.tab-content>` has CSS property: `display: none`",
+                    "estack": "AssertionError: Timed out retrying after 4000ms: expected '<li>' to be 'visible'\n\nThis element `<li>` is not visible because its parent `<div#overview.tab-content>` has CSS property: `display: none`\n    at Context.eval (webpack://cypresstests/./cypress/e2e/full-integration.cy.js:289:52)\n    at getRet (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:120949:20)\n    at tryCatcher (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1777:23)\n    at Promise.attempt.Promise.try (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:4285:29)\n    at Context.thenFn (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:120960:66)\n    at Context.then (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:121211:21)\n    at wrapped (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:141532:19)",
+                    "diff": null
+                  },
+                  "uuid": "5dbb24f8-7cf9-48dd-9c0c-c7b80c88b51a",
+                  "parentUUID": "1f66fa26-797e-4162-9080-fe09c9329ea2",
+                  "isHook": false,
+                  "skipped": false
+                }
+              ],
+              "suites": [],
+              "passes": [],
+              "failures": [
+                "5dbb24f8-7cf9-48dd-9c0c-c7b80c88b51a"
+              ],
+              "pending": [],
+              "skipped": [],
+              "duration": 13434,
+              "root": false,
+              "rootEmpty": false,
+              "_timeout": 2000
+            },
+            {
+              "uuid": "f74f3e89-a6ce-4e69-8920-6221d87aa8ea",
+              "title": "Settings and Account Management",
+              "fullFile": "",
+              "file": "",
+              "beforeHooks": [],
+              "afterHooks": [],
+              "tests": [
+                {
+                  "title": "should allow password change",
+                  "fullTitle": "Full Client Dashboard Integration Tests Settings and Account Management should allow password change",
+                  "timedOut": null,
+                  "duration": 11039,
+                  "state": "passed",
+                  "speed": "slow",
+                  "pass": true,
+                  "fail": false,
+                  "pending": false,
+                  "context": null,
+                  "code": "// Navigate to Settings tab\ncy.contains('.nav-tab', 'Settings').click();\n// Fill password change form\ncy.get('#currentPassword').type(credentials.password);\ncy.get('#newPassword').type('NewPass123!');\ncy.get('#confirmPassword').type('NewPass123!');\n// Intercept password change request\ncy.intercept('POST', '/api/client/change-password', {\n  statusCode: 200,\n  body: {\n    message: 'Password changed successfully'\n  }\n}).as('passwordChange');\n// Submit form\ncy.contains('button', 'Update Password').click();\n// Verify success\ncy.wait('@passwordChange');\ncy.contains('Password changed successfully').should('be.visible');",
+                  "err": {},
+                  "uuid": "251ce6c4-bfaf-4180-9430-cff193ab1bcb",
+                  "parentUUID": "f74f3e89-a6ce-4e69-8920-6221d87aa8ea",
+                  "isHook": false,
+                  "skipped": false
+                },
+                {
+                  "title": "should configure email reminders",
+                  "fullTitle": "Full Client Dashboard Integration Tests Settings and Account Management should configure email reminders",
+                  "timedOut": null,
+                  "duration": 9936,
+                  "state": "passed",
+                  "speed": "medium",
+                  "pass": true,
+                  "fail": false,
+                  "pending": false,
+                  "context": null,
+                  "code": "// Navigate to Settings tab\ncy.contains('.nav-tab', 'Settings').click();\n// Enable reminder\ncy.get('#enableReminder').check();\n// Set reminder time\ncy.get('#reminderTime').should('be.visible');\ncy.get('#reminderTime').type('09:00');\n// Set optional email\ncy.get('#reminderEmail').type('reminder@example.com');\n// Mock the save request\ncy.intercept('POST', '/api/client/update-reminder', {\n  statusCode: 200,\n  body: {\n    message: 'Reminder settings saved'\n  }\n}).as('saveReminder');\n// Save settings\ncy.contains('button', 'Save Reminder Settings').click();\n// Verify success\ncy.wait('@saveReminder');\ncy.contains('Reminder settings saved successfully').should('be.visible');",
+                  "err": {},
+                  "uuid": "bef6597e-180b-4cb1-aa6d-22ce2123b043",
+                  "parentUUID": "f74f3e89-a6ce-4e69-8920-6221d87aa8ea",
+                  "isHook": false,
+                  "skipped": false
+                }
+              ],
+              "suites": [],
+              "passes": [
+                "251ce6c4-bfaf-4180-9430-cff193ab1bcb",
+                "bef6597e-180b-4cb1-aa6d-22ce2123b043"
+              ],
+              "failures": [],
+              "pending": [],
+              "skipped": [],
+              "duration": 20975,
+              "root": false,
+              "rootEmpty": false,
+              "_timeout": 2000
+            },
+            {
+              "uuid": "8f4e4565-d2d3-4f32-b3ed-d860e096a950",
+              "title": "Progress Tracking",
+              "fullFile": "",
+              "file": "",
+              "beforeHooks": [],
+              "afterHooks": [],
+              "tests": [
+                {
+                  "title": "should load and display progress data",
+                  "fullTitle": "Full Client Dashboard Integration Tests Progress Tracking should load and display progress data",
+                  "timedOut": null,
+                  "duration": 8949,
+                  "state": "passed",
+                  "speed": "medium",
+                  "pass": true,
+                  "fail": false,
+                  "pending": false,
+                  "context": null,
+                  "code": "// Navigate to Progress tab\ncy.contains('.nav-tab', 'Progress').click();\n// Mock progress data\ncy.intercept('GET', '/api/client/progress', {\n  statusCode: 200,\n  body: {\n    progress: {\n      checkins: [{\n        emotional: 4,\n        medication: 5,\n        activity: 3,\n        date: '2024-07-20'\n      }, {\n        emotional: 3,\n        medication: 5,\n        activity: 4,\n        date: '2024-07-19'\n      }]\n    }\n  }\n}).as('loadProgress');\n// Select time range\ncy.get('#progressRange').select('7');\ncy.contains('button', 'Update').click();\n// Wait for data to load\ncy.wait('@loadProgress');\n// Verify progress is displayed\ncy.contains('Total check-ins:').should('be.visible');\ncy.contains('Average emotional rating:').should('be.visible');\ncy.contains('Medication adherence:').should('be.visible');",
+                  "err": {},
+                  "uuid": "e19b42c5-0e52-4e8e-8e08-0817af78ece0",
+                  "parentUUID": "8f4e4565-d2d3-4f32-b3ed-d860e096a950",
+                  "isHook": false,
+                  "skipped": false
+                }
+              ],
+              "suites": [],
+              "passes": [
+                "e19b42c5-0e52-4e8e-8e08-0817af78ece0"
+              ],
+              "failures": [],
+              "pending": [],
+              "skipped": [],
+              "duration": 8949,
+              "root": false,
+              "rootEmpty": false,
+              "_timeout": 2000
+            },
+            {
+              "uuid": "fb81eb74-ae87-4eef-a708-18f987750c0b",
+              "title": "Full User Journey",
+              "fullFile": "",
+              "file": "",
+              "beforeHooks": [],
+              "afterHooks": [],
+              "tests": [
+                {
+                  "title": "should complete entire check-in and report flow",
+                  "fullTitle": "Full Client Dashboard Integration Tests Full User Journey should complete entire check-in and report flow",
+                  "timedOut": null,
+                  "duration": 17247,
+                  "state": "failed",
+                  "speed": null,
+                  "pass": false,
+                  "fail": true,
+                  "pending": false,
+                  "context": null,
+                  "code": "// 1. Login\nperformLogin();\n// 2. Complete a check-in\ncy.contains('.nav-tab', 'Check-in').click();\n// Fill minimal required fields\ncy.get('.rating-button[data-value=\"4\"]').first().click();\ncy.get('.rating-button[data-value=\"3\"]').eq(1).click();\ncy.get('.rating-button[data-value=\"5\"]').last().click();\n// Submit\ncy.contains('button', 'Submit Check-in').click();\ncy.contains('Check-in submitted successfully').should('be.visible');\n// 3. Check progress\ncy.contains('.nav-tab', 'Progress').click();\ncy.contains('Your Progress').should('be.visible');\n// 4. Generate a report\ncy.contains('.nav-tab', 'Reports').click();\ncy.contains('Generate Reports').should('be.visible');\n// 5. Logout\ncy.contains('button', 'Logout').click();\ncy.url().should('include', '/login.html');",
+                  "err": {
+                    "message": "AssertionError: Timed out retrying after 4000ms: Expected to find content: 'Generate Reports' but never did.",
+                    "estack": "AssertionError: Timed out retrying after 4000ms: Expected to find content: 'Generate Reports' but never did.\n    at Context.eval (webpack://cypresstests/./cypress/e2e/full-integration.cy.js:411:38)",
+                    "diff": null
+                  },
+                  "uuid": "266afb60-4fa1-4c15-b96c-d2b854ac22ef",
+                  "parentUUID": "fb81eb74-ae87-4eef-a708-18f987750c0b",
+                  "isHook": false,
+                  "skipped": false
+                }
+              ],
+              "suites": [],
+              "passes": [],
+              "failures": [
+                "266afb60-4fa1-4c15-b96c-d2b854ac22ef"
+              ],
+              "pending": [],
+              "skipped": [],
+              "duration": 17247,
+              "root": false,
+              "rootEmpty": false,
+              "_timeout": 2000
+            }
+          ],
+          "passes": [],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 0,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    }
+  ],
+  "meta": {
+    "mocha": {
+      "version": "7.2.0"
+    },
+    "mochawesome": {
+      "options": {
+        "quiet": false,
+        "reportFilename": "mochawesome",
+        "saveHtml": true,
+        "saveJson": true,
+        "consoleReporter": "spec",
+        "useInlineDiffs": false,
+        "code": true
+      },
+      "version": "7.1.3"
+    },
+    "marge": {
+      "options": {
+        "reportDir": "cypress/results",
+        "overwrite": false,
+        "html": true,
+        "json": true
+      },
+      "version": "6.2.0"
+    }
+  }
+}

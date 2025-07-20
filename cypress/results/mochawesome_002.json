@@ -1,0 +1,143 @@
+{
+  "stats": {
+    "suites": 1,
+    "tests": 3,
+    "passes": 3,
+    "pending": 0,
+    "failures": 0,
+    "start": "2025-07-20T15:18:02.063Z",
+    "end": "2025-07-20T15:18:12.800Z",
+    "duration": 10737,
+    "testsRegistered": 3,
+    "passPercent": 100,
+    "pendingPercent": 0,
+    "other": 0,
+    "hasOther": false,
+    "skipped": 0,
+    "hasSkipped": false
+  },
+  "results": [
+    {
+      "uuid": "d8f9ae7b-35da-432b-9e57-85d767ef85f4",
+      "title": "",
+      "fullFile": "cypress\\e2e\\integration-test.cy.js",
+      "file": "cypress\\e2e\\integration-test.cy.js",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "bf7a5b35-1e33-4ac0-b755-3baa203973d4",
+          "title": "Therapy Companion Integration Tests",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "should navigate from homepage to login",
+              "fullTitle": "Therapy Companion Integration Tests should navigate from homepage to login",
+              "timedOut": null,
+              "duration": 1612,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "// Start at homepage\ncy.visit('https://therapy-companion.onrender.com');\n// Click Get Started to go to login\ncy.contains('a', 'Get Started').click();\n// Verify we're on login page\ncy.url().should('include', '/login.html');",
+              "err": {},
+              "uuid": "276f6e6a-44bc-48cb-8aa0-be924b3c1905",
+              "parentUUID": "bf7a5b35-1e33-4ac0-b755-3baa203973d4",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "should login successfully",
+              "fullTitle": "Therapy Companion Integration Tests should login successfully",
+              "timedOut": null,
+              "duration": 4104,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "// Go directly to login\ncy.visit('https://therapy-companion.onrender.com/login.html');\n// Use specific IDs for login form\ncy.get('#loginEmail').clear().type(credentials.email);\ncy.get('#loginPassword').clear().type(credentials.password);\n// Click the correct login button\ncy.get('button[type=\"submit\"]').contains('Login').click();\n// Verify successful login\ncy.url().should('not.include', '/login.html', {\n  timeout: 10000\n});\n// Add assertions for dashboard elements\n// cy.contains('Dashboard').should('be.visible')\n// cy.contains('Welcome').should('be.visible')",
+              "err": {},
+              "uuid": "ccb73a68-2e81-4a5c-8719-51839c0554a7",
+              "parentUUID": "bf7a5b35-1e33-4ac0-b755-3baa203973d4",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "should complete full user flow",
+              "fullTitle": "Therapy Companion Integration Tests should complete full user flow",
+              "timedOut": null,
+              "duration": 4950,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "// Homepage -> Login -> Dashboard\ncy.visit('https://therapy-companion.onrender.com');\ncy.contains('a', 'Get Started').click();\n// Login\ncy.get('#loginEmail').type(credentials.email);\ncy.get('#loginPassword').type(credentials.password);\ncy.get('button[type=\"submit\"]').contains('Login').click();\n// Verify we reached dashboard\ncy.url().should('not.include', '/login.html');\n// Add more integration tests here\n// e.g., navigate to different sections, test features",
+              "err": {},
+              "uuid": "0240b48f-4c8e-4e90-8cae-d8eeb4f8b3dd",
+              "parentUUID": "bf7a5b35-1e33-4ac0-b755-3baa203973d4",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "276f6e6a-44bc-48cb-8aa0-be924b3c1905",
+            "ccb73a68-2e81-4a5c-8719-51839c0554a7",
+            "0240b48f-4c8e-4e90-8cae-d8eeb4f8b3dd"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 10666,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    }
+  ],
+  "meta": {
+    "mocha": {
+      "version": "7.2.0"
+    },
+    "mochawesome": {
+      "options": {
+        "quiet": false,
+        "reportFilename": "mochawesome",
+        "saveHtml": true,
+        "saveJson": true,
+        "consoleReporter": "spec",
+        "useInlineDiffs": false,
+        "code": true
+      },
+      "version": "7.1.3"
+    },
+    "marge": {
+      "options": {
+        "reportDir": "cypress/results",
+        "overwrite": false,
+        "html": true,
+        "json": true
+      },
+      "version": "6.2.0"
+    }
+  }
+}

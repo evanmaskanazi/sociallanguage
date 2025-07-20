@@ -1,0 +1,109 @@
+{
+  "stats": {
+    "suites": 1,
+    "tests": 1,
+    "passes": 0,
+    "pending": 0,
+    "failures": 1,
+    "start": "2025-07-20T15:20:14.360Z",
+    "end": "2025-07-20T15:20:15.314Z",
+    "duration": 954,
+    "testsRegistered": 1,
+    "passPercent": 0,
+    "pendingPercent": 0,
+    "other": 0,
+    "hasOther": false,
+    "skipped": 0,
+    "hasSkipped": false
+  },
+  "results": [
+    {
+      "uuid": "c6fea310-b0c4-4352-b211-6fe4302e3d0f",
+      "title": "",
+      "fullFile": "cypress\\e2e\\full-integration.cy.js",
+      "file": "cypress\\e2e\\full-integration.cy.js",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "99b80b78-e119-4052-849e-d6e8248ec128",
+          "title": "Full Integration Test Suite",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "should complete full user workflow",
+              "fullTitle": "Full Integration Test Suite should complete full user workflow",
+              "timedOut": null,
+              "duration": 907,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "// Login\ncy.login('testuser@example.com', 'password123');\n// Verify dashboard loads\ncy.url().should('include', '/dashboard');\ncy.contains('Welcome back').should('be.visible');\n// Create new item\ncy.get('button#create-new').click();\ncy.get('#item-name').type('Test Item');\ncy.get('#item-description').type('Description for integration test');\ncy.get('button#save').click();\n// Verify item was created\ncy.contains('Item created successfully').should('be.visible');\n// Verify item appears in list\ncy.get('.items-list').should('contain', 'Test Item');\n// Test backend integration\ncy.request('GET', '/api/items').then(response => {\n  expect(response.status).to.eq(200);\n  const items = response.body;\n  const testItem = items.find(item => item.name === 'Test Item');\n  expect(testItem).to.exist;\n});",
+              "err": {
+                "message": "CypressError: `cy.visit()` failed trying to load:\n\nhttps://therapy-companion.onrender.com/login\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`",
+                "estack": "CypressError: `cy.visit()` failed trying to load:\n\nhttps://therapy-companion.onrender.com/login\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`\n    at <unknown> (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:135043:76)\n    at visitFailedByErr (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:134449:12)\n    at <unknown> (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:135026:13)\n    at tryCatcher (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1777:23)\n    at Promise._settlePromiseFromHandler (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1489:31)\n    at Promise._settlePromise (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1546:18)\n    at Promise._settlePromise0 (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1591:10)\n    at Promise._settlePromises (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1667:18)\n    at _drainQueueStep (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:2377:12)\n    at _drainQueue (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:2370:9)\n    at Async._drainQueues (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:2386:5)\n    at Async.drainQueues (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:2256:14)\nFrom Your Spec Code:\n    at Context.eval (webpack://cypresstests/./cypress/support/commands.js:39:4)\n    at getRet (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:120949:20)\n    at tryCatcher (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:1777:23)\n    at Promise.attempt.Promise.try (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:4285:29)\n    at Context.thenFn (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:120960:66)\n    at Context.then (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:121211:21)\n    at wrapped (https://therapy-companion.onrender.com/__cypress/runner/cypress_runner.js:141532:19)",
+                "diff": null
+              },
+              "uuid": "9e537b7a-14e9-421c-aa11-9ae1b344b1b6",
+              "parentUUID": "99b80b78-e119-4052-849e-d6e8248ec128",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "9e537b7a-14e9-421c-aa11-9ae1b344b1b6"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 907,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    }
+  ],
+  "meta": {
+    "mocha": {
+      "version": "7.2.0"
+    },
+    "mochawesome": {
+      "options": {
+        "quiet": false,
+        "reportFilename": "mochawesome",
+        "saveHtml": true,
+        "saveJson": true,
+        "consoleReporter": "spec",
+        "useInlineDiffs": false,
+        "code": true
+      },
+      "version": "7.1.3"
+    },
+    "marge": {
+      "options": {
+        "reportDir": "cypress/results",
+        "overwrite": false,
+        "html": true,
+        "json": true
+      },
+      "version": "6.2.0"
+    }
+  }
+}
