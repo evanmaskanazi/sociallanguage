@@ -24,10 +24,10 @@ pipeline {
             steps {
                 script {
                     // Clean install
-                    sh 'npm ci'
+                    bat 'npm ci'
                     
                     // Verify Cypress installation
-                    sh 'npx cypress verify'
+                    bat 'npx cypress verify'
                 }
             }
         }
@@ -36,7 +36,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh 'npm run cypress:run:chrome'
+                        bat 'npm run cypress:run:chrome'
                     } catch (Exception e) {
                         currentBuild.result = 'UNSTABLE'
                     }
@@ -51,7 +51,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh 'npm run cypress:run:edge'
+                        bat 'npm run cypress:run:edge'
                     } catch (Exception e) {
                         currentBuild.result = 'UNSTABLE'
                     }
@@ -63,10 +63,10 @@ pipeline {
             steps {
                 script {
                     // Merge JSON reports
-                    sh 'npm run report:merge'
+                    bat 'npm run report:merge'
                     
                     // Generate HTML report
-                    sh 'npm run report:generate'
+                    bat 'npm run report:generate'
                 }
             }
         }
@@ -75,11 +75,11 @@ pipeline {
             steps {
                 // Archive test results
                 archiveArtifacts artifacts: 'cypress/results/*.html', allowEmptyArchive: true
-                archiveArtifacts artifacts: 'cypress/screenshots/**/*.png', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'cypress/screenbatots/**/*.png', allowEmptyArchive: true
                 archiveArtifacts artifacts: 'cypress/videos/**/*.mp4', allowEmptyArchive: true
                 
-                // Publish HTML report
-                publishHTML([
+                // Publibat HTML report
+                publibatHTML([
                     allowMissing: false,
                     alwaysLinkToLastBuild: true,
                     keepAll: true,
@@ -89,7 +89,7 @@ pipeline {
                     reportTitles: 'E2E Test Results'
                 ])
                 
-                // Publish test results for trends
+                // Publibat test results for trends
                 junit 'cypress/results/*.xml'
             }
         }
