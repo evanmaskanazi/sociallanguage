@@ -197,10 +197,10 @@ app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SYSTEM_EMAIL')
 
 # Database connection pooling
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_size': 5,
+    'pool_size': 10,  # Increased for Starter plan
     'pool_recycle': 300,
     'pool_pre_ping': True,
-    'max_overflow': 10,
+    'max_overflow': 20,  # Increased for Starter plan
     'connect_args': {
         'connect_timeout': 10,
         'options': '-c statement_timeout=30000'
@@ -273,7 +273,7 @@ def after_request(response):
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
+    default_limits=["5000 per day", "500 per hour"],  # More reasonable for production
     storage_uri="memory://"
 )
 
@@ -1534,7 +1534,7 @@ def register():
 
 
 @app.route('/api/auth/login', methods=['POST'])
-@limiter.limit("5 per minute")
+@limiter.limit("20 per minute")  # Allow more login attempts
 def login():
     """Login user"""
     try:
@@ -1636,7 +1636,7 @@ def login():
 
 
 @app.route('/api/auth/request-reset', methods=['POST'])
-@limiter.limit("3 per hour, 10 per day")
+@limiter.limit("10 per hour, 30 per day")  # More reasonable limits
 def request_password_reset():
     """Request password reset"""
     try:
@@ -3318,7 +3318,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
 
 @app.route('/api/reports/generate/<int:client_id>/<week>', methods=['GET'])
 @require_auth(['therapist'])
-@limiter.limit("10 per hour")
+@limiter.limit("100 per hour")  # Allow more report generation
 def generate_report(client_id, week):
     """Generate comprehensive weekly Excel report with streaming"""
     try:
