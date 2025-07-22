@@ -1657,6 +1657,7 @@ credentials: 'include'
             console.log('Mon (short):', i18n.t('day.mon'));
             const weekGrid = document.getElementById('weekGrid');
             weekGrid.innerHTML = '';
+            try {
 
             const startOfWeek = getStartOfWeek(currentWeekOffset);
 
@@ -1702,6 +1703,13 @@ credentials: 'include'
             document.querySelectorAll('.day-cell .day-name').forEach((el, i) => {
         console.log(`Cell ${i}: ${el.textContent}`);
     });
+    } catch (error) {
+                console.error('Error in loadWeekView:', error);
+                const weekGrid = document.getElementById('weekGrid');
+                if (weekGrid) {
+                    weekGrid.innerHTML = '<div style="color: red;">Error loading week view</div>';
+                }
+            }
         }
 
         async function loadWeekCheckinStatus(weekStart) {
@@ -2758,7 +2766,7 @@ credentials: 'include',  // Add this
 
 async function loadConsentStatus() {
     try {
-        const response = await fetch('/api/client/consent/status', {
+        const response = await fetch('/api/client/consent', {
             headers: {
                 'Accept-Language': i18n.currentLang
             },

@@ -57,6 +57,18 @@ import html
 import redis
 redis_client = redis.from_url(os.environ.get('REDIS_URL', 'redis://localhost:6379'))
 
+if not os.environ.get('FIELD_ENCRYPTION_KEY'):
+    if os.environ.get('PRODUCTION'):
+        raise ValueError("FIELD_ENCRYPTION_KEY must be set in production")
+    else:
+        # Generate a development key
+        import secrets
+        ENCRYPTION_KEY = Fernet.generate_key()
+        logger.warning("Using generated encryption key - DO NOT use in production!")
+else:
+    ENCRYPTION_KEY = os.environ.get('FIELD_ENCRYPTION_KEY')
+
+
 def sanitize_input(text, allow_html=False):
     """Sanitize user input to prevent XSS"""
     if not text:
@@ -113,7 +125,7 @@ if not ENCRYPTION_KEY:
     # In production, this MUST come from environment
     raise ValueError("FIELD_ENCRYPTION_KEY must be set in production")
 
-fernet = Fernet(ENCRYPTION_KEY.encode() if isinstance(ENCRYPTION_KEY, str) else ENCRYPTION_KEY)
+fernet = Fernet(ENCRYPTION_KEY if isinstance(ENCRYPTION_KEY, bytes) else ENCRYPTION_KEY.encode())
 
 
 def encrypt_field(data):
@@ -282,10 +294,10 @@ app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SYSTEM_EMAIL')
 
 # Database connection pooling
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_size': 10,  # Increased for Starter plan
+    'pool_size': 5,  # Reduced for Starter plan
     'pool_recycle': 300,
     'pool_pre_ping': True,
-    'max_overflow': 20,  # Increased for Starter plan
+    'max_overflow': 10,  # Reduced for Starter plan
     'connect_args': {
         'connect_timeout': 10,
         'options': '-c statement_timeout=30000'
@@ -2230,7 +2242,7 @@ def get_therapist_clients():
 
         # Validate pagination parameters
         page = max(1, page)
-        per_page = min(max(1, per_page), 100)  # Max 100 items per page
+        per_page = min(max(1, per_page), 50)  # Max 100 items per page
 
         # Build query
         query = therapist.clients
@@ -4895,7 +4907,11 @@ def submit_checkin():
         client = request.current_user.client
         data = request.json
 
-        checkin_date = data.get('date', date.today().isoformat())
+        checkin_date_str = data.get('date', date.today().isoformat())
+        # Validate date string format first
+        if not isinstance(checkin_date_str, str) or len(checkin_date_str) != 10:
+            return jsonify({'error': 'Invalid date format'}), 400
+        checkin_date = checkin_date_str
 
         logger.info('checkin_data_received', extra={
             'extra_data': {
@@ -4997,6 +5013,9 @@ def submit_checkin():
         # Validate category responses
         category_responses = data.get('category_responses', {})
         validated_responses = {}
+        client_category_ids = set()
+        for plan in client.tracking_plans.filter_by(is_active=True):
+            client_category_ids.add(plan.category_id)
         for cat_id, value in category_responses.items():
             try:
                 value_int = int(value)
@@ -5010,6 +5029,9 @@ def submit_checkin():
 
         # Use validated responses
         category_responses = validated_responses
+
+        validated_responses = {k: v for k, v in validated_responses.items()
+                               if k in client_category_ids}
 
         # Process category responses
         responses_logged = []

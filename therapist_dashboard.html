@@ -1327,10 +1327,6 @@
 
 
 
-        // Check authentication
-        if (!authToken) {
-            window.location.href = '/login.html';
-        }
 
         document.addEventListener('DOMContentLoaded', async function() {
     console.log('DOMContentLoaded fired');
@@ -1415,13 +1411,29 @@ setInterval(function() {
         async function loadDashboard() {
         console.log('loadDashboard() called');
         console.log('Making API call to /api/therapist/dashboard');
+        // Add timeout to prevent hanging
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
             try {
                 const response = await fetch('/api/therapist/dashboard', {
                     headers: {
-    'Accept-Language': i18n.currentLang
-},
-credentials: 'include'
+                        'Accept-Language': i18n.currentLang
+                    },
+                    credentials: 'include',
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
+            } catch (error) {
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    throw new Error('Request timeout - server took too long to respond');
+                }
+                throw error;
+            }
+
+
+
 
                 if (!response.ok) {
                     if (response.status === 401) {
