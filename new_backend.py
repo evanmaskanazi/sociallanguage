@@ -1847,47 +1847,47 @@ def login():
             })
             return jsonify({'error': 'Account deactivated'}), 401
 
-            # Check password strength for existing users
-            def meets_password_requirements(password):
-                """Check if password meets current security requirements"""
-                import re
-                if len(password) < 12:
-                    return False
-                if not re.match(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]', password):
-                    return False
-                return True
+        # Check password strength for existing users
+        def meets_password_requirements(password):
+            """Check if password meets current security requirements"""
+            import re
+            if len(password) < 12:
+                return False
+            if not re.match(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]', password):
+                return False
+            return True
 
-            if not meets_password_requirements(password):
-                # Create a one-time token for password reset
-                reset_token = str(uuid.uuid4())
+        if not meets_password_requirements(password):
+            # Create a one-time token for password reset
+            reset_token = str(uuid.uuid4())
 
-                # Store reset token in database
-                password_reset = PasswordReset(
-                    user_id=user.id,
-                    reset_token=reset_token,
-                    expires_at=datetime.utcnow() + timedelta(hours=1)
-                )
-                db.session.add(password_reset)
-                db.session.commit()
+            # Store reset token in database
+            password_reset = PasswordReset(
+                user_id=user.id,
+                reset_token=reset_token,
+                expires_at=datetime.utcnow() + timedelta(hours=1)
+            )
+            db.session.add(password_reset)
+            db.session.commit()
 
-                # Log security event
-                logger.warning('weak_password_detected', extra={
-                    'extra_data': {
-                        'user_id': user.id,
-                        'email': email,
-                        'request_id': g.request_id
-                    },
+            # Log security event
+            logger.warning('weak_password_detected', extra={
+                'extra_data': {
+                    'user_id': user.id,
+                    'email': email,
                     'request_id': g.request_id
-                })
+                },
+                'request_id': g.request_id
+            })
 
-                # Return special response
-                return jsonify({
-                    'success': False,
-                    'requires_password_reset': True,
-                    'reset_token': reset_token,
-                    'message': 'Your password no longer meets security requirements. Please reset it.',
-                    'reset_url': f'/reset-password.html?token={reset_token}'
-                }), 403
+            # Return special response
+            return jsonify({
+                'success': False,
+                'requires_password_reset': True,
+                'reset_token': reset_token,
+                'message': 'Your password no longer meets security requirements. Please reset it.',
+                'reset_url': f'/reset-password.html?token={reset_token}'
+            }), 403
 
         # Clear failed attempts on successful login
         if redis_client:
@@ -4778,7 +4778,8 @@ def client_dashboard():
         return jsonify({
             'success': True,
             'client': {
-                'serial': client.client_serial,
+                'serial': client.client_serial,  # Use client_serial, not serial
+                'client_serial': client.client_serial,  # Also provide as client_serial for compatibility
                 'start_date': client.start_date.isoformat()
             },
             'today': {
@@ -4791,6 +4792,16 @@ def client_dashboard():
         })
 
     except Exception as e:
+        # Log the actual error
+        logger.error('client_dashboard_error', extra={
+            'extra_data': {
+                'error': str(e),
+                'client_id': client.id if 'client' in locals() else None,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        }, exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 
