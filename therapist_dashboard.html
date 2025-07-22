@@ -1250,6 +1250,7 @@
 
                 if (!response.ok) {
                     window.location.href = '/login.html';
+
                     return false;
                 }
 
@@ -1297,16 +1298,11 @@
                     };
                 }
             }
+            options.credentials = 'include';
 
             return originalFetch.apply(this, args);
         };
-        console.log('Auth token from localStorage:', authToken ? 'exists' : 'missing');
 
-// Check authentication
-        if (!authToken) {
-          console.log('No auth token, redirecting to login');
-          window.location.href = '/login.html';
-                }
         let therapistData = null;
         let clientsList = [];
         let trackingCategories = [];
@@ -1320,11 +1316,16 @@
             return translation !== key ? translation : categoryName;
         }
 
-        function translateCategoryDescription(categoryName, description) {
-            const key = 'category.' + categoryName.toLowerCase().replace(/\s+/g, '_') + '_desc';
+
+
+        // Translation helper functions
+        function translateCategoryName(categoryName) {
+            const key = 'category.' + categoryName.toLowerCase().replace(/\s+/g, '_');
             const translation = i18n.t(key);
-            return translation !== key ? translation : description;
+            return translation !== key ? translation : categoryName;
         }
+
+
 
         // Check authentication
         if (!authToken) {

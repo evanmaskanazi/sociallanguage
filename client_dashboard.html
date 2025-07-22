@@ -494,87 +494,58 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* RTL Support */
-        .rtl .header-content,
-        .rtl .user-info,
-        .rtl .week-navigation,
-        .rtl .card-header,
-        .rtl .date-selection,
-        .rtl .goal-item {
-            flex-direction: row-reverse;
-        }
-
-        .rtl .nav-tabs {
-            direction: rtl;
-        }
-
-        .rtl .form-section h3 {
-            flex-direction: row-reverse;
-        }
-
-        .rtl .notes-textarea,
-        .rtl .form-input {
-            text-align: right;
-            direction: rtl;
-        }
-
-
-
+     /* RTL Support */
 .rtl {
-            direction: rtl;
-            text-align: right;
-        }
+    direction: rtl;
+    text-align: right;
+}
 
-        .rtl .header-content,
-        .rtl .user-info,
-        .rtl .week-navigation,
-        .rtl .card-header,
-        .rtl .date-selection,
-        .rtl .goal-item,
-        .rtl .form-section h3,
-        .rtl .stat-icon {
-            flex-direction: row-reverse;
-        }
+.rtl .header-content,
+.rtl .user-info,
+.rtl .week-navigation,
+.rtl .card-header,
+.rtl .date-selection,
+.rtl .goal-item,
+.rtl .form-section h3,
+.rtl .stat-icon {
+    flex-direction: row-reverse;
+}
 
-        .rtl .nav-tabs {
-            direction: rtl;
-        }
+.rtl .nav-tabs {
+    direction: rtl;
+}
 
-        .rtl .form-section h3 {
-            flex-direction: row-reverse;
-        }
+.rtl .notes-textarea,
+.rtl .form-input,
+.rtl input[type="text"],
+.rtl input[type="email"],
+.rtl input[type="password"],
+.rtl textarea,
+.rtl select {
+    text-align: right;
+    direction: rtl;
+}
 
-        .rtl .notes-textarea,
-        .rtl .form-input,
-        .rtl input[type="text"],
-        .rtl input[type="email"],
-        .rtl input[type="password"],
-        .rtl textarea,
-        .rtl select {
-            text-align: right;
-            direction: rtl;
-        }
+.rtl .btn {
+    flex-direction: row-reverse;
+}
 
-        .rtl .btn {
-            flex-direction: row-reverse;
-        }
+.rtl .message {
+    text-align: right;
+}
 
-        .rtl .message {
-            text-align: right;
-        }
+.rtl .rating-scale {
+    direction: rtl;
+}
 
-        .rtl .rating-scale {
-            direction: rtl;
-        }
+.rtl .goal-checkbox {
+    margin-left: 1rem;
+    margin-right: 0;
+}
 
-        .rtl .goal-checkbox {
-            margin-left: 1rem;
-            margin-right: 0;
-        }
-
-        .rtl .stat-label {
-            text-align: right;
-        }
+.rtl .stat-label {
+    text-align: right;
+}
 
 
 
@@ -631,7 +602,7 @@
 
     <nav class="nav-tabs">
         <div class="nav-tab active" onclick="showTab('overview', event)" data-i18n="nav.overview">Overview</div>
-        <div class="nav-tab active" onclick="showTab('checkin', event)" data-i18n="nav.daily_checkin">Daily Check-in</div>
+        <div class="nav-tab" onclick="showTab('checkin', event)" data-i18n="nav.daily_checkin">Daily Check-in</div>
         <div class="nav-tab" onclick="showTab('progress', event)" data-i18n="nav.progress">Progress</div>
         <div class="nav-tab" onclick="showTab('goals', event)" data-i18n="nav.goals">Goals</div>
         <div class="nav-tab" onclick="showTab('reports', event)" data-i18n="nav.reports">Reports</div>
@@ -640,258 +611,253 @@
     </nav>
 
     <div class="container">
-        <!-- Success/Error Messages -->
-        <div id="messageContainer"></div>
+    <!-- Success/Error Messages -->
+    <div id="messageContainer"></div>
 
-        <!-- Overview Tab -->
-        <div id="overview" class="tab-content active">
-            <div class="welcome-card">
-                <h2 id="welcomeMessage" data-i18n="dashboard.welcome">Welcome back!</h2>
-                <p id="encouragementMessage" data-i18n="client.encouragement">Your journey to wellness continues. Every step counts!</p>
+    <!-- Overview Tab -->
+    <div id="overview" class="tab-content active">
+        <div class="welcome-card">
+            <h2 id="welcomeMessage" data-i18n="dashboard.welcome">Welcome back!</h2>
+            <p id="encouragementMessage" data-i18n="client.encouragement">Your journey to wellness continues. Every step counts!</p>
+        </div>
+
+        <!-- Calendar Week View -->
+        <div class="calendar-view">
+            <div class="week-navigation">
+                <button class="btn btn-secondary btn-small" onclick="changeWeek(-1)">
+                    <span data-i18n="client.previous_week">← Previous Week</span>
+                </button>
+                <h3 id="currentWeekLabel" data-i18n="dashboard.this_week">This Week</h3>
+                <button class="btn btn-secondary btn-small" onclick="changeWeek(1)">
+                    <span data-i18n="client.next_week">Next Week →</span>
+                </button>
             </div>
-
-            <!-- Calendar Week View -->
-            <div class="calendar-view">
-                <div class="week-navigation">
-                    <button class="btn btn-secondary btn-small" onclick="changeWeek(-1)">
-                        <span data-i18n="client.previous_week">← Previous Week</span>
-                    </button>
-                    <h3 id="currentWeekLabel" data-i18n="dashboard.this_week">This Week</h3>
-                    <button class="btn btn-secondary btn-small" onclick="changeWeek(1)">
-                        <span data-i18n="client.next_week">Next Week →</span>
-                    </button>
-                </div>
-                <div id="weekGrid" class="week-grid">
-                    <!-- Days will be populated here -->
-                </div>
-            </div>
-
-            <div class="dashboard-grid">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title" data-i18n="client.quick_stats">Quick Stats</h3>
-                        <div class="card-icon icon-progress">📊</div>
-                    </div>
-                    <div id="quickStats">
-                        <p data-i18n="msg.loading">Loading stats...</p>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title" data-i18n="client.week_goals">This Week's Goals</h3>
-                        <div class="card-icon icon-goals">🎯</div>
-                    </div>
-                    <ul class="goal-list" id="overviewGoalsList">
-                        <li data-i18n="msg.loading">Loading goals...</li>
-                    </ul>
-                </div>
+            <div id="weekGrid" class="week-grid">
+                <!-- Days will be populated here -->
             </div>
         </div>
 
-        <!-- Check-in Tab -->
-        <div id="checkin" class="tab-content">
-            <h2 data-i18n="checkin.title">Daily Check-in</h2>
-
-            <!-- Date Selection -->
-            <div class="date-selection">
-                <label for="checkinDate"><strong data-i18n="client.select_date">Select Date:</strong></label>
-                <input type="date" id="checkinDate" class="date-input">
-                <button class="btn btn-secondary btn-small" onclick="setToday()" data-i18n="dashboard.today">Today</button>
-                <span id="checkinDateStatus" style="margin-left: 1rem;"></span>
-            </div>
-
-            <div id="checkinForm" class="checkin-form">
-                <p style="color: #666; margin-bottom: 2rem;" data-i18n="client.checkin_intro">Take a moment to reflect on your day. Your responses help track your progress.</p>
-
-                <!-- Dynamic Categories Container -->
-                <div id="dynamicCategories">
-                    <!-- Categories will be loaded here dynamically -->
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title" data-i18n="client.quick_stats">Quick Stats</h3>
+                    <div class="card-icon icon-progress">📊</div>
                 </div>
-
-                <!-- Action Buttons -->
-                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                    <button class="btn btn-primary" onclick="submitCheckin()" data-i18n="client.submit_checkin">Submit Check-in</button>
-                    <button class="btn btn-secondary" onclick="clearCheckinForm()" data-i18n="client.clear_form">Clear</button>
+                <div id="quickStats">
+                    <p data-i18n="msg.loading">Loading stats...</p>
                 </div>
             </div>
-        </div>
 
-        <!-- Goals Tab -->
-        <div id="goals" class="tab-content">
-            <h2 data-i18n="goals.weekly">Weekly Goals</h2>
-
-            <div class="date-selection">
-                <label for="goalsWeek"><strong data-i18n="client.select_week">Select Week:</strong></label>
-                <input type="week" id="goalsWeek" class="date-input">
-                <button class="btn btn-secondary btn-small" onclick="loadWeeklyGoals()" data-i18n="client.load_goals">Load Goals</button>
-            </div>
-
-            <div id="goalsContent">
-                <h3 id="goalsWeekLabel" data-i18n="client.week_goals">This Week's Goals</h3>
-                <ul class="goal-list" id="goalsList">
-                    <li data-i18n="client.select_week_goals">Select a week to view goals</li>
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title" data-i18n="client.week_goals">This Week's Goals</h3>
+                    <div class="card-icon icon-goals">🎯</div>
+                </div>
+                <ul class="goal-list" id="overviewGoalsList">
+                    <li data-i18n="msg.loading">Loading goals...</li>
                 </ul>
             </div>
         </div>
+    </div>
 
-        <!-- Progress Tab -->
-        <div id="progress" class="tab-content">
-            <h2 data-i18n="client.your_progress">Your Progress</h2>
+    <!-- Check-in Tab -->
+    <div id="checkin" class="tab-content">
+        <h2 data-i18n="checkin.title">Daily Check-in</h2>
 
-            <div class="date-selection">
-                <label><strong data-i18n="client.view_progress">View Progress:</strong></label>
-                <select id="progressRange" class="form-input" style="width: auto;">
-                    <option value="7" data-i18n="client.last_7_days">Last 7 days</option>
-                    <option value="30" data-i18n="client.last_30_days">Last 30 days</option>
-                    <option value="90" data-i18n="client.last_90_days">Last 90 days</option>
-                </select>
-                <button class="btn btn-secondary btn-small" onclick="loadProgress()" data-i18n="client.update">Update</button>
-            </div>
-
-            <div id="progressContent">
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p data-i18n="client.loading_progress">Loading progress data...</p>
-                </div>
-            </div>
+        <!-- Date Selection -->
+        <div class="date-selection">
+            <label for="checkinDate"><strong data-i18n="client.select_date">Select Date:</strong></label>
+            <input type="date" id="checkinDate" class="date-input">
+            <button class="btn btn-secondary btn-small" onclick="setToday()" data-i18n="dashboard.today">Today</button>
+            <span id="checkinDateStatus" style="margin-left: 1rem;"></span>
         </div>
 
-        <!-- Reports Tab -->
-        <div id="reports" class="tab-content">
-            <h2 data-i18n="reports.generate">Generate Reports</h2>
+        <div id="checkinForm" class="checkin-form">
+            <p style="color: #666; margin-bottom: 2rem;" data-i18n="client.checkin_intro">Take a moment to reflect on your day. Your responses help track your progress.</p>
 
-            <div class="card">
-                <h3 data-i18n="reports.weekly">Weekly Report</h3>
-                <p style="color: #666; margin-bottom: 1rem;" data-i18n="client.report_desc">Generate a comprehensive report of your check-ins for any week.</p>
+            <!-- Dynamic Categories Container -->
+            <div id="dynamicCategories">
+                <!-- Categories will be loaded here dynamically -->
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button class="btn btn-primary" onclick="submitCheckin()" data-i18n="client.submit_checkin">Submit Check-in</button>
+                <button class="btn btn-secondary" onclick="clearCheckinForm()" data-i18n="client.clear_form">Clear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Goals Tab -->
+    <div id="goals" class="tab-content">
+        <h2 data-i18n="goals.weekly">Weekly Goals</h2>
+
+        <div class="date-selection">
+            <label for="goalsWeek"><strong data-i18n="client.select_week">Select Week:</strong></label>
+            <input type="week" id="goalsWeek" class="date-input">
+            <button class="btn btn-secondary btn-small" onclick="loadWeeklyGoals()" data-i18n="client.load_goals">Load Goals</button>
+        </div>
+
+        <div id="goalsContent">
+            <h3 id="goalsWeekLabel" data-i18n="client.week_goals">This Week's Goals</h3>
+            <ul class="goal-list" id="goalsList">
+                <li data-i18n="client.select_week_goals">Select a week to view goals</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Progress Tab -->
+    <div id="progress" class="tab-content">
+        <h2 data-i18n="client.your_progress">Your Progress</h2>
+
+        <div class="date-selection">
+            <label><strong data-i18n="client.view_progress">View Progress:</strong></label>
+            <select id="progressRange" class="form-input" style="width: auto;">
+                <option value="7" data-i18n="client.last_7_days">Last 7 days</option>
+                <option value="30" data-i18n="client.last_30_days">Last 30 days</option>
+                <option value="90" data-i18n="client.last_90_days">Last 90 days</option>
+            </select>
+            <button class="btn btn-secondary btn-small" onclick="loadProgress()" data-i18n="client.update">Update</button>
+        </div>
+
+        <div id="progressContent">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p data-i18n="client.loading_progress">Loading progress data...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Tab -->
+    <div id="reports" class="tab-content">
+        <h2 data-i18n="reports.generate">Generate Reports</h2>
+
+        <div class="card">
+            <h3 data-i18n="reports.weekly">Weekly Report</h3>
+            <p style="color: #666; margin-bottom: 1rem;" data-i18n="client.report_desc">Generate a comprehensive report of your check-ins for any week.</p>
+
+            <div class="form-group">
+                <label for="reportWeek" data-i18n="reports.select_week">Select Week:</label>
+                <input type="week" id="reportWeek" class="form-input">
+            </div>
+
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="generateReport()" data-i18n="client.generate_excel">Generate Excel Report</button>
+                <button class="btn btn-primary" onclick="generatePDFReport()" data-i18n="client.generate_pdf">Generate PDF Report</button>
+                <button class="btn btn-secondary" onclick="prepareEmailReport()" data-i18n="client.prepare_email">Prepare Email Report</button>
+            </div>
+
+            <div id="reportStatus" style="margin-top: 2rem; display: none;">
+                <h4 data-i18n="client.report_status">Report Status</h4>
+                <div id="reportStatusContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div id="settings" class="tab-content">
+        <h2 data-i18n="client.account_settings">Account Settings</h2>
+
+        <div class="card">
+            <h3 data-i18n="client.change_password">Change Password</h3>
+            <p style="color: #666; margin-bottom: 1rem;" data-i18n="client.password_requirements">Password must be at least 12 characters long.</p>
+
+            <form id="passwordChangeForm" onsubmit="changePassword(event)">
+                <div class="form-group">
+                    <label for="currentPassword" data-i18n="client.current_password">Current Password</label>
+                    <input type="password" id="currentPassword" class="form-input" required>
+                </div>
 
                 <div class="form-group">
-                    <label for="reportWeek" data-i18n="reports.select_week">Select Week:</label>
-                    <input type="week" id="reportWeek" class="form-input">
+                    <label for="newPassword" data-i18n="client.new_password">New Password</label>
+                    <input type="password" id="newPassword" class="form-input" required minlength="8">
                 </div>
 
-
-
-                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                     <button class="btn btn-primary" onclick="generateReport()" data-i18n="client.generate_excel">Generate Excel Report</button>
-                    <button class="btn btn-primary" onclick="generatePDFReport()" data-i18n="client.generate_pdf">Generate PDF Report</button>
-                    <button class="btn btn-secondary" onclick="prepareEmailReport()" data-i18n="client.prepare_email">Prepare Email Report</button>
+                <div class="form-group">
+                    <label for="confirmPassword" data-i18n="client.confirm_new_password">Confirm New Password</label>
+                    <input type="password" id="confirmPassword" class="form-input" required minlength="8">
                 </div>
 
-                <div id="reportStatus" style="margin-top: 2rem; display: none;">
-                    <h4 data-i18n="client.report_status">Report Status</h4>
-                    <div id="reportStatusContent"></div>
-                </div>
-            </div>
+                <button type="submit" class="btn btn-primary" data-i18n="client.update_password">Update Password</button>
+            </form>
         </div>
 
-        <!-- Settings Tab -->
-        <div id="settings" class="tab-content">
-            <h2 data-i18n="client.account_settings">Account Settings</h2>
+        <!-- Email Reminder Settings -->
+        <div class="card" style="margin-top: 2rem;">
+            <h3 data-i18n="client.reminder_settings">Email Reminder Settings</h3>
+            <p style="color: #666; margin-bottom: 1rem;" data-i18n="client.reminder_desc">
+                Set up daily email reminders for your check-ins
+            </p>
 
-            <div class="card">
-                <h3 data-i18n="client.change_password">Change Password</h3>
-                <p style="color: #666; margin-bottom: 1rem;" data-i18n="client.password_requirements">Password must be at least 12 characters long.</p>
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" id="enableReminder" onchange="toggleReminder()" style="width: auto;">
+                    <span data-i18n="client.enable_reminder">Enable daily check-in reminder</span>
+                </label>
+            </div>
 
-                <form id="passwordChangeForm" onsubmit="changePassword(event)">
-                    <div class="form-group">
-                        <label for="currentPassword" data-i18n="client.current_password">Current Password</label>
-                        <input type="password" id="currentPassword" class="form-input" required>
-                    </div>
+            <div id="reminderTimeSection" style="display: none; margin-top: 1rem;">
+                <div class="form-group">
+                    <label for="reminderTime" data-i18n="client.reminder_time">Reminder Time</label>
+                    <input type="time" id="reminderTime" class="form-input" onchange="updateUTCDisplay()">
+                    <small style="color: #666; display: block; margin-top: 0.5rem;">
+                        <span data-i18n="client.reminder_timezone">Time is in your local timezone</span>
+                        <span id="utcTimeDisplay" style="font-weight: bold;"></span>
+                    </small>
+                </div>
 
-                    <div class="form-group">
-                        <label for="newPassword" data-i18n="client.new_password">New Password</label>
-                        <input type="password" id="newPassword" class="form-input" required minlength="8">
-                    </div>
+                <div class="form-group">
+                    <label for="reminderEmail" data-i18n="client.reminder_email">Email Address (optional)</label>
+                    <input type="email" id="reminderEmail" class="form-input" placeholder="Leave blank to use account email">
+                    <small style="color: #666; display: block; margin-top: 0.5rem;" data-i18n="client.reminder_email_desc">
+                        We'll use your account email if this is left blank
+                    </small>
+                </div>
 
-                    <div class="form-group">
-                        <label for="confirmPassword" data-i18n="client.confirm_new_password">Confirm New Password</label>
-                        <input type="password" id="confirmPassword" class="form-input" required minlength="8">
-                    </div>
+                <button class="btn btn-primary" onclick="saveReminderSettings()">
+                    <span data-i18n="client.save_reminder">Save Reminder Settings</span>
+                </button>
 
-                    <button type="submit" class="btn btn-primary" data-i18n="client.update_password">Update Password</button>
-                </form>
+                <button class="btn btn-secondary btn-small" id="testReminderBtn" style="margin-left: 1rem;">
+                    <span data-i18n="client.test_reminder">Send Test Reminder</span>
+                </button>
+            </div>
+
+            <div id="reminderStatus" style="margin-top: 1rem; display: none;">
+                <p class="message success" data-i18n="client.reminder_saved">
+                    Reminder settings saved successfully!
+                </p>
+            </div>
+
+            <div id="queueStatus" style="margin-top: 1rem; display: none;">
+                <p style="color: #666; font-size: 0.875rem;">
+                    <span data-i18n="client.queue_status">Queue Status:</span>
+                    <span id="queueInfo"></span>
+                </p>
             </div>
         </div>
     </div>
 
     <!-- Consent Management Tab -->
-        <div id="consent" class="tab-content">
-            <h2 data-i18n="client.consent_management">Consent Management</h2>
+    <div id="consent" class="tab-content">
+        <h2 data-i18n="client.consent_management">Consent Management</h2>
 
-            <div class="card">
-                <h3 data-i18n="client.your_consents">Your Consents</h3>
-                <p style="color: #666; margin-bottom: 1rem;" data-i18n="client.consent_desc">
-                    Manage how your data is used and shared
-                </p>
+        <div class="card">
+            <h3 data-i18n="client.your_consents">Your Consents</h3>
+            <p style="color: #666; margin-bottom: 1rem;" data-i18n="client.consent_desc">
+                Manage how your data is used and shared
+            </p>
 
-                <div id="consentsList" style="margin-top: 1rem;">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p data-i18n="msg.loading">Loading...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-
-    <!-- Email Reminder Settings -->
-            <div class="card" style="margin-top: 2rem;">
-                <h3 data-i18n="client.reminder_settings">Email Reminder Settings</h3>
-                <p style="color: #666; margin-bottom: 1rem;" data-i18n="client.reminder_desc">
-                    Set up daily email reminders for your check-ins
-                </p>
-
-                <div class="form-group">
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                        <input type="checkbox" id="enableReminder" onchange="toggleReminder()" style="width: auto;">
-                        <span data-i18n="client.enable_reminder">Enable daily check-in reminder</span>
-                    </label>
-                </div>
-
-               <div id="reminderTimeSection" style="display: none; margin-top: 1rem;">
-    <div class="form-group">
-                        <label for="reminderTime" data-i18n="client.reminder_time">Reminder Time</label>
-                        <input type="time" id="reminderTime" class="form-input" onchange="updateUTCDisplay()">
-                        <small style="color: #666; display: block; margin-top: 0.5rem;">
-                            <span data-i18n="client.reminder_timezone">Time is in your local timezone</span>
-                            <span id="utcTimeDisplay" style="font-weight: bold;"></span>
-                        </small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="reminderEmail" data-i18n="client.reminder_email">Email Address (optional)</label>
-                        <input type="email" id="reminderEmail" class="form-input" placeholder="Leave blank to use account email">
-                        <small style="color: #666; display: block; margin-top: 0.5rem;" data-i18n="client.reminder_email_desc">
-                            We'll use your account email if this is left blank
-                        </small>
-                    </div>
-
-                    <button class="btn btn-primary" onclick="saveReminderSettings()">
-                        <span data-i18n="client.save_reminder">Save Reminder Settings</span>
-                    </button>
-
-                    <button class="btn btn-secondary btn-small" id="testReminderBtn" style="margin-left: 1rem;">
-                        <span data-i18n="client.test_reminder">Send Test Reminder</span>
-                    </button>
-                </div>
-
-                <div id="reminderStatus" style="margin-top: 1rem; display: none;">
-                    <p class="message success" data-i18n="client.reminder_saved">
-                        Reminder settings saved successfully!
-                    </p>
-                </div>
-
-                <div id="queueStatus" style="margin-top: 1rem; display: none;">
-                    <p style="color: #666; font-size: 0.875rem;">
-                        <span data-i18n="client.queue_status">Queue Status:</span>
-                        <span id="queueInfo"></span>
-                    </p>
+            <div id="consentsList" style="margin-top: 1rem;">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p data-i18n="msg.loading">Loading...</p>
                 </div>
             </div>
         </div>
     </div>
+
+</div>
 
     <script>
         // Add translations for client dashboard
@@ -1531,13 +1497,14 @@ credentials: 'include'
                     }
         }
 
-        // Show tab
-        function showTab(tabName) {
+        function showTab(tabName, event) {
     // Update nav tabs
     document.querySelectorAll('.nav-tab').forEach(tab => {
         tab.classList.remove('active');
     });
-    event.target.classList.add('active');
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
 
     // Update content
     document.querySelectorAll('.tab-content').forEach(content => {
@@ -2537,14 +2504,13 @@ credentials: 'include'
     }
 }
 
-        // Load reminder settings when settings tab is shown
-        const originalShowTab = window.showTab;
-        window.showTab = function(tabName) {
-            originalShowTab(tabName);
-            if (tabName === 'settings') {
-                loadReminderSettings();
-            }
-        };
+      const originalShowTab = window.showTab;
+window.showTab = function(tabName, event) {
+    originalShowTab(tabName, event);
+    if (tabName === 'settings') {
+        loadReminderSettings();
+    }
+};
 
         // Auto-refresh queue status when on settings tab
         let queueStatusInterval = null;
@@ -2789,6 +2755,41 @@ credentials: 'include',  // Add this
         showMessage(i18n.t('consent.update_error') + ': ' + error.message, 'error');
     }
 }
+
+async function loadConsentStatus() {
+    try {
+        const response = await fetch('/api/client/consent/status', {
+            headers: {
+                'Accept-Language': i18n.currentLang
+            },
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load consent status');
+        }
+
+        const data = await response.json();
+
+        // Display the consents
+        if (data.consents) {
+            displayConsents(data.consents);
+        } else {
+            // If no consent data exists, show default unconsented state
+            displayConsents({
+                'data_sharing': { consented: false, date: null },
+                'treatment': { consented: false, date: null },
+                'communication': { consented: false, date: null }
+            });
+        }
+    } catch (error) {
+        console.error('Error loading consent status:', error);
+        document.getElementById('consentsList').innerHTML = `
+            <p style="color: #f44336;">${i18n.t('msg.error')}: ${error.message}</p>
+        `;
+    }
+}
+
 </script>
 </body>
 </html>
