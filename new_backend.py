@@ -924,16 +924,62 @@ def verify_token(token):
 
 
 def require_auth(allowed_roles=None):
-    """Authentication decorator"""
+    """Authentication decorator that supports both JWT and cookie sessions"""
 
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
+            # First try cookie-based session
+            session_token = request.cookies.get('session_token')
+
+            if session_token:
+                # Validate session token
+                session = SessionToken.query.filter_by(
+                    token=session_token
+                ).first()
+
+                if session and session.expires_at > datetime.utcnow():
+                    user = User.query.get(session.user_id)
+                    if user and user.is_active:
+                        # Check role permissions
+                        if allowed_roles and user.role not in allowed_roles:
+                            logger.warning('auth_failed', extra={
+                                'extra_data': {
+                                    'reason': 'insufficient_permissions',
+                                    'user_role': user.role,
+                                    'required_roles': allowed_roles,
+                                    'request_id': getattr(g, 'request_id', 'unknown')
+                                },
+                                'request_id': getattr(g, 'request_id', 'unknown')
+                            })
+                            return jsonify({'error': 'Insufficient permissions'}), 403
+
+                        # Log successful auth
+                        logger.info('auth_success', extra={
+                            'extra_data': {
+                                'user_id': user.id,
+                                'role': user.role,
+                                'auth_method': 'cookie',
+                                'request_id': getattr(g, 'request_id', 'unknown')
+                            },
+                            'request_id': getattr(g, 'request_id', 'unknown'),
+                            'user_id': user.id
+                        })
+
+                        # Add user info to request
+                        request.current_user = user
+                        request.user_id = user.id
+                        request.user_role = user.role
+
+                        return f(*args, **kwargs)
+
+            # Fall back to JWT token in Authorization header
             auth_header = request.headers.get('Authorization', '')
             if not auth_header.startswith('Bearer '):
                 logger.warning('auth_failed', extra={
                     'extra_data': {
                         'reason': 'missing_bearer_token',
+                        'has_cookie': bool(session_token),
                         'request_id': getattr(g, 'request_id', 'unknown')
                     },
                     'request_id': getattr(g, 'request_id', 'unknown')
@@ -984,6 +1030,7 @@ def require_auth(allowed_roles=None):
                 'extra_data': {
                     'user_id': user.id,
                     'role': user.role,
+                    'auth_method': 'jwt',
                     'request_id': getattr(g, 'request_id', 'unknown')
                 },
                 'request_id': getattr(g, 'request_id', 'unknown'),
