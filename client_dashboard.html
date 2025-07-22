@@ -1362,7 +1362,7 @@
         }
 
          // Check authentication - keep for now as fallback
-        
+
 
         // Initialize
 document.addEventListener('DOMContentLoaded', async function() {
@@ -2539,11 +2539,18 @@ credentials: 'include'
                 return;
             }
 
-            // Validate password length
-            if (newPassword.length < 8) {
-                showMessage(i18n.t('client.password_too_short'), 'error');
-                return;
-            }
+             // Validate password length
+    if (newPassword.length < 12) {
+        showMessage('Password must be at least 12 characters long', 'error');
+        return;
+    }
+
+    // Check password complexity
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+    if (!passwordRegex.test(newPassword)) {
+        showMessage('Password must contain uppercase, lowercase, number and special character (@$!%*?&)', 'error');
+        return;
+    }
 
             try {
                 const response = await fetch('/api/client/change-password', {

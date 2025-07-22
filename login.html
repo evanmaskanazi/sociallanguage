@@ -596,8 +596,16 @@ async function handleRegister(event) {
         return;
     }
 
-    if (password.length < 8) {
-        showMessage(i18n.t('register.password_length'), 'error');
+       // Validate password length
+    if (password.length < 12) {
+        showMessage('Password must be at least 12 characters long', 'error');
+        return;
+    }
+
+    // Check password complexity
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+    if (!passwordRegex.test(password)) {
+        showMessage('Password must contain uppercase, lowercase, number and special character (@$!%*?&)', 'error');
         return;
     }
 
