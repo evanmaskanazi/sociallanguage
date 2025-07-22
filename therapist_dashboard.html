@@ -1408,68 +1408,68 @@ setInterval(function() {
 
 
         // Load dashboard data
-        async function loadDashboard() {
-        console.log('loadDashboard() called');
-        console.log('Making API call to /api/therapist/dashboard');
+async function loadDashboard() {
+    console.log('loadDashboard() called');
+    console.log('Making API call to /api/therapist/dashboard');
+
+    try {
         // Add timeout to prevent hanging
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-            try {
-                const response = await fetch('/api/therapist/dashboard', {
-                    headers: {
-                        'Accept-Language': i18n.currentLang
-                    },
-                    credentials: 'include',
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-            } catch (error) {
-                clearTimeout(timeoutId);
-                if (error.name === 'AbortError') {
-                    throw new Error('Request timeout - server took too long to respond');
-                }
-                throw error;
+        let response;
+        try {
+            response = await fetch('/api/therapist/dashboard', {
+                headers: {
+                    'Accept-Language': i18n.currentLang
+                },
+                credentials: 'include',
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error('Request timeout - server took too long to respond');
             }
-
-
-
-
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        logout();
-                        return;
-                    }
-                    throw new Error('Failed to load dashboard');
-                }
-
-                const data = await response.json();
-                therapistData = data.therapist;
-
-                // Update UI
-                document.getElementById('therapistName').textContent = therapistData.name;
-                document.getElementById('licenseInfo').textContent = `${i18n.t('therapist.license')}: ${therapistData.license_number}`;
-                document.getElementById('totalClients').textContent = data.statistics.total_clients;
-                document.getElementById('activeClients').textContent = data.statistics.active_clients;
-                document.getElementById('recentCheckins').textContent = data.statistics.recent_checkins;
-                document.getElementById('pendingMissions').textContent = data.statistics.pending_missions;
-
-                // Update recent activity to show it's not implemented
-                document.getElementById('recentActivity').innerHTML = `
-                    <div style="padding: 2rem; background: #f8f9fa; border-radius: 8px; text-align: center;">
-                        <p style="color: #666;">${i18n.t('therapist.activity_coming_soon')}</p>
-                        <p style="color: #999; font-size: 0.875rem; margin-top: 0.5rem;">
-                            ${i18n.t('therapist.check_clients_tab')}
-                        </p>
-                    </div>
-                `;
-
-                // Load clients list
-                loadClients();
-            } catch (error) {
-                showMessage(i18n.t('therapist.error_loading') + ' ' + error.message, 'error');
-            }
+            throw error;
         }
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                logout();
+                return;
+            }
+            throw new Error('Failed to load dashboard');
+        }
+
+        const data = await response.json();
+        therapistData = data.therapist;
+
+        // Update UI
+        document.getElementById('therapistName').textContent = therapistData.name;
+        document.getElementById('licenseInfo').textContent = `${i18n.t('therapist.license')}: ${therapistData.license_number}`;
+        document.getElementById('totalClients').textContent = data.statistics.total_clients;
+        document.getElementById('activeClients').textContent = data.statistics.active_clients;
+        document.getElementById('recentCheckins').textContent = data.statistics.recent_checkins;
+        document.getElementById('pendingMissions').textContent = data.statistics.pending_missions;
+
+        // Update recent activity to show it's not implemented
+        document.getElementById('recentActivity').innerHTML = `
+            <div style="padding: 2rem; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                <p style="color: #666;">${i18n.t('therapist.activity_coming_soon')}</p>
+                <p style="color: #999; font-size: 0.875rem; margin-top: 0.5rem;">
+                    ${i18n.t('therapist.check_clients_tab')}
+                </p>
+            </div>
+        `;
+
+        // Load clients list
+        loadClients();
+    } catch (error) {
+        showMessage(i18n.t('therapist.error_loading') + ' ' + error.message, 'error');
+    }
+}
 
         // Load tracking categories
 
