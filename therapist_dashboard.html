@@ -2114,16 +2114,17 @@ credentials: 'include'
                 showMessage(i18n.t('therapist.preparing_email'), 'info');
 
                 const response = await fetch('/api/therapist/email-report', {
-                    headers: {
-    'Content-Type': 'application/json',
-                        'Accept-Language': i18n.currentLang
-},
-credentials: 'include',
-                    body: JSON.stringify({
-                        client_id: parseInt(clientId),
-                        week: week
-                    })
-                });
+    method: 'POST',  // <-- This line was missing!
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept-Language': i18n.currentLang
+    },
+    credentials: 'include',
+    body: JSON.stringify({
+        client_id: parseInt(clientId),
+        week: week
+    })
+});
 
                 const result = await response.json();
 
