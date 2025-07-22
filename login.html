@@ -498,6 +498,19 @@ async function handleLogin(event) {
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
 
+    // Client-side validation
+    if (!email || !password) {
+        showMessage(i18n.t('login.fill_fields'), 'error');
+        return;
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showMessage(i18n.t('login.invalid_email'), 'error');
+        return;
+    }
+
     // Show loading
     const loginBtn = document.getElementById('loginBtn');
     const loginBtnText = document.getElementById('loginBtnText');
@@ -512,39 +525,46 @@ async function handleLogin(event) {
         const csrfData = await csrfResponse.json();
         const csrfToken = csrfData.csrf_token;
 
-        // Then make login request with CSRF token
         const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept-Language': i18n.currentLang,
                 'X-CSRF-Token': csrfToken
             },
-            credentials: 'same-origin',
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password }),
+            credentials: 'include'  // Important for cookies
         });
 
         const data = await response.json();
 
-        if (response.ok) {
-            // Save token
-            localStorage.setItem('authToken', data.token);
-            localStorage.setItem('userRole', data.user.role);
+        if (response.ok && data.success) {
+            // Don't store token in localStorage anymore
+            // Session is managed by secure cookie
 
-            showMessage(i18n.t('msg.login_success'), 'success');
+            // Store non-sensitive data only
+            localStorage.setItem('userRole', data.user.role);
+            localStorage.setItem('userEmail', data.user.email);
+
+            showMessage(i18n.t('login.success'), 'success');
 
             // Redirect based on role
             setTimeout(() => {
                 if (data.user.role === 'therapist') {
                     window.location.href = '/therapist-dashboard.html';
-                } else {
+                } else if (data.user.role === 'client') {
                     window.location.href = '/client-dashboard.html';
                 }
             }, 1000);
         } else {
-            showMessage(data.error || i18n.t('login.error'), 'error');
+            if (response.status === 429) {
+                showMessage(data.error || i18n.t('login.account_locked'), 'error');
+            } else {
+                showMessage(data.error || i18n.t('login.invalid_credentials'), 'error');
+            }
         }
     } catch (error) {
-        showMessage(i18n.t('msg.network_error'), 'error');
+        showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
     } finally {
         loginBtn.disabled = false;
         loginBtnText.textContent = i18n.t('btn.login');

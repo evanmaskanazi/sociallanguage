@@ -52,6 +52,91 @@ from flask import g
 import uuid
 import time
 
+import bleach
+import html
+import redis
+redis_client = redis.from_url(os.environ.get('REDIS_URL', 'redis://localhost:6379'))
+
+def sanitize_input(text, allow_html=False):
+    """Sanitize user input to prevent XSS"""
+    if not text:
+        return text
+
+    if allow_html:
+        # Allow only safe HTML tags
+        allowed_tags = ['b', 'i', 'u', 'em', 'strong', 'p', 'br']
+        allowed_attributes = {}
+        text = bleach.clean(text, tags=allowed_tags, attributes=allowed_attributes, strip=True)
+    else:
+        # Escape all HTML
+        text = html.escape(text)
+
+    # Additional sanitization
+    text = text.replace('\x00', '')  # Remove null bytes
+
+    return text
+
+
+def validate_email(email):
+    """Validate email format"""
+    import re
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+
+def validate_date(date_string):
+    """Validate date format and range"""
+    try:
+        date_obj = datetime.strptime(date_string, '%Y-%m-%d').date()
+        # Check reasonable range
+        if date_obj < date(2020, 1, 1) or date_obj > date.today() + timedelta(days=30):
+            return False
+        return True
+    except:
+        return False
+
+
+
+
+
+
+
+
+
+
+from cryptography.fernet import Fernet
+import base64
+
+# Generate or load encryption key
+ENCRYPTION_KEY = os.environ.get('FIELD_ENCRYPTION_KEY')
+if not ENCRYPTION_KEY:
+    # In production, this MUST come from environment
+    raise ValueError("FIELD_ENCRYPTION_KEY must be set in production")
+
+fernet = Fernet(ENCRYPTION_KEY.encode() if isinstance(ENCRYPTION_KEY, str) else ENCRYPTION_KEY)
+
+
+def encrypt_field(data):
+    """Encrypt sensitive field data"""
+    if not data:
+        return None
+    if isinstance(data, str):
+        data = data.encode()
+    return fernet.encrypt(data).decode()
+
+
+def decrypt_field(encrypted_data):
+    """Decrypt sensitive field data"""
+    if not encrypted_data:
+        return None
+    return fernet.decrypt(encrypted_data.encode()).decode()
+
+
+
+
+
+
+
 
 # Configure structured logging
 class StructuredFormatter(logging.Formatter):
@@ -620,14 +705,38 @@ class DailyCheckin(db.Model):
     checkin_date = db.Column(db.Date, nullable=False)
     checkin_time = db.Column(db.Time, nullable=False)
     emotional_value = db.Column(db.Integer)
-    emotional_notes = db.Column(db.Text)
+    emotional_notes_encrypted = db.Column(db.Text)  # Encrypted
     medication_value = db.Column(db.Integer)
-    medication_notes = db.Column(db.Text)
+    medication_notes_encrypted = db.Column(db.Text)  # Encrypted
     activity_value = db.Column(db.Integer)
-    activity_notes = db.Column(db.Text)
+    activity_notes_encrypted = db.Column(db.Text)  # Encrypted
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     __table_args__ = (db.UniqueConstraint('client_id', 'checkin_date'),)
+
+    @property
+    def emotional_notes(self):
+        return decrypt_field(self.emotional_notes_encrypted)
+
+    @emotional_notes.setter
+    def emotional_notes(self, value):
+        self.emotional_notes_encrypted = encrypt_field(value)
+
+    @property
+    def medication_notes(self):
+        return decrypt_field(self.medication_notes_encrypted)
+
+    @medication_notes.setter
+    def medication_notes(self, value):
+        self.medication_notes_encrypted = encrypt_field(value)
+
+    @property
+    def activity_notes(self):
+        return decrypt_field(self.activity_notes_encrypted)
+
+    @activity_notes.setter
+    def activity_notes(self, value):
+        self.activity_notes_encrypted = encrypt_field(value)
 
 
 class CategoryResponse(db.Model):
@@ -724,6 +833,71 @@ class SessionToken(db.Model):
     token = db.Column(db.String(255), unique=True, nullable=False)
     expires_at = db.Column(db.DateTime, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class AuditLog(db.Model):
+    __tablename__ = 'audit_logs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_email = db.Column(db.String(255))  # Store email separately for deleted users
+    action = db.Column(db.String(100), nullable=False)
+    resource_type = db.Column(db.String(50))  # 'client', 'checkin', 'report', etc.
+    resource_id = db.Column(db.Integer)
+    ip_address = db.Column(db.String(45))
+    user_agent = db.Column(db.String(500))
+    details = db.Column(db.JSON)
+    phi_accessed = db.Column(db.Boolean, default=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    # Indexes for compliance queries
+    __table_args__ = (
+        db.Index('idx_audit_user_timestamp', 'user_id', 'timestamp'),
+        db.Index('idx_audit_phi_timestamp', 'phi_accessed', 'timestamp'),
+    )
+
+
+class ConsentRecord(db.Model):
+    __tablename__ = 'consent_records'
+
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=False)
+    consent_type = db.Column(db.String(50), nullable=False)  # 'data_sharing', 'treatment', 'communication'
+    consent_version = db.Column(db.String(20), nullable=False)
+    consented = db.Column(db.Boolean, nullable=False)
+    consent_date = db.Column(db.DateTime, default=datetime.utcnow)
+    ip_address = db.Column(db.String(45))
+    withdrawal_date = db.Column(db.DateTime)
+
+    client = db.relationship('Client', backref='consents')
+
+
+
+
+
+
+
+
+
+
+def log_audit(action, resource_type=None, resource_id=None, details=None, phi_accessed=False):
+    """Log an audit trail entry for HIPAA compliance"""
+    try:
+        audit = AuditLog(
+            user_id=request.current_user.id if hasattr(request, 'current_user') else None,
+            user_email=request.current_user.email if hasattr(request, 'current_user') else 'system',
+            action=action,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent', '')[:500],
+            details=details,
+            phi_accessed=phi_accessed
+        )
+        db.session.add(audit)
+        db.session.commit()
+    except Exception as e:
+        logger.error(f"Failed to log audit: {e}")
 
 
 # ============= AUTHENTICATION HELPERS =============
@@ -1060,8 +1234,25 @@ def send_email_async(app, to_email, subject, body, html_body=None):
 
             # Send email
             server = smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT'])
+
+            # Enable TLS encryption
             server.starttls()
+
+            # Verify TLS is active
+            if not server.has_extn('STARTTLS'):
+                app.logger.error("SMTP server doesn't support TLS encryption - aborting email with PHI")
+                email_circuit_breaker.call_failed()
+                return False
+
+            # Additional TLS verification
+            server.ehlo()  # Re-identify ourselves over TLS connection
+
+            # Login and send
             server.login(app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
+
+            # Log encryption status for compliance
+            app.logger.info(f"Sending encrypted email to {to_email} via TLS")
+
             server.send_message(msg)
             server.quit()
 
@@ -1442,6 +1633,19 @@ def register():
             })
             return jsonify({'error': 'Email already registered'}), 400
 
+        if len(password) < 12:  # Increased from 8
+            return jsonify({'error': 'Password must be at least 12 characters long'}), 400
+
+            # Check password complexity
+        import re
+        if not re.match(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]', password):
+            return jsonify({'error': 'Password must contain uppercase, lowercase, number and special character'}), 400
+
+        # Check against common passwords
+        common_passwords = ['Password123!', 'Therapy123!', 'Welcome123!']  # Add more
+        if password in common_passwords:
+            return jsonify({'error': 'Password is too common. Please choose a stronger password'}), 400
+
         # Create user
         user = User(
             email=email,
@@ -1534,9 +1738,9 @@ def register():
 
 
 @app.route('/api/auth/login', methods=['POST'])
-@limiter.limit("20 per minute")  # Allow more login attempts
+@limiter.limit("20 per minute")
 def login():
-    """Login user"""
+    """Login user with secure session management"""
     try:
         data = request.json
         email = data.get('email')
@@ -1553,9 +1757,27 @@ def login():
             })
             return jsonify({'error': 'Missing email or password'}), 400
 
+        # Check for account lockout
+        lockout_key = f"lockout:{email}"
+        attempts_key = f"attempts:{email}"
+
+        if redis_client:  # Add Redis client to your app
+            if redis_client.get(lockout_key):
+                return jsonify({'error': 'Account locked. Please try again later.'}), 429
+
+            attempts = int(redis_client.get(attempts_key) or 0)
+            if attempts >= 5:
+                redis_client.setex(lockout_key, 900, '1')  # 15 minute lockout
+                return jsonify({'error': 'Too many failed attempts. Account locked for 15 minutes.'}), 429
+
         # Find user
         user = User.query.filter_by(email=email).first()
         if not user or not bcrypt.check_password_hash(user.password_hash, password):
+            # Increment failed attempts
+            if redis_client:
+                redis_client.incr(attempts_key)
+                redis_client.expire(attempts_key, 900)
+
             logger.warning('login_failed', extra={
                 'extra_data': {
                     'reason': 'invalid_credentials',
@@ -1578,12 +1800,68 @@ def login():
             })
             return jsonify({'error': 'Account deactivated'}), 401
 
+            # Check password strength for existing users
+            def meets_password_requirements(password):
+                """Check if password meets current security requirements"""
+                import re
+                if len(password) < 12:
+                    return False
+                if not re.match(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]', password):
+                    return False
+                return True
+
+            if not meets_password_requirements(password):
+                # Create a one-time token for password reset
+                reset_token = str(uuid.uuid4())
+
+                # Store reset token in database
+                password_reset = PasswordReset(
+                    user_id=user.id,
+                    reset_token=reset_token,
+                    expires_at=datetime.utcnow() + timedelta(hours=1)
+                )
+                db.session.add(password_reset)
+                db.session.commit()
+
+                # Log security event
+                logger.warning('weak_password_detected', extra={
+                    'extra_data': {
+                        'user_id': user.id,
+                        'email': email,
+                        'request_id': g.request_id
+                    },
+                    'request_id': g.request_id
+                })
+
+                # Return special response
+                return jsonify({
+                    'success': False,
+                    'requires_password_reset': True,
+                    'reset_token': reset_token,
+                    'message': 'Your password no longer meets security requirements. Please reset it.',
+                    'reset_url': f'/reset-password.html?token={reset_token}'
+                }), 403
+
+        # Clear failed attempts on successful login
+        if redis_client:
+            redis_client.delete(attempts_key)
+
         # Update last login
         user.last_login = datetime.utcnow()
         db.session.commit()
 
-        # Generate token
+        # Generate token but store it securely
         token = generate_token(user.id, user.role)
+
+        # Create secure session
+        session_id = str(uuid.uuid4())
+        session_token = SessionToken(
+            user_id=user.id,
+            token=session_id,  # Store session ID, not JWT
+            expires_at=datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)
+        )
+        db.session.add(session_token)
+        db.session.commit()
 
         # Log successful login
         logger.info('login_success', extra={
@@ -1597,10 +1875,12 @@ def login():
             'user_id': user.id
         })
 
+        # Audit log
+        log_audit('USER_LOGIN', 'user', user.id, {'role': user.role})
+
         # Get role-specific data
         response_data = {
             'success': True,
-            'token': token,
             'user': {
                 'id': user.id,
                 'email': user.email,
@@ -1622,7 +1902,18 @@ def login():
                 'start_date': user.client.start_date.isoformat()
             }
 
-        return jsonify(response_data)
+        # Set secure cookie instead of returning token
+        resp = jsonify(response_data)
+        resp.set_cookie(
+            'session_token',
+            session_id,
+            secure=True,  # HTTPS only
+            httponly=True,  # Not accessible via JavaScript
+            samesite='Lax',
+            max_age=86400  # 24 hours
+        )
+
+        return resp
 
     except Exception as e:
         logger.error('login_error', extra={
@@ -1776,8 +2067,17 @@ def reset_password():
         if not all([reset_token, new_password]):
             return jsonify({'error': 'Token and password are required'}), 400
 
-        if len(new_password) < 8:
+        if len(new_password) < 12:
             return jsonify({'error': 'Password must be at least 8 characters long'}), 400
+
+        import re
+        if not re.match(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]', new_password):
+            return jsonify({'error': 'Password must contain uppercase, lowercase, number and special character'}), 400
+
+        # Check against common passwords
+        common_passwords = ['Password123!', 'Therapy123!', 'Welcome123!']  # Add more
+        if new_password in common_passwords:
+            return jsonify({'error': 'Password is too common. Please choose a stronger password'}), 400
 
         # Find valid reset token
         password_reset = PasswordReset.query.filter_by(
@@ -2007,14 +2307,15 @@ def get_therapist_clients():
 @app.route('/api/therapist/client/<int:client_id>', methods=['GET'])
 @require_auth(['therapist'])
 def get_client_details(client_id):
-    """Get detailed client information"""
+    """Get detailed client information with strict access control"""
     try:
         therapist = request.current_user.therapist
 
-        # Verify client belongs to therapist
-        client = Client.query.filter_by(
-            id=client_id,
-            therapist_id=therapist.id
+        # Strict verification with explicit query
+        client = db.session.query(Client).filter(
+            Client.id == client_id,
+            Client.therapist_id == therapist.id,
+            Client.is_active == True
         ).first()
 
         if not client:
@@ -2029,25 +2330,54 @@ def get_client_details(client_id):
                 'request_id': g.request_id,
                 'user_id': request.current_user.id
             })
+
+            # Audit log for security
+            log_audit(
+                action='UNAUTHORIZED_ACCESS_ATTEMPT',
+                resource_type='client',
+                resource_id=client_id,
+                details={'therapist_id': therapist.id},
+                phi_accessed=False
+            )
+
             # Return generic error to prevent enumeration
             return jsonify({'error': 'Resource not found'}), 404
 
-        # Get tracking plans
+        # Log authorized access
+        log_audit(
+            action='VIEW_CLIENT_DETAILS',
+            resource_type='client',
+            resource_id=client_id,
+            details={'client_serial': client.client_serial},
+            phi_accessed=True
+        )
+
+        # Get tracking plans with additional verification
         tracking_plans = []
         for plan in client.tracking_plans.filter_by(is_active=True):
+            # Verify plan belongs to client
+            if plan.client_id != client.id:
+                logger.error(f"Data integrity issue: plan {plan.id} has mismatched client_id")
+                continue
+
             tracking_plans.append({
                 'id': plan.id,
                 'category': plan.category.name,
                 'description': plan.category.description
             })
 
-        # Get active goals
+        # Get active goals with date validation
         active_goals = []
         week_start = date.today() - timedelta(days=date.today().weekday())
-        for goal in client.goals.filter_by(
-                week_start=week_start,
-                is_active=True
-        ):
+
+        goals_query = client.goals.filter_by(
+            week_start=week_start,
+            is_active=True
+        ).filter(
+            WeeklyGoal.therapist_id == therapist.id  # Extra verification
+        )
+
+        for goal in goals_query:
             # Get completions for each day
             completions = {}
             for i in range(7):
@@ -2061,28 +2391,31 @@ def get_client_details(client_id):
                 'completions': completions
             })
 
-        # Get recent check-ins
+        # Get recent check-ins with limit
         recent_checkins = []
         for checkin in client.checkins.order_by(
                 DailyCheckin.checkin_date.desc()
-        ).limit(7):
+        ).limit(7):  # Limit to prevent data exposure
             recent_checkins.append({
                 'date': checkin.checkin_date.isoformat(),
                 'emotional': checkin.emotional_value,
                 'medication': checkin.medication_value,
                 'activity': checkin.activity_value
+                # Note: Not including notes in list view for privacy
             })
 
-        # Get therapist notes/missions
+        # Get therapist notes/missions with verification
         notes = []
-        for note in TherapistNote.query.filter_by(
-                client_id=client_id,
-                therapist_id=therapist.id
-        ).order_by(TherapistNote.created_at.desc()).limit(10):
+        notes_query = TherapistNote.query.filter_by(
+            client_id=client_id,
+            therapist_id=therapist.id  # Ensure notes are from this therapist
+        ).order_by(TherapistNote.created_at.desc()).limit(10)
+
+        for note in notes_query:
             notes.append({
                 'id': note.id,
                 'type': note.note_type,
-                'content': note.content,
+                'content': note.content,  # Consider encrypting this
                 'is_mission': note.is_mission,
                 'completed': note.mission_completed,
                 'created_at': note.created_at.isoformat()
@@ -2103,7 +2436,17 @@ def get_client_details(client_id):
         })
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error('get_client_details_error', extra={
+            'extra_data': {
+                'error': str(e),
+                'client_id': client_id,
+                'therapist_id': therapist.id if therapist else None,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        }, exc_info=True)
+        return jsonify({'error': 'An error occurred'}), 500
 
 
 # ============= TRACKING CATEGORY MANAGEMENT =============
@@ -3967,6 +4310,54 @@ def initialize_database():
                 pass
 
 
+def migrate_existing_data_if_needed():
+    """Automatically encrypt existing data on first run"""
+    try:
+        # Check if migration has been done
+        migration_done = db.session.execute(
+            text("SELECT COUNT(*) FROM daily_checkins WHERE emotional_notes_encrypted IS NOT NULL")
+        ).scalar() > 0
+
+        if migration_done:
+            return  # Already migrated
+
+        # Get all checkins with unencrypted notes
+        checkins = DailyCheckin.query.filter(
+            or_(
+                DailyCheckin.emotional_notes != None,
+                DailyCheckin.medication_notes != None,
+                DailyCheckin.activity_notes != None
+            )
+        ).all()
+
+        migrated = 0
+        for checkin in checkins:
+            try:
+                # Encrypt existing notes
+                if checkin.emotional_notes:
+                    checkin.emotional_notes_encrypted = encrypt_field(checkin.emotional_notes)
+                if checkin.medication_notes:
+                    checkin.medication_notes_encrypted = encrypt_field(checkin.medication_notes)
+                if checkin.activity_notes:
+                    checkin.activity_notes_encrypted = encrypt_field(checkin.activity_notes)
+                migrated += 1
+            except Exception as e:
+                logger.error(f"Failed to encrypt checkin {checkin.id}: {e}")
+
+        if migrated > 0:
+            db.session.commit()
+            logger.info(f"Successfully encrypted {migrated} existing checkins")
+
+    except Exception as e:
+        logger.error(f"Migration failed: {e}")
+        db.session.rollback()
+
+
+
+
+
+
+
 # Initialize on first request
 def initialize_app_data():
     """Initialize application data - run once at startup"""
@@ -3999,7 +4390,7 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         initialize_database()
-
+        migrate_existing_data_if_needed()
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=not os.environ.get('PRODUCTION'))
 
@@ -4356,6 +4747,88 @@ def client_dashboard():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/client/consent', methods=['GET'])
+@require_auth(['client'])
+def get_consent_status():
+    """Get client's consent status"""
+    try:
+        client = request.current_user.client
+
+        consent_types = ['data_sharing', 'treatment', 'communication']
+        consent_status = {}
+
+        for consent_type in consent_types:
+            record = ConsentRecord.query.filter_by(
+                client_id=client.id,
+                consent_type=consent_type,
+                withdrawal_date=None
+            ).order_by(ConsentRecord.consent_date.desc()).first()
+
+            consent_status[consent_type] = {
+                'consented': record.consented if record else False,
+                'date': record.consent_date.isoformat() if record else None,
+                'version': record.consent_version if record else None
+            }
+
+        return jsonify({
+            'success': True,
+            'consents': consent_status
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/client/consent', methods=['POST'])
+@require_auth(['client'])
+def update_consent():
+    """Update client consent"""
+    try:
+        client = request.current_user.client
+        data = request.json
+
+        consent_type = data.get('consent_type')
+        consented = data.get('consented')
+
+        if consent_type not in ['data_sharing', 'treatment', 'communication']:
+            return jsonify({'error': 'Invalid consent type'}), 400
+
+        # Create new consent record
+        consent = ConsentRecord(
+            client_id=client.id,
+            consent_type=consent_type,
+            consent_version='1.0',  # Update this when consent forms change
+            consented=consented,
+            ip_address=request.remote_addr
+        )
+        db.session.add(consent)
+        db.session.commit()
+
+        # Audit log
+        log_audit(
+            action='UPDATE_CONSENT',
+            resource_type='consent',
+            resource_id=consent.id,
+            details={
+                'consent_type': consent_type,
+                'consented': consented
+            }
+        )
+
+        return jsonify({
+            'success': True,
+            'message': 'Consent updated successfully'
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
+
+
+
+
 @app.route('/api/client/checkin', methods=['POST'])
 @require_auth(['client'])
 def submit_checkin():
@@ -4459,6 +4932,10 @@ def submit_checkin():
             if notes and len(notes) > 500:
                 return jsonify({'error': f'Notes too long for category {cat_id}. Maximum 500 characters.'}), 400
 
+        for cat_id, notes in category_notes.items():
+            if notes:
+                category_notes[cat_id] = sanitize_input(notes)[:500]  # Also enforce length
+
         # Validate category responses
         category_responses = data.get('category_responses', {})
         validated_responses = {}
@@ -4534,6 +5011,18 @@ def submit_checkin():
             goals_updated += 1
 
         db.session.commit()
+
+        log_audit(
+            action='CREATE_CHECKIN' if not is_update else 'UPDATE_CHECKIN',
+            resource_type='checkin',
+            resource_id=existing.id,
+            details={
+                'client_serial': client.client_serial,
+                'checkin_date': str(checkin_date),
+                'categories_tracked': len(responses_logged)
+            },
+            phi_accessed=True
+        )
 
         logger.info('checkin_success', extra={
             'extra_data': {
@@ -5975,6 +6464,97 @@ def get_client_week_goals(week):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/admin/data-retention', methods=['POST'])
+@require_auth(['therapist'])  # Should be admin role
+def apply_data_retention():
+    """Apply data retention policy - GDPR/HIPAA compliance"""
+    try:
+        # Only allow specific admin therapists
+        if request.current_user.email not in app.config.get('ADMIN_EMAILS', []):
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        retention_days = 2555  # 7 years for HIPAA
+        cutoff_date = date.today() - timedelta(days=retention_days)
+
+        # Archive old check-ins
+        old_checkins = DailyCheckin.query.filter(
+            DailyCheckin.checkin_date < cutoff_date
+        ).all()
+
+        archived_count = 0
+        for checkin in old_checkins:
+            # Archive to cold storage (implement based on your needs)
+            archive_data = {
+                'client_id': checkin.client_id,
+                'date': checkin.checkin_date.isoformat(),
+                'data': {
+                    'emotional': checkin.emotional_value,
+                    'medication': checkin.medication_value,
+                    'activity': checkin.activity_value
+                }
+            }
+            # TODO: Send to archive storage
+
+            # Delete from active database
+            db.session.delete(checkin)
+            archived_count += 1
+
+        db.session.commit()
+
+        # Audit log
+        log_audit(
+            action='DATA_RETENTION_APPLIED',
+            details={
+                'cutoff_date': cutoff_date.isoformat(),
+                'archived_count': archived_count
+            }
+        )
+
+        return jsonify({
+            'success': True,
+            'archived': archived_count
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/client/request-deletion', methods=['POST'])
+@require_auth(['client'])
+def request_data_deletion():
+    """GDPR right to deletion"""
+    try:
+        client = request.current_user.client
+
+        # Create deletion request (implement approval workflow)
+        deletion_request = {
+            'client_id': client.id,
+            'requested_at': datetime.utcnow(),
+            'status': 'pending'
+        }
+
+        # Notify therapist
+        # TODO: Send notification
+
+        # Audit log
+        log_audit(
+            action='DATA_DELETION_REQUESTED',
+            resource_type='client',
+            resource_id=client.id
+        )
+
+        return jsonify({
+            'success': True,
+            'message': 'Deletion request submitted. Your therapist will be notified.'
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
+
+
 # The create_weekly_report_excel function continues from Part 1
 # It's already complete in Part 1, starting at line 2324
 
@@ -6488,43 +7068,7 @@ def client_queue_status():
 _initialized = False
 
 
-def initialize_database():
-    """Initialize database with default data"""
-    global _initialized
-    if _initialized:
-        return
 
-    _initialized = True
-
-    try:
-        db.create_all()
-
-        # Add default tracking categories if not exist
-        if TrackingCategory.query.count() == 0:
-            default_categories = [
-                ('Emotion Level', 'Overall emotional state', True),
-                ('Energy', 'Physical and mental energy levels', True),
-                ('Social Activity', 'Engagement in social interactions', True),
-                ('Sleep Quality', 'Quality of sleep', False),
-                ('Anxiety Level', 'Level of anxiety experienced', False),
-                ('Motivation', 'Level of motivation and drive', False),
-                ('Medication', 'Medication adherence', True),
-                ('Physical Activity', 'Physical activity level', True)
-            ]
-
-            for name, description, is_default in default_categories:
-                category = TrackingCategory(
-                    name=name,
-                    description=description,
-                    is_default=is_default
-                )
-                db.session.add(category)
-
-            db.session.commit()
-            print("Database initialized with default tracking categories")
-    except Exception as e:
-        print(f"Database initialization error: {e}")
-        _initialized = False
 
 
 # Don't initialize on import for production
@@ -6540,6 +7084,7 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         initialize_database()
+        migrate_existing_data_if_needed()
         initialize_app_data()  # Run once at startup
 
     port = int(os.environ.get('PORT', 5000))

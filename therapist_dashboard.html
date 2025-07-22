@@ -1241,6 +1241,28 @@
 
         // Global variables
         let authToken = localStorage.getItem('authToken');
+
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/user/profile', {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    window.location.href = '/login.html';
+                    return false;
+                }
+
+                return true;
+            } catch (error) {
+                window.location.href = '/login.html';
+                return false;
+            }
+        }
+
+
+
+
                 // CSRF Token Management
         let csrfToken = null;
 
@@ -1309,30 +1331,37 @@
             window.location.href = '/login.html';
         }
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
     console.log('DOMContentLoaded fired');
     console.log('window.i18n exists:', !!window.i18n);
     console.log('window.i18n.currentLang:', window.i18n?.currentLang);
     console.log('authToken exists:', !!authToken);
 
-    // Ensure i18n is ready
-    if (window.i18n && window.i18n.currentLang) {
-        console.log('i18n is ready, loading dashboard components...');
-        loadDashboard();
-        loadTrackingCategories();
-        setCurrentWeek();
-        updatePlaceholders();
-    } else {
-        console.log('i18n not ready, waiting 100ms...');
-        // Wait a bit for i18n to initialize
-        setTimeout(() => {
-            console.log('After timeout - window.i18n.currentLang:', window.i18n?.currentLang);
-            loadDashboard();
-            loadTrackingCategories();
+    try {
+        const isAuthenticated = await checkAuth();
+        if (!isAuthenticated) return;
+
+        // Ensure i18n is ready
+        if (window.i18n && window.i18n.currentLang) {
+            console.log('i18n is ready, loading dashboard components...');
+            await loadDashboard();
+            await loadTrackingCategories();
             setCurrentWeek();
             updatePlaceholders();
-        }, 100);
+        } else {
+            console.log('i18n not ready, waiting 100ms...');
+            // Wait a bit for i18n to initialize
+            setTimeout(async () => {
+                console.log('After timeout - window.i18n.currentLang:', window.i18n?.currentLang);
+                await loadDashboard();
+                await loadTrackingCategories();
+                setCurrentWeek();
+                updatePlaceholders();
+            }, 100);
+        }
+    } catch (error) {
+        console.error('Initialization error:', error);
+        showMessage('Error loading dashboard', 'error');
     }
 });
 
@@ -1388,9 +1417,9 @@ setInterval(function() {
             try {
                 const response = await fetch('/api/therapist/dashboard', {
                     headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'Accept-Language': i18n.currentLang
-                    }
+    'Accept-Language': i18n.currentLang
+},
+credentials: 'include'
                 });
 
                 if (!response.ok) {
@@ -1438,9 +1467,9 @@ async function loadTrackingCategories() {
     try {
         const response = await fetch('/api/categories/translated', {
             headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Accept-Language': i18n.currentLang
-            }
+    'Accept-Language': i18n.currentLang
+},
+credentials: 'include'
         });
         console.log('Response status:', response.status);
 
@@ -1471,10 +1500,10 @@ async function loadTrackingCategories() {
 
         // If translated endpoint fails, try regular categories endpoint
         const response2 = await fetch('/api/categories', {
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Accept-Language': i18n.currentLang
-            }
+        headers: {
+    'Accept-Language': i18n.currentLang
+},
+credentials: 'include'
         });
 
         if (response2.ok) {
@@ -1545,11 +1574,11 @@ async function loadTrackingCategories() {
         // Load clients
         async function loadClients(page = 1) {
     try {
-        const response = await fetch(`/api/therapist/clients?page=${page}&per_page=20`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Accept-Language': i18n.currentLang
-            }
+    const response = await fetch(`/api/therapist/clients?page=${page}&per_page=20`, {
+        headers: {
+    'Accept-Language': i18n.currentLang
+},
+credentials: 'include'
         });
 
         if (!response.ok) {
@@ -1656,11 +1685,11 @@ function updatePaginationControls(pagination) {
         // View client details
         async function viewClientDetails(clientId) {
             try {
-                const response = await fetch(`/api/therapist/client/${clientId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'Accept-Language': i18n.currentLang
-                    }
+            const response = await fetch(`/api/therapist/client/${clientId}`, {
+                headers: {
+    'Accept-Language': i18n.currentLang
+},
+credentials: 'include'
                 });
 
                 if (!response.ok) {
@@ -1845,10 +1874,10 @@ function updatePaginationControls(pagination) {
                 const response = await fetch('/api/therapist/create-client', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'Content-Type': 'application/json',
+    'Content-Type': 'application/json',
                         'Accept-Language': i18n.currentLang
-                    },
+},
+credentials: 'include',
                     body: JSON.stringify(data)
                 });
 
@@ -1898,10 +1927,10 @@ function updatePaginationControls(pagination) {
                 const response = await fetch('/api/therapist/add-goal', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'Content-Type': 'application/json',
+    'Content-Type': 'application/json',
                         'Accept-Language': i18n.currentLang
-                    },
+},
+credentials: 'include',
                     body: JSON.stringify({
                         client_id: clientId,
                         goal_text: goalText
@@ -1933,10 +1962,10 @@ function updatePaginationControls(pagination) {
                 const response = await fetch('/api/therapist/add-note', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'Content-Type': 'application/json',
+    'Content-Type': 'application/json',
                         'Accept-Language': i18n.currentLang
-                    },
+},
+credentials: 'include',
                     body: JSON.stringify({
                         client_id: clientId,
                         content: content,
@@ -1980,10 +2009,10 @@ function updatePaginationControls(pagination) {
                 showMessage(i18n.t('therapist.generating_report'), 'success');
 
                 const response = await fetch(`/api/reports/generate/${clientId}/${week}`, {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'Accept-Language': i18n.currentLang
-                    }
+                    hheaders: {
+    'Accept-Language': i18n.currentLang
+},
+credentials: 'include'
                 });
 
                 if (response.ok) {
@@ -2029,9 +2058,9 @@ function updatePaginationControls(pagination) {
 
         const response = await fetch(`/api/reports/generate-pdf/${clientId}/${week}`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Accept-Language': i18n.currentLang
-            }
+    'Accept-Language': i18n.currentLang
+},
+credentials: 'include'
         });
 
         if (response.ok) {
@@ -2072,12 +2101,11 @@ function updatePaginationControls(pagination) {
                 showMessage(i18n.t('therapist.preparing_email'), 'info');
 
                 const response = await fetch('/api/therapist/email-report', {
-                    method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'Content-Type': 'application/json',
+    'Content-Type': 'application/json',
                         'Accept-Language': i18n.currentLang
-                    },
+},
+credentials: 'include',
                     body: JSON.stringify({
                         client_id: parseInt(clientId),
                         week: week

@@ -305,5 +305,15 @@ if __name__ == '__main__':
     print("Initialization script completed")
     print("=" * 50)
 
+    print("\nEncrypting existing sensitive data...")
+    try:
+        from migrations.encrypt_existing_data import migrate_checkin_encryption
+
+        migrate_checkin_encryption()
+        print("✅ Sensitive data encrypted successfully")
+    except Exception as e:
+        print(f"⚠️ Could not encrypt existing data: {e}")
+        print("   Run migrations/encrypt_existing_data.py manually")
+
     # Exit with success code
     sys.exit(0)
