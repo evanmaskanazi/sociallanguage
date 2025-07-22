@@ -2553,13 +2553,20 @@ credentials: 'include'
     }
 
             try {
-                const response = await fetch('/api/client/change-password', {
-                    method: 'POST',
-                    headers: {
-    'Content-Type': 'application/json',
-    'Accept-Language': i18n.currentLang
-},
-credentials: 'include',
+                // Get CSRF token first
+const csrfResponse = await fetch('/api/csrf-token', {
+    credentials: 'same-origin'
+});
+const csrfData = await csrfResponse.json();
+
+const response = await fetch('/api/client/change-password', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept-Language': i18n.currentLang,
+        'X-CSRF-Token': csrfData.csrf_token
+    },
+    credentials: 'include',
                     body: JSON.stringify({
                         current_password: currentPassword,
                         new_password: newPassword

@@ -357,7 +357,8 @@ translations: {
         'email.weekly_report_intro': 'Here is my weekly progress report for',
         'email.report_generated_on': 'Report generated on',
         'email.best_regards': 'Best regards',
-
+        'nav.daily_checkin': 'Daily Check-in',
+        'nav.consent': 'Consent',
 
 
 
@@ -741,6 +742,8 @@ translations: {
         'therapist.no_notes': 'אין הערות עדיין',
         'therapist.generate_pdf': 'צור דוח PDF',
         'client.generate_pdf': 'צור דוח PDF',
+        'nav.daily_checkin': 'צ׳ק-אין יומי',
+        'nav.consent': 'הסכמה',
 
         // Index page
         'hero.subtitle': 'מערכת ליווי טיפולית מקיפה למטפלים ומטופלים',
@@ -874,6 +877,8 @@ translations: {
         'client.add_note': 'Добавить заметку',
         'therapist.generate_pdf': 'Создать PDF отчет',
         'client.generate_pdf': 'Создать PDF отчет',
+        'nav.daily_checkin': 'Ежедневная отметка',
+        'nav.consent': 'Согласие',
 
         // Check-in
         'checkin.title': 'Ежедневная отметка',
@@ -1344,6 +1349,8 @@ translations: {
 'therapist.recent_notes': 'الملاحظات والمهام الأخيرة',
 'therapist.mission': 'مهمة',
 'therapist.no_notes': 'لا توجد ملاحظات بعد',
+'nav.daily_checkin': 'تسجيل الحضور اليومي',
+'nav.consent': 'الموافقة',
 
 // Index page translations
 'hero.subtitle': 'نظام رفيق علاجي شامل للمعالجين والعملاء',

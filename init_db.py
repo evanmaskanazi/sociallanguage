@@ -238,6 +238,70 @@ def initialize_database():
         fix_existing_clients()
         print("✓ Updated existing clients with any missing categories")
 
+        # Create consent records table if missing
+        try:
+            db.session.execute(text("""
+                CREATE TABLE IF NOT EXISTS consent_records (
+                    id SERIAL PRIMARY KEY,
+                    client_id INTEGER NOT NULL REFERENCES clients(id),
+                    consent_type VARCHAR(50) NOT NULL,
+                    consent_version VARCHAR(20) NOT NULL,
+                    consented BOOLEAN NOT NULL,
+                    consent_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    ip_address VARCHAR(45),
+                    withdrawal_date TIMESTAMP
+                )
+            """))
+            db.session.commit()
+            print("✓ Created consent_records table")
+        except Exception as e:
+            print(f"Consent records table may already exist: {e}")
+
+        # Create email queue table if missing
+        try:
+            db.session.execute(text("""
+                CREATE TABLE IF NOT EXISTS email_queue (
+                    id SERIAL PRIMARY KEY,
+                    to_email VARCHAR(255) NOT NULL,
+                    subject VARCHAR(500) NOT NULL,
+                    body TEXT NOT NULL,
+                    html_body TEXT,
+                    status VARCHAR(50) DEFAULT 'pending',
+                    attempts INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    sent_at TIMESTAMP,
+                    last_attempt_at TIMESTAMP,
+                    error_message TEXT
+                )
+            """))
+            db.session.commit()
+            print("✓ Created email_queue table")
+        except Exception as e:
+            print(f"Email queue table may already exist: {e}")
+        # Create audit logs table if missing
+        try:
+            db.session.execute(text("""
+                CREATE TABLE IF NOT EXISTS audit_logs (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER REFERENCES users(id),
+                    user_email VARCHAR(255),
+                    action VARCHAR(100) NOT NULL,
+                    resource_type VARCHAR(50),
+                    resource_id INTEGER,
+                    ip_address VARCHAR(45),
+                    user_agent VARCHAR(500),
+                    details JSON,
+                    phi_accessed BOOLEAN DEFAULT FALSE,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_audit_user_timestamp ON audit_logs(user_id, timestamp);
+                CREATE INDEX IF NOT EXISTS idx_audit_phi_timestamp ON audit_logs(phi_accessed, timestamp);
+            """))
+            db.session.commit()
+            print("✓ Created audit_logs table with indexes")
+        except Exception as e:
+            print(f"Audit logs table may already exist: {e}")
+
         # Check if we have the expected 8 categories
         category_count = TrackingCategory.query.count()
         if category_count < 8:
