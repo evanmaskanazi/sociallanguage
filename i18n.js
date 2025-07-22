@@ -48,6 +48,7 @@ translations: {
         'login.welcome_back': 'Welcome back!',
         'login.instruction': 'Therapists and clients can login here with their credentials.',
         'login.forgot_coming_soon': 'Password reset functionality coming soon!',
+        'login.success': 'Login Successful!',
 
         // Password Reset
         'reset.title': 'Reset Password',
@@ -275,6 +276,9 @@ translations: {
         'therapist.generate_pdf': 'Generate PDF Report',
         'client.generate_pdf': 'Generate PDF Report',
 
+
+
+
         // Therapist specific
         'therapist.dashboard_title': 'Therapist Dashboard',
         'therapist.dashboard_overview': 'Dashboard Overview',
@@ -435,6 +439,7 @@ translations: {
         'login.welcome_back': 'ברוך הבא!',
         'login.instruction': 'מטפלים ומטופלים יכולים להתחבר כאן עם האישורים שלהם.',
         'login.forgot_coming_soon': 'פונקציית איפוס סיסמה תגיע בקרוב!',
+        'login.success': 'Login Successful!',
 
         'email.dear_therapist': 'מטפל יקר',
         'email.weekly_report_intro': 'הנה דוח ההתקדמות השבועי שלי עבור',
@@ -664,6 +669,7 @@ translations: {
         'client.incorrect_password': 'הסיסמה הנוכחית שגויה',
         'client.error_changing_password': 'שגיאה בשינוי הסיסמה:',
 
+
         // Therapist specific
         'therapist.dashboard_title': 'לוח בקרה למטפל',
         'therapist.dashboard_overview': 'סקירת לוח בקרה',
@@ -814,6 +820,7 @@ translations: {
         'login.welcome_back': 'С возвращением!',
         'login.instruction': 'Терапевты и клиенты могут войти здесь со своими учетными данными.',
         'login.forgot_coming_soon': 'Функция сброса пароля скоро появится!',
+        'login.success': 'Вход выполнен успешно!',
 
         // Password Reset
         'reset.title': 'Сброс пароля',
@@ -878,7 +885,7 @@ translations: {
         'therapist.generate_pdf': 'Создать PDF отчет',
         'client.generate_pdf': 'Создать PDF отчет',
         'nav.daily_checkin': 'Ежедневная отметка',
-        'nav.consent': 'Согласие',
+
 
         // Check-in
         'checkin.title': 'Ежедневная отметка',
@@ -1083,7 +1090,8 @@ translations: {
     'login.error': 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
     'login.welcome_back': 'مرحباً بعودتك!',
     'login.instruction': 'يمكن للمعالجين والعملاء تسجيل الدخول هنا باستخدام بيانات الاعتماد الخاصة بهم.',
-    'login.forgot_coming_soon': 'وظيفة إعادة تعيين كلمة المرور قادمة قريباً!',        
+    'login.forgot_coming_soon': 'وظيفة إعادة تعيين كلمة المرور قادمة قريباً!',
+          'login.success': 'تم تسجيل الدخول بنجاح!',
             // Password Reset
     'reset.title': 'إعادة تعيين كلمة المرور',
     'reset.instruction': 'أدخل عنوان بريدك الإلكتروني وسنرسل لك رابط إعادة تعيين كلمة المرور.',
@@ -1161,7 +1169,8 @@ translations: {
     'checkin.med_partial': 'جزئي',
     'checkin.med_na': 'غير متاح',
     'therapist.generate_pdf': 'إنشاء تقرير PDF',
-    'client.generate_pdf': 'إنشاء تقرير PDF',       
+    'client.generate_pdf': 'إنشاء تقرير PDF',
+
 
     // Goals
     'goals.weekly': 'الأهداف الأسبوعية',
