@@ -2768,6 +2768,8 @@ const response = await fetch('/api/client/change-password', {
         });
          async function testReminder() {
             try {
+
+                const clientId = clientData && clientData.id ? clientData.id : null;
                 const response = await fetch('/api/client/test-reminder', {
                     method: 'POST',
                     headers: {
@@ -2778,7 +2780,7 @@ const response = await fetch('/api/client/change-password', {
 credentials: 'include',  // Add this
 
                      body: JSON.stringify({
-                     client_id: clientData.id
+                     client_id: clientId
                      })
                 });
 
