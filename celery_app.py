@@ -47,6 +47,13 @@ celery.conf.update(
 def send_reminder_test(self, email):
     """Test task to send a reminder email"""
     try:
+        # Import Flask app and models at the top of the task
+        import sys
+        import os
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+        from new_backend import app, db, User, Client, Reminder
+
         # Email configuration from environment
         smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
         smtp_port = int(os.environ.get('SMTP_PORT', 587))
@@ -56,21 +63,23 @@ def send_reminder_test(self, email):
         if not smtp_username or not smtp_password:
             return {'error': 'Email configuration missing'}
 
-        # Create email
-            # Get user's language preference from the email's user
+        # Get user's language preference within Flask app context
         reminder_lang = 'en'
-        try:
-            from new_backend import User, Client
-            user = User.query.filter_by(email=email).first()
-            if user and user.client:
-                reminder = user.client.reminders.filter_by(
-                    reminder_type='daily_checkin',
-                    is_active=True
-                ).first()
-                if reminder and hasattr(reminder, 'reminder_language'):
-                    reminder_lang = reminder.reminder_language
-        except:
-            pass
+        with app.app_context():
+            try:
+                user = User.query.filter_by(email=email).first()
+                if user and user.client:
+                    reminder = user.client.reminders.filter_by(
+                        reminder_type='daily_checkin',
+                        is_active=True
+                    ).first()
+                    if reminder and hasattr(reminder, 'reminder_language') and reminder.reminder_language:
+                        reminder_lang = reminder.reminder_language
+                        print(f"[CELERY] Found reminder language: {reminder_lang} for {email}")
+                    else:
+                        print(f"[CELERY] No reminder language found for {email}, using default: en")
+            except Exception as e:
+                print(f"[CELERY] Error getting language preference: {e}")
 
         # Translated test messages
         test_subjects = {
@@ -83,28 +92,28 @@ def send_reminder_test(self, email):
         test_bodies = {
             'en': """This is a test email from the Therapeutic Companion Celery worker.
 
-    If you're receiving this, it means the background task system is working correctly!
+If you're receiving this, it means the background task system is working correctly!
 
-    Best regards,
-    Therapeutic Companion Team""",
+Best regards,
+Therapeutic Companion Team""",
             'he': """זוהי הודעת בדיקה ממערכת ה-Celery של המלווה הטיפולי.
 
-    אם אתה מקבל את זה, זה אומר שמערכת המשימות ברקע עובדת כראוי!
+אם אתה מקבל את זה, זה אומר שמערכת המשימות ברקע עובדת כראוי!
 
-    בברכה,
-    צוות המלווה הטיפולי""",
+בברכה,
+צוות המלווה הטיפולי""",
             'ru': """Это тестовое письмо от рабочего Celery Терапевтического Компаньона.
 
-    Если вы получили это, значит фоновая система задач работает правильно!
+Если вы получили это, значит фоновая система задач работает правильно!
 
-    С наилучшими пожеланиями,
-    Команда Терапевтического Компаньона""",
+С наилучшими пожеланиями,
+Команда Терапевтического Компаньона""",
             'ar': """هذا بريد إلكتروني تجريبي من عامل Celery للرفيق العلاجي.
 
-    إذا كنت تتلقى هذا، فهذا يعني أن نظام المهام في الخلفية يعمل بشكل صحيح!
+إذا كنت تتلقى هذا، فهذا يعني أن نظام المهام في الخلفية يعمل بشكل صحيح!
 
-    مع أطيب التحيات،
-    فريق الرفيق العلاجي"""
+مع أطيب التحيات،
+فريق الرفيق العلاجي"""
         }
 
         # Create email
@@ -114,16 +123,6 @@ def send_reminder_test(self, email):
         msg['Subject'] = test_subjects.get(reminder_lang, test_subjects['en'])
 
         body = test_bodies.get(reminder_lang, test_bodies['en'])
-
-
-
-
-
-
-
-
-
-
         msg.attach(MIMEText(body, 'plain'))
 
         # Send email
@@ -133,7 +132,7 @@ def send_reminder_test(self, email):
         server.send_message(msg)
         server.quit()
 
-        return {'success': True, 'message': f'Test email sent to {email}'}
+        return {'success': True, 'message': f'Test email sent to {email} in language: {reminder_lang}'}
 
     except Exception as e:
         # Retry with exponential backoff
