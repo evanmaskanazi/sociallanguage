@@ -2698,13 +2698,14 @@ def get_client_ai_insights(client_id):
                     'id': f'{client.id}_emotional_{int(time.time())}',
                     'client_id': client.id,
                     'priority': 'critical' if decline_percent > 30 else 'warning',
-                    'title': 'Declining Emotional State',
-                    'description': f'Emotional ratings have decreased by {int(decline_percent)}% over the past month.',
-                    'recommendation': 'Schedule immediate session to discuss recent stressors and coping strategies.',
+                    'title': 'therapist.declining_emotional_state',
+                    'description': 'therapist.emotional_decline_desc',
+                    'description_params': {'percent': int(decline_percent)},
+                    'recommendation': 'therapist.schedule_session_rec',
                     'trend': 'declining',
-                    'trend_description': f'From {avg_first:.1f} to {avg_second:.1f}'
+                    'trend_description': 'therapist.from_to_trend',
+                    'trend_params': {'from': f'{avg_first:.1f}', 'to': f'{avg_second:.1f}'}
                 })
-
         # 2. INCONSISTENT CHECK-INS
         days_between_checkins = []
         for i in range(1, len(all_checkins)):
@@ -2718,11 +2719,13 @@ def get_client_ai_insights(client_id):
                     'id': f'{client.id}_engagement_{int(time.time())}',
                     'client_id': client.id,
                     'priority': 'warning',
-                    'title': 'Inconsistent Engagement',
-                    'description': f'Average {avg_gap:.1f} days between check-ins. Regular daily tracking recommended.',
-                    'recommendation': 'Discuss barriers to daily check-ins and set up reminders.',
+                    'title': 'therapist.inconsistent_engagement',
+                    'description': 'therapist.inconsistent_desc',
+                    'description_params': {'days': int(avg_gap)},
+                    'recommendation': 'therapist.discuss_barriers_rec',
                     'trend': 'stable',
-                    'trend_description': f'{len(all_checkins)} check-ins in 30 days'
+                    'trend_description': 'therapist.checkins_in_days',
+                    'trend_params': {'count': len(all_checkins), 'days': 30}  # Using 30 since we're analyzing 30 days
                 })
 
         # 3. MEDICATION ADHERENCE
@@ -2732,29 +2735,32 @@ def get_client_ai_insights(client_id):
             insights.append({
                 'id': f'{client.id}_medication_{int(time.time())}',
                 'client_id': client.id,
-                'priority': 'critical',
-                'title': 'Medication Adherence Concerns',
-                'description': f'{non_adherent_days} days with missed or partial doses in the past month.',
-                'recommendation': 'Discuss medication challenges and consider adherence strategies.',
+                'priority': 'warning' if non_adherent_days < 10 else 'critical',
+                'title': 'therapist.medication_concerns',
+                'description': 'therapist.medication_desc',
+                'description_params': {'days': non_adherent_days},
+                'recommendation': 'therapist.discuss_medication_rec',
                 'trend': 'declining',
-                'trend_description': f'{int(non_adherent_days / len(med_values) * 100)}% non-adherent days'
+                'trend_description': 'therapist.non_adherent_percent',
+                'trend_params': {'percent': int((non_adherent_days / 30) * 100)}
             })
 
         # 4. POSITIVE PROGRESS
         if emotional_first and emotional_second:
             improvement = avg_second - avg_first
-            if improvement > 0.5 and avg_second >= 3.5:
-                insights.append({
-                    'id': f'{client.id}_improvement_{int(time.time())}',
-                    'client_id': client.id,
-                    'priority': 'info',
-                    'title': 'Positive Progress',
-                    'description': f'Emotional wellbeing improved by {int(improvement / avg_first * 100)}%.',
-                    'recommendation': 'Acknowledge progress and identify successful strategies.',
-                    'trend': 'improving',
-                    'trend_description': f'Now averaging {avg_second:.1f}/5'
-                })
-
+            improvement_percent=(avg_second - avg_first)/(avg_first *100)
+            insights.append({
+                'id': f'{client.id}_progress_{int(time.time())}',
+                'client_id': client.id,
+                'priority': 'info',
+                'title': 'therapist.positive_progress',
+                'description': 'therapist.improvement_desc',
+                'description_params': {'percent': int(improvement_percent)},
+                'recommendation': 'therapist.acknowledge_progress_rec',
+                'trend': 'improving',
+                'trend_description': 'therapist.averaging_score',
+                'trend_params': {'score': f'{avg_second:.1f}'}
+            })
         # 5. CRISIS DETECTION
         if len(emotional_second) >= 3:
             last_three = emotional_second[-3:]
@@ -2765,13 +2771,14 @@ def get_client_ai_insights(client_id):
                         'id': f'{client.id}_crisis_{int(time.time())}',
                         'client_id': client.id,
                         'priority': 'critical',
-                        'title': 'Potential Crisis',
-                        'description': 'Consistently low mood (≤2) for past 3 check-ins.',
-                        'recommendation': 'Immediate outreach recommended. Consider safety assessment.',
+                        'title': 'therapist.potential_crisis',
+                        'description': 'therapist.crisis_desc',
+                        'description_params': {},
+                        'recommendation': 'therapist.immediate_outreach_rec',
                         'trend': 'declining',
-                        'trend_description': 'Urgent attention needed'
+                        'trend_description': 'therapist.urgent_attention',
+                        'trend_params': {}
                     })
-
         # 6. SLEEP QUALITY ANALYSIS (if tracking)
         sleep_responses = []
         for checkin in all_checkins:
@@ -2790,13 +2797,14 @@ def get_client_ai_insights(client_id):
                     'id': f'{client.id}_sleep_{int(time.time())}',
                     'client_id': client.id,
                     'priority': 'warning',
-                    'title': 'Sleep Quality Concerns',
-                    'description': f'Poor sleep reported {poor_sleep_days} of last 7 days.',
-                    'recommendation': 'Discuss sleep hygiene and consider sleep study referral.',
+                    'title': 'therapist.sleep_concerns',
+                    'description': 'therapist.sleep_desc',
+                    'description_params': {'days': poor_sleep_days},
+                    'recommendation': 'therapist.sleep_hygiene_rec',
                     'trend': 'stable',
-                    'trend_description': 'Persistent sleep issues'
+                    'trend_description': 'therapist.persistent_sleep',
+                    'trend_params': {}
                 })
-
         # Sort by priority
         priority_order = {'critical': 0, 'warning': 1, 'info': 2}
         insights.sort(key=lambda x: priority_order.get(x['priority'], 3))

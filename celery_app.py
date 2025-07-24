@@ -58,62 +58,62 @@ def send_reminder_test(self, email):
 
         # Create email
             # Get user's language preference from the email's user
-            reminder_lang = 'en'
-            try:
-                from new_backend import User, Client
-                user = User.query.filter_by(email=email).first()
-                if user and user.client:
-                    reminder = user.client.reminders.filter_by(
-                        reminder_type='daily_checkin',
-                        is_active=True
-                    ).first()
-                    if reminder and hasattr(reminder, 'reminder_language'):
-                        reminder_lang = reminder.reminder_language
-            except:
-                pass
+        reminder_lang = 'en'
+        try:
+            from new_backend import User, Client
+            user = User.query.filter_by(email=email).first()
+            if user and user.client:
+                reminder = user.client.reminders.filter_by(
+                    reminder_type='daily_checkin',
+                    is_active=True
+                ).first()
+                if reminder and hasattr(reminder, 'reminder_language'):
+                    reminder_lang = reminder.reminder_language
+        except:
+            pass
 
-            # Translated test messages
-            test_subjects = {
-                'en': 'Celery Test - Therapeutic Companion',
-                'he': 'בדיקת Celery - מלווה טיפולי',
-                'ru': 'Тест Celery - Терапевтический Компаньон',
-                'ar': 'اختبار Celery - الرفيق العلاجي'
-            }
+        # Translated test messages
+        test_subjects = {
+            'en': 'Celery Test - Therapeutic Companion',
+            'he': 'בדיקת Celery - מלווה טיפולי',
+            'ru': 'Тест Celery - Терапевтический Компаньон',
+            'ar': 'اختبار Celery - الرفيق العلاجي'
+        }
 
-            test_bodies = {
-                'en': """This is a test email from the Therapeutic Companion Celery worker.
+        test_bodies = {
+            'en': """This is a test email from the Therapeutic Companion Celery worker.
 
-        If you're receiving this, it means the background task system is working correctly!
+    If you're receiving this, it means the background task system is working correctly!
 
-        Best regards,
-        Therapeutic Companion Team""",
-                'he': """זוהי הודעת בדיקה ממערכת ה-Celery של המלווה הטיפולי.
+    Best regards,
+    Therapeutic Companion Team""",
+            'he': """זוהי הודעת בדיקה ממערכת ה-Celery של המלווה הטיפולי.
 
-        אם אתה מקבל את זה, זה אומר שמערכת המשימות ברקע עובדת כראוי!
+    אם אתה מקבל את זה, זה אומר שמערכת המשימות ברקע עובדת כראוי!
 
-        בברכה,
-        צוות המלווה הטיפולי""",
-                'ru': """Это тестовое письмо от рабочего Celery Терапевтического Компаньона.
+    בברכה,
+    צוות המלווה הטיפולי""",
+            'ru': """Это тестовое письмо от рабочего Celery Терапевтического Компаньона.
 
-        Если вы получили это, значит фоновая система задач работает правильно!
+    Если вы получили это, значит фоновая система задач работает правильно!
 
-        С наилучшими пожеланиями,
-        Команда Терапевтического Компаньона""",
-                'ar': """هذا بريد إلكتروني تجريبي من عامل Celery للرفيق العلاجي.
+    С наилучшими пожеланиями,
+    Команда Терапевтического Компаньона""",
+            'ar': """هذا بريد إلكتروني تجريبي من عامل Celery للرفيق العلاجي.
 
-        إذا كنت تتلقى هذا، فهذا يعني أن نظام المهام في الخلفية يعمل بشكل صحيح!
+    إذا كنت تتلقى هذا، فهذا يعني أن نظام المهام في الخلفية يعمل بشكل صحيح!
 
-        مع أطيب التحيات،
-        فريق الرفيق العلاجي"""
-            }
+    مع أطيب التحيات،
+    فريق الرفيق العلاجي"""
+        }
 
-            # Create email
-            msg = MIMEMultipart()
-            msg['From'] = smtp_username
-            msg['To'] = email
-            msg['Subject'] = test_subjects.get(reminder_lang, test_subjects['en'])
+        # Create email
+        msg = MIMEMultipart()
+        msg['From'] = smtp_username
+        msg['To'] = email
+        msg['Subject'] = test_subjects.get(reminder_lang, test_subjects['en'])
 
-            body = test_bodies.get(reminder_lang, test_bodies['en'])
+        body = test_bodies.get(reminder_lang, test_bodies['en'])
 
 
 

@@ -729,19 +729,8 @@
                         <p data-i18n="dashboard.pending_missions">Pending Missions</p>
                     </div>
                 </div>
-            </div>
 
-            <div class="progress-section">
-                <h3 data-i18n="therapist.recent_activity">Recent Activity</h3>
-                <div id="recentActivity" class="loading">
-                    <div class="spinner"></div>
-                    <p data-i18n="therapist.loading_activity">Loading recent activity...</p>
-                </div>
-            </div>
-        </div>
-
-
-<!-- AI Insights Section -->
+                <!-- AI Insights Section -->
             <div class="progress-section" style="margin-top: 2rem;">
                 <h3 data-i18n="therapist.ai_insights">AI-Powered Client Insights</h3>
 
@@ -830,6 +819,29 @@
             .trend-down { color: #4caf50; }
             .trend-stable { color: #ff9800; }
             </style>
+
+
+
+            </div>
+
+            <div class="progress-section">
+                <h3 data-i18n="therapist.recent_activity">Recent Activity</h3>
+                <div id="recentActivity" class="loading">
+                    <div class="spinner"></div>
+                    <p data-i18n="therapist.loading_activity">Loading recent activity...</p>
+                </div>
+            </div>
+
+
+
+
+
+
+
+        </div>
+
+
+
 
 
 
@@ -1030,6 +1042,30 @@
                 'therapist.prepare_email': 'Prepare Email Report',
                 'therapist.report_status': 'Report Status',
                 'therapist.client_details': 'Client Details',
+                'therapist.declining_emotional_state': 'Declining Emotional State',
+                'therapist.emotional_decline_desc': 'Emotional ratings have decreased by {percent}% over the past month.',
+                'therapist.schedule_session_rec': 'Schedule immediate session to discuss recent stressors and coping strategies.',
+                'therapist.from_to_trend': 'From {from} to {to}',
+                'therapist.inconsistent_engagement': 'Inconsistent Engagement',
+                'therapist.inconsistent_desc': 'Average {days} days between check-ins. Regular daily tracking recommended.',
+                'therapist.discuss_barriers_rec': 'Discuss barriers to daily check-ins and set up reminders.',
+                'therapist.checkins_in_days': '{count} check-ins in {days} days',
+                'therapist.medication_concerns': 'Medication Adherence Concerns',
+                'therapist.medication_desc': '{days} days with missed or partial doses in the past month.',
+                'therapist.discuss_medication_rec': 'Discuss medication challenges and consider adherence strategies.',
+                'therapist.non_adherent_percent': '{percent}% non-adherent days',
+                'therapist.positive_progress': 'Positive Progress',
+                'therapist.improvement_desc': 'Emotional wellbeing improved by {percent}%.',
+                'therapist.acknowledge_progress_rec': 'Acknowledge progress and identify successful strategies.',
+                'therapist.averaging_score': 'Now averaging {score}/5',
+                'therapist.potential_crisis': 'Potential Crisis',
+                'therapist.crisis_desc': 'Consistently low mood (≤2) for past 3 check-ins.',
+                'therapist.immediate_outreach_rec': 'Immediate outreach recommended. Consider safety assessment.',
+                'therapist.urgent_attention': 'Urgent attention needed',
+                'therapist.sleep_concerns': 'Sleep Quality Concerns',
+                'therapist.sleep_desc': 'Poor sleep reported {days} of last 7 days.',
+                'therapist.sleep_hygiene_rec': 'Discuss sleep hygiene and consider sleep study referral.',
+                'therapist.persistent_sleep': 'Persistent sleep issues',
                 'therapist.no_clients': 'No clients found. Add your first client to get started.',
                 'therapist.license': 'License',
                 'therapist.activity_coming_soon': 'Recent activity feature coming soon',
@@ -1061,6 +1097,7 @@
                 'therapist.all_categories_note': 'Note: All categories are selected by default. Uncheck any you don\'t want the client to track.',
                 'therapist.view_client': 'View',
                 'therapist.add_goal': 'Add Goal',
+                therapist.select_client': 'Select Client',
                 'therapist.select_client_for_insights': 'Select a client to view AI-powered insights',
                 'therapist.error_loading_insights': 'Error loading insights',
                 'therapist.ai_insights': 'AI-Powered Client Insights',
@@ -1128,6 +1165,30 @@
                 'therapist.add_another_goal': '+ הוסף יעד נוסף',
                 'therapist.create_client_btn': 'צור חשבון מטופל',
                 'therapist.client_reports': 'דוחות מטופלים',
+                'therapist.declining_emotional_state': 'ירידה במצב הרגשי',
+                'therapist.emotional_decline_desc': 'הדירוגים הרגשיים ירדו ב-{percent}% בחודש האחרון.',
+                'therapist.schedule_session_rec': 'קבע פגישה מיידית לדיון בגורמי לחץ אחרונים ואסטרטגיות התמודדות.',
+                'therapist.from_to_trend': 'מ-{from} ל-{to}',
+                'therapist.inconsistent_engagement': 'מעורבות לא עקבית',
+                'therapist.inconsistent_desc': 'ממוצע של {days} ימים בין צ׳ק-אינים. מומלץ מעקב יומי סדיר.',
+                'therapist.discuss_barriers_rec': 'דון בחסמים לצ׳ק-אינים יומיים והגדר תזכורות.',
+                'therapist.checkins_in_days': '{count} צ׳ק-אינים ב-{days} ימים',
+                'therapist.medication_concerns': 'חששות בנוגע להיענות לתרופות',
+                'therapist.medication_desc': '{days} ימים עם מינונים חסרים או חלקיים בחודש האחרון.',
+                'therapist.discuss_medication_rec': 'דון באתגרי התרופות ושקול אסטרטגיות היענות.',
+                'therapist.non_adherent_percent': '{percent}% ימים ללא היענות',
+                'therapist.positive_progress': 'התקדמות חיובית',
+                'therapist.improvement_desc': 'הרווחה הרגשית השתפרה ב-{percent}%.',
+                'therapist.acknowledge_progress_rec': 'הכר בהתקדמות וזהה אסטרטגיות מוצלחות.',
+                'therapist.averaging_score': 'כעת בממוצע {score}/5',
+                'therapist.potential_crisis': 'משבר פוטנציאלי',
+                'therapist.crisis_desc': 'מצב רוח נמוך באופן עקבי (≤2) ב-3 הצ׳ק-אינים האחרונים.',
+                'therapist.immediate_outreach_rec': 'מומלץ פנייה מיידית. שקול הערכת בטיחות.',
+                'therapist.urgent_attention': 'דרושה התייחסות דחופה',
+                'therapist.sleep_concerns': 'חששות לגבי איכות השינה',
+                'therapist.sleep_desc': 'דווח על שינה גרועה ב-{days} מתוך 7 הימים האחרונים.',
+                'therapist.sleep_hygiene_rec': 'דון בהיגיינת שינה ושקול הפניה למעבדת שינה.',
+                'therapist.persistent_sleep': 'בעיות שינה מתמשכות',
                 'therapist.generate_weekly_report': 'צור דוח שבועי',
                 'therapist.select_client_option': 'בחר מטופל...',
                 'therapist.generate_excel': 'צור דוח אקסל',
@@ -1149,6 +1210,7 @@
                 'therapist.note_added': 'ההערה נוספה בהצלחה!',
                 'therapist.please_enter_note': 'אנא הזן הערה',
                 'therapist.mark_as_mission': 'סמן כמשימה',
+                'therapist.select_client': 'בחר מטופל',
                 'therapist.this_week_progress': 'התקדמות השבוע',
                 'therapist.select_both': 'אנא בחר גם מטופל וגם שבוע',
                 'therapist.generating_report': 'מייצר דוח...',
@@ -1234,6 +1296,7 @@
                 'therapist.client_reports': 'Отчеты клиентов',
                 'therapist.generate_weekly_report': 'Создать недельный отчет',
                 'therapist.select_client_option': 'Выберите клиента...',
+                'therapist.select_client': 'Выберите клиента',
                 'therapist.generate_excel': 'Создать отчет Excel',
                 'therapist.prepare_email': 'Подготовить отчет по email',
                 'therapist.report_status': 'Статус отчета',
@@ -1268,6 +1331,30 @@
                 'therapist.error_preparing': 'Ошибка подготовки email отчета:',
                 'therapist.all_categories_note': 'Примечание: Все категории выбраны по умолчанию. Снимите флажки с тех, которые клиент не должен отслеживать.',
                 'therapist.view_client': 'Просмотр',
+                'therapist.declining_emotional_state': 'Снижение эмоционального состояния',
+                'therapist.emotional_decline_desc': 'Эмоциональные оценки снизились на {percent}% за последний месяц.',
+                'therapist.schedule_session_rec': 'Запланируйте немедленную сессию для обсуждения недавних стрессоров и стратегий преодоления.',
+                'therapist.from_to_trend': 'С {from} до {to}',
+                'therapist.inconsistent_engagement': 'Непоследовательная вовлеченность',
+                'therapist.inconsistent_desc': 'В среднем {days} дней между отметками. Рекомендуется регулярное ежедневное отслеживание.',
+                'therapist.discuss_barriers_rec': 'Обсудите препятствия для ежедневных отметок и настройте напоминания.',
+                'therapist.checkins_in_days': '{count} отметок за {days} дней',
+                'therapist.medication_concerns': 'Проблемы с приверженностью лечению',
+                'therapist.medication_desc': '{days} дней с пропущенными или частичными дозами за последний месяц.',
+                'therapist.discuss_medication_rec': 'Обсудите проблемы с лекарствами и рассмотрите стратегии приверженности.',
+                'therapist.non_adherent_percent': '{percent}% дней без приверженности',
+                'therapist.positive_progress': 'Положительный прогресс',
+                'therapist.improvement_desc': 'Эмоциональное благополучие улучшилось на {percent}%.',
+                'therapist.acknowledge_progress_rec': 'Отметьте прогресс и определите успешные стратегии.',
+                'therapist.averaging_score': 'Теперь в среднем {score}/5',
+                'therapist.potential_crisis': 'Потенциальный кризис',
+                'therapist.crisis_desc': 'Стабильно низкое настроение (≤2) за последние 3 отметки.',
+                'therapist.immediate_outreach_rec': 'Рекомендуется немедленная помощь. Рассмотрите оценку безопасности.',
+                'therapist.urgent_attention': 'Требуется срочное внимание',
+                'therapist.sleep_concerns': 'Проблемы с качеством сна',
+                'therapist.sleep_desc': 'Плохой сон отмечен {days} из последних 7 дней.',
+                'therapist.sleep_hygiene_rec': 'Обсудите гигиену сна и рассмотрите направление на исследование сна.',
+                'therapist.persistent_sleep': 'Постоянные проблемы со сном',
                 'therapist.add_goal': 'Добавить цель',
                 'therapist.ai_insights': 'Аналитика клиентов на основе ИИ',
 'therapist.analyzing_patterns': 'Анализ паттернов клиентов...',
@@ -1354,6 +1441,30 @@
                 'therapist.email': 'البريد الإلكتروني',
                 'therapist.temp_password_label': 'كلمة المرور المؤقتة',
                 'therapist.goal_added': 'تمت إضافة الهدف بنجاح!',
+                'therapist.declining_emotional_state': 'تراجع الحالة العاطفية',
+                'therapist.emotional_decline_desc': 'انخفضت التقييمات العاطفية بنسبة {percent}% خلال الشهر الماضي.',
+                'therapist.schedule_session_rec': 'حدد موعدًا فوريًا لمناقشة الضغوطات الأخيرة واستراتيجيات التأقلم.',
+                'therapist.from_to_trend': 'من {from} إلى {to}',
+                'therapist.inconsistent_engagement': 'مشاركة غير متسقة',
+                'therapist.inconsistent_desc': 'متوسط {days} أيام بين تسجيلات الحضور. يُوصى بالتتبع اليومي المنتظم.',
+                'therapist.discuss_barriers_rec': 'ناقش العوائق أمام تسجيلات الحضور اليومية وقم بإعداد التذكيرات.',
+                'therapist.checkins_in_days': '{count} تسجيلات حضور في {days} أيام',
+                'therapist.medication_concerns': 'مخاوف بشأن الالتزام بالأدوية',
+                'therapist.medication_desc': '{days} أيام مع جرعات مفقودة أو جزئية في الشهر الماضي.',
+                'therapist.discuss_medication_rec': 'ناقش تحديات الأدوية وفكر في استراتيجيات الالتزام.',
+                'therapist.non_adherent_percent': '{percent}% أيام عدم الالتزام',
+                'therapist.positive_progress': 'تقدم إيجابي',
+                'therapist.improvement_desc': 'تحسنت الصحة العاطفية بنسبة {percent}%.',
+                'therapist.acknowledge_progress_rec': 'اعترف بالتقدم وحدد الاستراتيجيات الناجحة.',
+                'therapist.averaging_score': 'الآن بمتوسط {score}/5',
+                'therapist.potential_crisis': 'أزمة محتملة',
+                'therapist.crisis_desc': 'مزاج منخفض باستمرار (≤2) لآخر 3 تسجيلات حضور.',
+                'therapist.immediate_outreach_rec': 'يُوصى بالتواصل الفوري. فكر في تقييم السلامة.',
+                'therapist.urgent_attention': 'يحتاج عناية عاجلة',
+                'therapist.sleep_concerns': 'مخاوف بشأن جودة النوم',
+                'therapist.sleep_desc': 'تم الإبلاغ عن نوم سيء {days} من آخر 7 أيام.',
+                'therapist.sleep_hygiene_rec': 'ناقش نظافة النوم وفكر في الإحالة لدراسة النوم.',
+                'therapist.persistent_sleep': 'مشاكل نوم مستمرة',
                 'therapist.enter_goal': 'أدخل الهدف لهذا الأسبوع:',
                 'therapist.note_added': 'تمت إضافة الملاحظة بنجاح!',
                 'therapist.please_enter_note': 'يرجى إدخال ملاحظة',
@@ -1369,6 +1480,7 @@
                 'therapist.error_adding_goal': 'خطأ في إضافة الهدف:',
                 'therapist.error_adding_note': 'خطأ في إضافة الملاحظة:',
                 'therapist.error_loading_details': 'خطأ في تحميل تفاصيل العميل:',
+                'therapist.select_client': 'اختر عميل',
                 'therapist.error_generating': 'خطأ في إنشاء التقرير:',
                 'therapist.error_preparing': 'خطأ في إعداد تقرير البريد الإلكتروني:',
                 'therapist.all_categories_note': 'ملاحظة: جميع الفئات محددة بشكل افتراضي. قم بإلغاء تحديد أي فئة لا تريد أن يتتبعها العميل.',
@@ -2246,21 +2358,46 @@ credentials: 'include',
                             trendClass = 'trend-stable';
                         }
 
+                        // Translate title
+                        const title = i18n.t(insight.title);
+
+                        // Translate description with parameters
+                        let description = i18n.t(insight.description);
+                        if (insight.description_params) {
+                            for (const [key, value] of Object.entries(insight.description_params)) {
+                                description = description.replace(`{${key}}`, value);
+                            }
+                        }
+
+                        // Translate recommendation
+                        const recommendation = i18n.t(insight.recommendation);
+
+                        // Translate trend description
+                        let trendDescription = '';
+                        if (insight.trend_description) {
+                            trendDescription = i18n.t(insight.trend_description);
+                            if (insight.trend_params) {
+                                for (const [key, value] of Object.entries(insight.trend_params)) {
+                                    trendDescription = trendDescription.replace(`{${key}}`, value);
+                                }
+                            }
+                        }
+
                         return `
                             <div class="insight-card ${insight.priority}">
                                 <div class="insight-header">
-                                    <h4 class="insight-title">${insight.title}</h4>
+                                    <h4 class="insight-title">${title}</h4>
                                     <span class="insight-badge status-badge ${insight.priority}">
                                         ${insight.priority.toUpperCase()}
                                     </span>
                                 </div>
                                 <div class="insight-content">
-                                    <p>${insight.description}</p>
+                                    <p>${description}</p>
                                     <div class="insight-trend ${trendClass}">
                                         <span>${trendIcon}</span>
-                                        <span>${insight.trend_description || ''}</span>
+                                        <span>${trendDescription}</span>
                                     </div>
-                                    <p style="margin-top: 0.5rem;"><strong>${i18n.t('therapist.recommendation')}:</strong> ${insight.recommendation}</p>
+                                    <p style="margin-top: 0.5rem;"><strong>${i18n.t('therapist.recommendation')}:</strong> ${recommendation}</p>
                                 </div>
                                 <div class="insight-actions">
                                     <button class="btn btn-secondary btn-small" onclick="dismissInsight('${insight.id}')">

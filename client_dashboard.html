@@ -594,7 +594,7 @@
         <div class="header-content">
             <h1 data-i18n="client.dashboard_title">My Therapy Journey</h1>
             <div class="user-info">
-                <span id="clientSerial" data-i18n="msg.loading">Loading...</span>
+                <span id="clientSerial"></span>
                 <button class="logout-btn" onclick="logout()" data-i18n="btn.logout">Logout</button>
             </div>
         </div>
@@ -961,6 +961,7 @@
                 'client.please_select_time': 'Please select a reminder time',
                 'client.sending_test': 'Sending test reminder...',
                 'client.test_sent': 'Test reminder queued for delivery!',
+                'client.password_complexity': 'Password must have uppercase, lowercase, number and special character.',
                 'client.queue_status': 'Queue Status:',
                 'client.encouragement': 'Your journey to wellness continues. Every step counts!',
                 'client.previous_week': '← Previous Week',
@@ -1003,6 +1004,8 @@
                 'client.select_client_week': 'Please select a week',
                 'client.report_generated': 'Report generated and downloaded successfully!',
                 'client.error_progress': 'Error loading progress data',
+                'checkin.title': 'Daily Check-in',
+                'checkin.medication': 'Did you take your medication as prescribed?',
                 'checkin.med_na': 'N/A',
                 'checkin.med_no': 'No',
                 'checkin.med_partial': 'Partial',
@@ -1096,6 +1099,7 @@
                 'client.prepare_email': 'הכן דוח דוא״ל',
                 'client.report_status': 'סטטוס דוח',
                 'client.no_checkin': 'אין צ׳ק-אין',
+                    'client.password_complexity': 'הסיסמה חייבת להכיל אותיות גדולות, אותיות קטנות, מספר ותו מיוחד.',
                 'client.today_marker': '(היום)',
                 'client.past_date': '(תאריך עבר)',
                 'client.future_date': '(תאריך עתידי)',
@@ -1112,6 +1116,8 @@
                 'client.select_client_week': 'אנא בחר שבוע',
                 'client.report_generated': 'הדוח נוצר והורד בהצלחה!',
                 'client.error_progress': 'שגיאה בטעינת נתוני התקדמות',
+                'checkin.title': 'צ׳ק-אין יומי',
+                'checkin.medication': 'האם נטלת את התרופות שלך כפי שנרשם?'
                 'checkin.med_na': 'לא רלוונטי',
                 'checkin.med_no': 'לא',
                 'checkin.med_partial': 'חלקי',
@@ -1177,6 +1183,7 @@
                 'client.test_reminder': 'Отправить тестовое напоминание',
                 'client.reminder_saved': 'Настройки напоминания успешно сохранены!',
                 'client.please_select_time': 'Пожалуйста, выберите время напоминания',
+                'client.password_complexity': 'Пароль должен содержать заглавные, строчные буквы, цифру и специальный символ.',
                 'client.sending_test': 'Отправка тестового напоминания...',
                 'client.test_sent': 'Тестовое напоминание добавлено в очередь отправки!',
                 'client.queue_status': 'Статус очереди:',
@@ -1221,6 +1228,8 @@
                 'client.select_client_week': 'Пожалуйста, выберите неделю',
                 'client.report_generated': 'Отчет создан и загружен успешно!',
                 'client.error_progress': 'Ошибка загрузки данных прогресса',
+                'checkin.title': 'Ежедневная отметка',
+                'checkin.medication': 'Вы принимали лекарства согласно предписанию?',
                 'checkin.med_na': 'Н/Д',
                 'checkin.med_no': 'Нет',
                 'checkin.med_partial': 'Частично',
@@ -1277,6 +1286,7 @@
                 'client.dashboard_title': 'رحلتي العلاجية',
                 'client.reminder_settings': 'إعدادات تذكيرات البريد الإلكتروني',
                 'client.reminder_desc': 'قم بإعداد تذكيرات يومية بالبريد الإلكتروني لتسجيلات الحضور الخاصة بك',
+                'client.password_complexity': 'يجب أن تحتوي كلمة المرور على أحرف كبيرة وصغيرة ورقم ورمز خاص.',
                 'client.enable_reminder': 'تفعيل التذكير اليومي لتسجيل الحضور',
                 'client.reminder_time': 'وقت التذكير',
                 'client.reminder_timezone': 'الوقت حسب منطقتك الزمنية المحلية',
@@ -1330,6 +1340,8 @@
                 'client.select_client_week': 'يرجى اختيار أسبوع',
                 'client.report_generated': 'تم إنشاء التقرير وتنزيله بنجاح!',
                 'client.error_progress': 'خطأ في تحميل بيانات التقدم',
+                'checkin.title': 'تسجيل الحضور اليومي',
+                'checkin.medication': 'هل تناولت الأدوية كما وصفت لك؟'
                 'checkin.med_na': 'غير متاح',
                 'checkin.med_no': 'لا',
                 'checkin.med_partial': 'جزئي',
@@ -2055,16 +2067,22 @@ credentials: 'include'
 
                 const data = await response.json();
 
-                // Display progress (simplified version)
-                progressContent.innerHTML = `
-                    <div class="card">
-                        <h3>${i18n.t('checkin.title')}</h3>
-                        <p>${i18n.t('client.total_checkins')} ${data.progress.checkins.length}</p>
-                        <p>${i18n.t('client.avg_emotional')} ${calculateAverage(data.progress.checkins, 'emotional')}/5</p>
-                        <p>${i18n.t('client.medication_adherence')} ${calculateAdherence(data.progress.checkins)}%</p>
-                        <p>${i18n.t('client.avg_activity')} ${calculateAverage(data.progress.checkins, 'activity')}/5</p>
-                    </div>
-                `;
+// Display progress (simplified version)
+progressContent.innerHTML = `
+    <div class="card">
+        <h3 data-i18n="checkin.title">${i18n.t('checkin.title')}</h3>
+        <p><span data-i18n="client.total_checkins">${i18n.t('client.total_checkins')}</span> ${data.progress.checkins.length}</p>
+        <p><span data-i18n="client.avg_emotional">${i18n.t('client.avg_emotional')}</span> ${calculateAverage(data.progress.checkins, 'emotional')}/5</p>
+        <p><span data-i18n="client.medication_adherence">${i18n.t('client.medication_adherence')}</span> ${calculateAdherence(data.progress.checkins)}%</p>
+        <p><span data-i18n="client.avg_activity">${i18n.t('client.avg_activity')}</span> ${calculateAverage(data.progress.checkins, 'activity')}/5</p>
+    </div>
+`;
+
+// Re-apply translations to dynamically created content
+if (window.i18n) {
+    i18n.translatePage();
+}
+
             } catch (error) {
                 document.getElementById('progressContent').innerHTML =
                     `<p style="color: #f44336;">${i18n.t('client.error_progress')}</p>`;
