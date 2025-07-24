@@ -44,7 +44,7 @@ celery.conf.update(
 
 
 @celery.task(bind=True, max_retries=3)
-def send_reminder_test(self, email):
+def send_reminder_test(self, email, client_id=None):
     """Test task to send a reminder email"""
     try:
         # Import Flask app and models at the top of the task
@@ -67,35 +67,56 @@ def send_reminder_test(self, email):
         reminder_lang = 'en'
         with app.app_context():
             try:
-                # First try to find user by the email address
-                user = User.query.filter_by(email=email).first()
-
-                # If not found, it might be a reminder email - search reminders
-                if not user:
-                    reminder = Reminder.query.filter_by(
-                        reminder_email=email,
-                        reminder_type='daily_checkin',
-                        is_active=True
-                    ).first()
-                    if reminder and reminder.client:
-                        user = reminder.client.user
-                        if reminder.reminder_language:
+                # If client_id is provided, use it directly (most reliable)
+                if client_id:
+                    client = Client.query.get(client_id)
+                    if client:
+                        user = client.user
+                        reminder = client.reminders.filter_by(
+                            reminder_type='daily_checkin',
+                            is_active=True
+                        ).first()
+                        if reminder and reminder.reminder_language:
                             reminder_lang = reminder.reminder_language
-                            print(f"[CELERY] Found language via reminder email: {reminder_lang} for {email}")
-
-                # If we found the user, check their reminders
-                elif user and user.client:
-                    reminder = user.client.reminders.filter_by(
-                        reminder_type='daily_checkin',
-                        is_active=True
-                    ).first()
-                    if reminder and hasattr(reminder, 'reminder_language') and reminder.reminder_language:
-                        reminder_lang = reminder.reminder_language
-                        print(f"[CELERY] Found reminder language: {reminder_lang} for {email}")
+                            print(f"[CELERY] Found language via client_id: {reminder_lang} for {email}")
                     else:
-                        print(f"[CELERY] No reminder language found for {email}, using default: en")
+                        print(f"[CELERY] Client ID {client_id} not found, falling back to email search")
+                        # Fall through to email search below
+                        user = None
                 else:
-                    print(f"[CELERY] No user found for {email}, using default: en")
+                    # No client_id provided, use email search
+                    user = None
+
+                # Email search fallback (if no client_id or client not found)
+                if not user:
+                    # First try to find user by the email address
+                    user = User.query.filter_by(email=email).first()
+
+                    # If not found, it might be a reminder email - search reminders
+                    if not user:
+                        reminder = Reminder.query.filter_by(
+                            reminder_email=email,
+                            reminder_type='daily_checkin',
+                            is_active=True
+                        ).first()
+                        if reminder and reminder.client:
+                            user = reminder.client.user
+                            if reminder.reminder_language:
+                                reminder_lang = reminder.reminder_language
+                                print(f"[CELERY] Found language via reminder email: {reminder_lang} for {email}")
+                    # If we found the user by email, check their reminders
+                    elif user and user.client:
+                        reminder = user.client.reminders.filter_by(
+                            reminder_type='daily_checkin',
+                            is_active=True
+                        ).first()
+                        if reminder and hasattr(reminder, 'reminder_language') and reminder.reminder_language:
+                            reminder_lang = reminder.reminder_language
+                            print(f"[CELERY] Found reminder language: {reminder_lang} for {email}")
+                        else:
+                            print(f"[CELERY] No reminder language found for {email}, using default: en")
+                    else:
+                        print(f"[CELERY] No user found for {email}, using default: en")
 
             except Exception as e:
                 print(f"[CELERY] Error getting language preference: {e}")

@@ -7517,7 +7517,7 @@ def test_client_reminder():
                 'user_id': request.current_user.id
             })
 
-            task = send_reminder_test.delay(email)
+            task = send_reminder_test.delay(email, client_id=client.id)
 
             logger.info('test_reminder_task_queued', extra={
                 'extra_data': {
