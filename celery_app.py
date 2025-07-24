@@ -57,19 +57,72 @@ def send_reminder_test(self, email):
             return {'error': 'Email configuration missing'}
 
         # Create email
-        msg = MIMEMultipart()
-        msg['From'] = smtp_username
-        msg['To'] = email
-        msg['Subject'] = 'Celery Test - Therapeutic Companion'
+            # Get user's language preference from the email's user
+            reminder_lang = 'en'
+            try:
+                from new_backend import User, Client
+                user = User.query.filter_by(email=email).first()
+                if user and user.client:
+                    reminder = user.client.reminders.filter_by(
+                        reminder_type='daily_checkin',
+                        is_active=True
+                    ).first()
+                    if reminder and hasattr(reminder, 'reminder_language'):
+                        reminder_lang = reminder.reminder_language
+            except:
+                pass
 
-        body = """
-        This is a test email from the Therapeutic Companion Celery worker.
+            # Translated test messages
+            test_subjects = {
+                'en': 'Celery Test - Therapeutic Companion',
+                'he': 'בדיקת Celery - מלווה טיפולי',
+                'ru': 'Тест Celery - Терапевтический Компаньон',
+                'ar': 'اختبار Celery - الرفيق العلاجي'
+            }
+
+            test_bodies = {
+                'en': """This is a test email from the Therapeutic Companion Celery worker.
 
         If you're receiving this, it means the background task system is working correctly!
 
         Best regards,
-        Therapeutic Companion Team
-        """
+        Therapeutic Companion Team""",
+                'he': """זוהי הודעת בדיקה ממערכת ה-Celery של המלווה הטיפולי.
+
+        אם אתה מקבל את זה, זה אומר שמערכת המשימות ברקע עובדת כראוי!
+
+        בברכה,
+        צוות המלווה הטיפולי""",
+                'ru': """Это тестовое письмо от рабочего Celery Терапевтического Компаньона.
+
+        Если вы получили это, значит фоновая система задач работает правильно!
+
+        С наилучшими пожеланиями,
+        Команда Терапевтического Компаньона""",
+                'ar': """هذا بريد إلكتروني تجريبي من عامل Celery للرفيق العلاجي.
+
+        إذا كنت تتلقى هذا، فهذا يعني أن نظام المهام في الخلفية يعمل بشكل صحيح!
+
+        مع أطيب التحيات،
+        فريق الرفيق العلاجي"""
+            }
+
+            # Create email
+            msg = MIMEMultipart()
+            msg['From'] = smtp_username
+            msg['To'] = email
+            msg['Subject'] = test_subjects.get(reminder_lang, test_subjects['en'])
+
+            body = test_bodies.get(reminder_lang, test_bodies['en'])
+
+
+
+
+
+
+
+
+
 
         msg.attach(MIMEText(body, 'plain'))
 
@@ -139,22 +192,86 @@ def send_daily_reminders():
                         # Queue the email
                         base_url = os.environ.get('APP_BASE_URL', 'https://therapy-companion.onrender.com')
 
-                        subject = "Daily Check-in Reminder - Therapeutic Companion"
-                        body = f"""Hello,
+                        # Get reminder language
+                        reminder_lang = reminder.reminder_language if hasattr(reminder, 'reminder_language') else 'en'
 
-This is your daily reminder to complete your therapy check-in.
+                        # Translated subjects
+                        subjects = {
+                            'en': "Daily Check-in Reminder - Therapeutic Companion",
+                            'he': "תזכורת יומית לצ'ק-אין - מלווה טיפולי",
+                            'ru': "Ежедневное напоминание об отметке - Терапевтический Компаньон",
+                            'ar': "تذكير يومي بتسجيل الحضور - الرفيق العلاجي"
+                        }
 
-Your therapist is tracking your progress, and your daily input is valuable for your treatment.
+                        # Translated bodies
+                        bodies = {
+                            'en': f"""Hello,
 
-Click here to log in and complete today's check-in:
-{base_url}/login.html
+                        This is your daily reminder to complete your therapy check-in.
 
-Client ID: {client.client_serial}
+                        Your therapist is tracking your progress, and your daily input is valuable for your treatment.
 
-If you've already completed today's check-in, please disregard this message.
+                        Click here to log in and complete today's check-in:
+                        {base_url}/login.html
 
-Best regards,
-Your Therapy Team"""
+                        Client ID: {client.client_serial}
+
+                        If you've already completed today's check-in, please disregard this message.
+
+                        Best regards,
+                        Your Therapy Team""",
+                            'he': f"""שלום,
+
+                        זוהי התזכורת היומית שלך להשלים את הצ'ק-אין הטיפולי שלך.
+
+                        המטפל שלך עוקב אחר ההתקדמות שלך, והקלט היומי שלך חשוב לטיפול שלך.
+
+                        לחץ כאן כדי להתחבר ולהשלים את הצ'ק-אין של היום:
+                        {base_url}/login.html
+
+                        מספר מטופל: {client.client_serial}
+
+                        אם כבר השלמת את הצ'ק-אין של היום, אנא התעלם מהודעה זו.
+
+                        בברכה,
+                        צוות הטיפול שלך""",
+                            'ru': f"""Здравствуйте,
+
+                        Это ваше ежедневное напоминание о необходимости заполнить терапевтическую отметку.
+
+                        Ваш терапевт отслеживает ваш прогресс, и ваши ежедневные данные важны для вашего лечения.
+
+                        Нажмите здесь, чтобы войти и заполнить сегодняшнюю отметку:
+                        {base_url}/login.html
+
+                        ID клиента: {client.client_serial}
+
+                        Если вы уже заполнили сегодняшнюю отметку, пожалуйста, игнорируйте это сообщение.
+
+                        С наилучшими пожеланиями,
+                        Ваша терапевтическая команда""",
+                            'ar': f"""مرحباً،
+
+                        هذا تذكيرك اليومي لإكمال تسجيل الحضور العلاجي الخاص بك.
+
+                        معالجك يتتبع تقدمك، ومدخلاتك اليومية قيمة لعلاجك.
+
+                        انقر هنا لتسجيل الدخول وإكمال تسجيل حضور اليوم:
+                        {base_url}/login.html
+
+                        معرف العميل: {client.client_serial}
+
+                        إذا كنت قد أكملت بالفعل تسجيل حضور اليوم، يرجى تجاهل هذه الرسالة.
+
+                        مع أطيب التحيات،
+                        فريق العلاج الخاص بك"""
+                        }
+
+                        subject = subjects.get(reminder_lang, subjects['en'])
+                        body = bodies.get(reminder_lang, bodies['en'])
+
+
+
 
                         html_body = f"""
                         <html>

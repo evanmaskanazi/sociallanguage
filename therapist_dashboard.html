@@ -740,6 +740,103 @@
             </div>
         </div>
 
+
+<!-- AI Insights Section -->
+            <div class="progress-section" style="margin-top: 2rem;">
+                <h3 data-i18n="therapist.ai_insights">AI-Powered Client Insights</h3>
+
+                <!-- Client Selection -->
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="insightClientSelect" data-i18n="therapist.select_client">Select Client</label>
+                    <select id="insightClientSelect" class="form-input" onchange="loadClientInsights()">
+                        <option value="" data-i18n="therapist.select_client_option">Select a client...</option>
+                    </select>
+                </div>
+
+                <!-- Insights Container -->
+                <div id="aiInsights" class="insights-container" style="display: none;">
+                    <!-- Insights will be loaded here -->
+                </div>
+
+                <!-- Initial Message -->
+                <div id="insightsPlaceholder" style="text-align: center; color: #999; padding: 2rem;">
+                    <p data-i18n="therapist.select_client_for_insights">Select a client to view AI-powered insights</p>
+                </div>
+            </div>
+
+            <style>
+            .insights-container {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+                gap: 1.5rem;
+                margin-top: 1rem;
+            }
+
+            .insight-card {
+                background: white;
+                border-radius: 12px;
+                padding: 1.5rem;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+                border-left: 4px solid #3498db;
+            }
+
+            .insight-card.warning {
+                border-left-color: #ff9800;
+            }
+
+            .insight-card.critical {
+                border-left-color: #f44336;
+            }
+
+            .insight-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1rem;
+            }
+
+            .insight-title {
+                font-weight: 600;
+                color: #333;
+            }
+
+            .insight-badge {
+                padding: 0.25rem 0.75rem;
+                border-radius: 12px;
+                font-size: 0.75rem;
+                font-weight: 600;
+            }
+
+            .insight-content {
+                color: #666;
+                line-height: 1.6;
+            }
+
+            .insight-actions {
+                margin-top: 1rem;
+                display: flex;
+                gap: 0.5rem;
+            }
+
+            .insight-trend {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin-top: 0.5rem;
+                font-size: 0.875rem;
+            }
+
+            .trend-up { color: #f44336; }
+            .trend-down { color: #4caf50; }
+            .trend-stable { color: #ff9800; }
+            </style>
+
+
+
+
+
+
+
         <!-- Clients Tab -->
         <div id="clients" class="tab-content">
             <div class="client-list-header">
@@ -964,6 +1061,22 @@
                 'therapist.all_categories_note': 'Note: All categories are selected by default. Uncheck any you don\'t want the client to track.',
                 'therapist.view_client': 'View',
                 'therapist.add_goal': 'Add Goal',
+                'therapist.select_client_for_insights': 'Select a client to view AI-powered insights',
+                'therapist.error_loading_insights': 'Error loading insights',
+                'therapist.ai_insights': 'AI-Powered Client Insights',
+'therapist.analyzing_patterns': 'Analyzing client patterns...',
+'therapist.no_insights': 'No significant patterns detected at this time.',
+'therapist.insights_update': 'Insights update as clients log more check-ins.',
+'therapist.recommendation': 'Recommendation',
+'therapist.view_client': 'View Client',
+'therapist.dismiss': 'Dismiss',
+'therapist.declining_emotional': 'Declining Emotional State',
+'therapist.low_engagement': 'Low Engagement',
+'therapist.medication_concerns': 'Medication Adherence Concerns',
+'therapist.positive_progress': 'Positive Progress',
+'therapist.trend_improving': 'Improving trend',
+'therapist.trend_declining': 'Declining trend',
+'therapist.trend_stable': 'Stable trend',
                 'pagination.previous': 'Previous',
 'pagination.next': 'Next',
 'pagination.page_info': 'Page {page} of {pages}',
@@ -1051,10 +1164,26 @@
                 'therapist.error_preparing': 'שגיאה בהכנת דוח דוא״ל:',
                 'therapist.all_categories_note': 'הערה: כל הקטגוריות נבחרות כברירת מחדל. בטל סימון של כל קטגוריה שאינך רוצה שהמטופל יעקוב אחריה.',
                 'therapist.view_client': 'צפה',
+                'therapist.ai_insights': 'תובנות לקוח מבוססות AI',
+'therapist.analyzing_patterns': 'מנתח דפוסי לקוח...',
+'therapist.no_insights': 'לא זוהו דפוסים משמעותיים כרגע.',
+'therapist.insights_update': 'התובנות מתעדכנות ככל שלקוחות מתעדים יותר צ\'ק-אינים.',
+'therapist.recommendation': 'המלצה',
+'therapist.view_client': 'צפה בלקוח',
+'therapist.dismiss': 'בטל',
+'therapist.declining_emotional': 'ירידה במצב הרגשי',
+'therapist.low_engagement': 'מעורבות נמוכה',
+'therapist.medication_concerns': 'בעיות בהיענות לתרופות',
+'therapist.positive_progress': 'התקדמות חיובית',
+'therapist.trend_improving': 'מגמת שיפור',
+'therapist.trend_declining': 'מגמת ירידה',
+'therapist.trend_stable': 'מגמה יציבה',
                 'therapist.add_goal': 'הוסף יעד',
                 'pagination.previous': 'הקודם',
 'pagination.next': 'הבא',
 'pagination.page_info': 'עמוד {page} מתוך {pages}',
+'therapist.select_client_for_insights': 'בחר לקוח כדי לראות תובנות מבוססות AI',
+'therapist.error_loading_insights': 'שגיאה בטעינת תובנות',
 'pagination.total': 'סה"כ: {count}'
             });
 
@@ -1140,9 +1269,25 @@
                 'therapist.all_categories_note': 'Примечание: Все категории выбраны по умолчанию. Снимите флажки с тех, которые клиент не должен отслеживать.',
                 'therapist.view_client': 'Просмотр',
                 'therapist.add_goal': 'Добавить цель',
+                'therapist.ai_insights': 'Аналитика клиентов на основе ИИ',
+'therapist.analyzing_patterns': 'Анализ паттернов клиентов...',
+'therapist.no_insights': 'Значительные паттерны не обнаружены.',
+'therapist.insights_update': 'Аналитика обновляется по мере добавления отметок.',
+'therapist.recommendation': 'Рекомендация',
+'therapist.view_client': 'Просмотр клиента',
+'therapist.dismiss': 'Отклонить',
+'therapist.declining_emotional': 'Снижение эмоционального состояния',
+'therapist.low_engagement': 'Низкая вовлеченность',
+'therapist.medication_concerns': 'Проблемы с приверженностью лечению',
+'therapist.positive_progress': 'Положительный прогресс',
+'therapist.trend_improving': 'Улучшающийся тренд',
+'therapist.trend_declining': 'Ухудшающийся тренд',
+'therapist.trend_stable': 'Стабильный тренд',
                 'pagination.previous': 'Предыдущая',
 'pagination.next': 'Следующая',
 'pagination.page_info': 'Страница {page} из {pages}',
+'therapist.select_client_for_insights': 'Выберите клиента для просмотра аналитики на основе ИИ',
+'therapist.error_loading_insights': 'Ошибка загрузки аналитики',
 'pagination.total': 'Всего: {count}'
 
             });
@@ -1229,6 +1374,22 @@
                 'therapist.all_categories_note': 'ملاحظة: جميع الفئات محددة بشكل افتراضي. قم بإلغاء تحديد أي فئة لا تريد أن يتتبعها العميل.',
                 'therapist.view_client': 'عرض',
                 'therapist.add_goal': 'إضافة هدف',
+                'therapist.select_client_for_insights': 'اختر عميلاً لعرض الرؤى المدعومة بالذكاء الاصطناعي',
+'therapist.error_loading_insights': 'خطأ في تحميل الرؤى',
+'therapist.ai_insights': 'رؤى العملاء المدعومة بالذكاء الاصطناعي',
+'therapist.analyzing_patterns': 'تحليل أنماط العملاء...',
+'therapist.no_insights': 'لم يتم اكتشاف أنماط مهمة في الوقت الحالي.',
+'therapist.insights_update': 'يتم تحديث الرؤى مع تسجيل المزيد من المراجعات.',
+'therapist.recommendation': 'التوصية',
+'therapist.view_client': 'عرض العميل',
+'therapist.dismiss': 'رفض',
+'therapist.declining_emotional': 'تراجع الحالة العاطفية',
+'therapist.low_engagement': 'مشاركة منخفضة',
+'therapist.medication_concerns': 'مخاوف بشأن الالتزام بالأدوية',
+'therapist.positive_progress': 'تقدم إيجابي',
+'therapist.trend_improving': 'اتجاه تحسن',
+'therapist.trend_declining': 'اتجاه تراجع',
+'therapist.trend_stable': 'اتجاه مستقر',
                 'pagination.previous': 'السابق',
 'pagination.next': 'التالي',
 'pagination.page_info': 'صفحة {page} من {pages}',
@@ -1471,6 +1632,11 @@ async function loadDashboard() {
     }
 }
 
+
+populateInsightClientSelect();
+
+
+
         // Load tracking categories
 
 async function loadTrackingCategories() {
@@ -1606,6 +1772,7 @@ credentials: 'include'
         updateClientsTable();
         updatePaginationControls(data.pagination);
         updateReportClientSelect();
+        populateInsightClientSelect();
     } catch (error) {
         showMessage(i18n.t('therapist.error_loading') + ' ' + error.message, 'error');
     }
@@ -2007,6 +2174,144 @@ credentials: 'include',
                     `<option value="${client.id}">${client.serial} - ${i18n.t('therapist.started')} ${new Date(client.start_date).toLocaleDateString()}</option>`
                 ).join('');
         }
+
+
+
+// Populate AI insights client selector
+        function populateInsightClientSelect() {
+            const select = document.getElementById('insightClientSelect');
+            select.innerHTML = `<option value="">${i18n.t('therapist.select_client_option')}</option>` +
+                clientsList.map(client =>
+                    `<option value="${client.id}">${client.serial} - ${i18n.t('therapist.started')} ${new Date(client.start_date).toLocaleDateString()}</option>`
+                ).join('');
+        }
+
+        // Load AI insights for selected client
+        async function loadClientInsights() {
+            const clientId = document.getElementById('insightClientSelect').value;
+            const container = document.getElementById('aiInsights');
+            const placeholder = document.getElementById('insightsPlaceholder');
+
+            if (!clientId) {
+                container.style.display = 'none';
+                placeholder.style.display = 'block';
+                return;
+            }
+
+            // Show loading state
+            container.style.display = 'grid';
+            placeholder.style.display = 'none';
+            container.innerHTML = `
+                <div class="loading" style="grid-column: 1/-1;">
+                    <div class="spinner"></div>
+                    <p>${i18n.t('therapist.analyzing_patterns')}</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`/api/therapist/ai-insights/${clientId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Accept-Language': i18n.currentLang
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    if (data.insights.length === 0) {
+                        container.innerHTML = `
+                            <div style="grid-column: 1/-1; text-align: center; color: #999; padding: 2rem;">
+                                <p>${i18n.t('therapist.no_insights')}</p>
+                                <p style="font-size: 0.875rem; margin-top: 0.5rem;">
+                                    ${i18n.t('therapist.insights_update')}
+                                </p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    container.innerHTML = data.insights.map(insight => {
+                        let trendIcon = '';
+                        let trendClass = '';
+
+                        if (insight.trend === 'improving') {
+                            trendIcon = '↑';
+                            trendClass = 'trend-up';
+                        } else if (insight.trend === 'declining') {
+                            trendIcon = '↓';
+                            trendClass = 'trend-down';
+                        } else {
+                            trendIcon = '→';
+                            trendClass = 'trend-stable';
+                        }
+
+                        return `
+                            <div class="insight-card ${insight.priority}">
+                                <div class="insight-header">
+                                    <h4 class="insight-title">${insight.title}</h4>
+                                    <span class="insight-badge status-badge ${insight.priority}">
+                                        ${insight.priority.toUpperCase()}
+                                    </span>
+                                </div>
+                                <div class="insight-content">
+                                    <p>${insight.description}</p>
+                                    <div class="insight-trend ${trendClass}">
+                                        <span>${trendIcon}</span>
+                                        <span>${insight.trend_description || ''}</span>
+                                    </div>
+                                    <p style="margin-top: 0.5rem;"><strong>${i18n.t('therapist.recommendation')}:</strong> ${insight.recommendation}</p>
+                                </div>
+                                <div class="insight-actions">
+                                    <button class="btn btn-secondary btn-small" onclick="dismissInsight('${insight.id}')">
+                                        ${i18n.t('therapist.dismiss')}
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    container.innerHTML = `
+                        <div style="grid-column: 1/-1; text-align: center; color: #999; padding: 2rem;">
+                            <p>${i18n.t('therapist.error_loading_insights')}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading AI insights:', error);
+                container.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; color: #999; padding: 2rem;">
+                        <p>${i18n.t('therapist.error_loading_insights')}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Dismiss insight
+        async function dismissInsight(insightId) {
+            try {
+                const clientId = document.getElementById('insightClientSelect').value;
+                const response = await fetch(`/api/therapist/dismiss-insight/${insightId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ client_id: clientId })
+                });
+
+                if (response.ok) {
+                    loadClientInsights(); // Refresh insights for current client
+                }
+            } catch (error) {
+                console.error('Error dismissing insight:', error);
+            }
+        }
+
+
+
+
+
 
         // Generate Excel report
         async function generateReport() {

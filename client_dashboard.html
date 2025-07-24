@@ -649,14 +649,39 @@
             </div>
 
             <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title" data-i18n="client.week_goals">This Week's Goals</h3>
-                    <div class="card-icon icon-goals">🎯</div>
+    <div class="card-header">
+        <h3 class="card-title" data-i18n="client.week_goals">This Week's Goals</h3>
+        <div class="card-icon icon-goals">🎯</div>
+    </div>
+
+    <!-- Brief Goals Section -->
+    <div style="padding: 0 1rem 1rem 1rem;">
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+            <strong data-i18n="client.brief_goals_label">Brief Description:</strong>
+            <div id="briefGoalsContainer" style="flex: 1;">
+                <input id="briefGoalsInput" type="text" maxlength="100"
+                       style="display: none; width: 100%; padding: 5px; border: 1px solid #ddd; border-radius: 4px;"
+                       placeholder="Brief goals (20 words max)"
+                       data-i18n-placeholder="client.brief_goals_placeholder">
+                <div id="briefGoalsDisplay" style="padding: 5px; min-height: 30px; cursor: pointer;"
+                     onclick="enableBriefGoalsEditing()">
+                    <span id="briefGoalsText" style="color: #666; font-style: italic;"
+                          data-i18n="client.click_add_brief">Click to add brief goals</span>
                 </div>
-                <ul class="goal-list" id="overviewGoalsList">
-                    <li data-i18n="msg.loading">Loading goals...</li>
-                </ul>
+                <div style="display: flex; gap: 10px; margin-top: 5px;">
+                    <button id="saveBriefGoalsBtn" class="btn btn-primary btn-small"
+                            style="display: none;" onclick="saveBriefGoals()"
+                            data-i18n="client.save_goals">Save Goals</button>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Goals List -->
+    <ul class="goal-list" id="overviewGoalsList">
+        <li data-i18n="msg.loading">Loading goals...</li>
+    </ul>
+</div>
         </div>
     </div>
 
@@ -689,22 +714,34 @@
     </div>
 
     <!-- Goals Tab -->
-    <div id="goals" class="tab-content">
-        <h2 data-i18n="goals.weekly">Weekly Goals</h2>
+<div id="goals" class="tab-content">
+    <h2 data-i18n="goals.weekly">Weekly Goals</h2>
 
-        <div class="date-selection">
-            <label for="goalsWeek"><strong data-i18n="client.select_week">Select Week:</strong></label>
-            <input type="week" id="goalsWeek" class="date-input">
-            <button class="btn btn-secondary btn-small" onclick="loadWeeklyGoals()" data-i18n="client.load_goals">Load Goals</button>
-        </div>
+    <div class="date-selection">
+        <label for="goalsWeek"><strong data-i18n="client.select_week">Select Week:</strong></label>
+        <input type="week" id="goalsWeek" class="date-input">
+        <button class="btn btn-secondary btn-small" onclick="loadWeeklyGoals()" data-i18n="client.load_goals">Load Goals</button>
+        <button class="btn btn-primary btn-small" onclick="enableGoalsEditing()" data-i18n="client.add_goals">Add Goals</button>
+    </div>
 
-        <div id="goalsContent">
-            <h3 id="goalsWeekLabel" data-i18n="client.week_goals">This Week's Goals</h3>
-            <ul class="goal-list" id="goalsList">
-                <li data-i18n="client.select_week_goals">Select a week to view goals</li>
-            </ul>
+    <div id="goalsContent">
+        <h3 data-i18n="client.goals_description_header">Goals Description</h3>
+        <div class="goals-editor-container">
+            <textarea id="goalsTextArea" class="notes-textarea" maxlength="2500" rows="8"
+                     style="display: none;"
+                     placeholder="Enter your goals for this week (500 words max)..."
+                     data-i18n-placeholder="client.goals_placeholder"></textarea>
+            <div id="goalsDisplay" style="background: #f8f9fa; padding: 1rem; border-radius: 8px; min-height: 150px;">
+                <span data-i18n="client.no_goals_yet">No goals set for this week</span>
+            </div>
+            <div id="goalsCharCount" style="display: none; margin-top: 5px; color: #666;">
+                <small><span id="charCount">0</span>/2500 <span data-i18n="client.characters">characters</span></small>
+            </div>
+            <button id="saveGoalsBtn" class="btn btn-primary" style="display: none; margin-top: 10px;"
+                    onclick="saveWeeklyGoals()" data-i18n="client.save_goals">Save Goals</button>
         </div>
     </div>
+</div>
 
     <!-- Progress Tab -->
     <div id="progress" class="tab-content">
@@ -761,6 +798,7 @@
         <div class="card">
             <h3 data-i18n="client.change_password">Change Password</h3>
             <p style="color: #666; margin-bottom: 1rem;" data-i18n="client.password_requirements">Password must be at least 12 characters long.</p>
+            <p style="color: #666; margin-bottom: 1rem;" data-i18n="client.password_complexity">Password must have uppercase, lowercase, number and special character.</p>
 
             <form id="passwordChangeForm" onsubmit="changePassword(event)">
                 <div class="form-group">
@@ -1458,8 +1496,14 @@ credentials: 'include'
 } else if (clientData && clientData.client_serial) {
     document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${clientData.client_serial}`;
 } else {
-    document.getElementById('clientSerial').textContent = '';
+    document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${i18n.t('msg.loading')}`;
 }
+
+
+
+
+
+
 
             // Update welcome message
             const hour = new Date().getHours();
@@ -1943,6 +1987,51 @@ credentials: 'include'
                 `;
             }).join('');
         }
+
+
+function updateOverviewGoals() {
+    const goalsList = document.getElementById('overviewGoalsList');
+
+    if (weeklyGoals.length === 0) {
+        goalsList.innerHTML = `<li style="color: #999;">${i18n.t('client.no_goals_week')}</li>`;
+    } else {
+        goalsList.innerHTML = weeklyGoals.map(goal => {
+            const isCompleted = goal.today_completed === true;
+            return `
+                <li class="goal-item ${isCompleted ? 'completed' : ''}">
+                    <span class="goal-text">${goal.text}</span>
+                </li>
+            `;
+        }).join('');
+    }
+
+    // Load brief goals for current week
+    loadBriefGoalsForCurrentWeek();
+}
+
+async function loadBriefGoalsForCurrentWeek() {
+    try {
+        const weekStart = getStartOfWeek(0);
+        const response = await fetch(`/api/client/get-brief-goals?week_start=${weekStart.toISOString().split('T')[0]}`, {
+            headers: { 'Accept-Language': i18n.currentLang },
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            const briefData = await response.json();
+            if (briefData.brief_goals) {
+                document.getElementById('briefGoalsText').textContent = briefData.brief_goals;
+                document.getElementById('briefGoalsText').style.color = '#333';
+                document.getElementById('briefGoalsText').style.fontStyle = 'normal';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading brief goals:', error);
+    }
+}
+
+
+
 
         // Progress Functions
         async function loadProgress() {
@@ -2431,7 +2520,8 @@ credentials: 'include',
                 time: time || '09:00',
                 is_active: enabled,
                 email: email || undefined,
-                timezone_offset: tzOffset  // Send the validated offset
+                timezone_offset: tzOffset,  // Send the validated offset
+                language: i18n.currentLang
             })
         });
 
@@ -2797,6 +2887,265 @@ async function loadConsentStatus() {
         `;
     }
 }
+
+
+
+
+// Goals editing functionality
+        let currentEditingWeek = null;
+
+        function enableGoalsEditing() {
+            const goalsTextArea = document.getElementById('goalsTextArea');
+            const goalsDisplay = document.getElementById('goalsDisplay');
+            const saveBtn = document.getElementById('saveGoalsBtn');
+            const charCountDiv = document.getElementById('goalsCharCount');
+
+            // Get current week from input
+            const weekInput = document.getElementById('goalsWeek');
+            currentEditingWeek = weekInput.value || getCurrentWeekString();
+            weekInput.value = currentEditingWeek;
+
+            // Show textarea and hide display
+            goalsTextArea.style.display = 'block';
+            goalsDisplay.style.display = 'none';
+            saveBtn.style.display = 'block';
+            charCountDiv.style.display = 'block';
+
+            // Load existing goals if any
+            loadGoalsForEditing(currentEditingWeek);
+
+            // Focus textarea
+            goalsTextArea.focus();
+        }
+
+        function getCurrentWeekString() {
+            const now = new Date();
+            const monday = new Date(now);
+            monday.setDate(now.getDate() - now.getDay() + 1);
+            const year = monday.getFullYear();
+            const week = getWeekNumber(monday);
+            return `${year}-W${week.toString().padStart(2, '0')}`;
+        }
+
+        function getWeekNumber(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+        }
+
+        async function loadGoalsForEditing(weekString) {
+            try {
+                const [year, week] = weekString.split('-W');
+                const weekStart = getDateFromWeek(parseInt(year), parseInt(week));
+
+                const response = await fetch(`/api/client/get-goals?week_start=${weekStart}`, {
+                    headers: { 'Accept-Language': i18n.currentLang },
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.goals) {
+                        document.getElementById('goalsTextArea').value = data.goals;
+                        updateCharCount();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading goals:', error);
+            }
+        }
+
+        function getDateFromWeek(year, week) {
+            const january4 = new Date(year, 0, 4);
+            const monday = new Date(january4);
+            monday.setDate(january4.getDate() - january4.getDay() + 1);
+            monday.setDate(monday.getDate() + (week - 1) * 7);
+            return monday.toISOString().split('T')[0];
+        }
+
+        async function saveWeeklyGoals() {
+            const goalsText = document.getElementById('goalsTextArea').value.trim();
+
+            if (!goalsText) {
+                showMessage(i18n.t('client.goals_empty'), 'error');
+                return;
+            }
+
+            // Count words
+            const wordCount = goalsText.split(/\s+/).filter(word => word.length > 0).length;
+            if (wordCount > 500) {
+                showMessage(i18n.t('client.goals_too_long'), 'error');
+                return;
+            }
+
+            try {
+                const [year, week] = currentEditingWeek.split('-W');
+                const weekStart = getDateFromWeek(parseInt(year), parseInt(week));
+
+                const response = await fetch('/api/client/save-goals', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept-Language': i18n.currentLang
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        week_start: weekStart,
+                        goals: goalsText
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to save goals');
+
+                showMessage(i18n.t('client.goals_saved'), 'success');
+
+                // Hide editor and show display
+                document.getElementById('goalsTextArea').style.display = 'none';
+                document.getElementById('goalsDisplay').style.display = 'block';
+                document.getElementById('saveGoalsBtn').style.display = 'none';
+                document.getElementById('goalsCharCount').style.display = 'none';
+
+                // Update display
+                document.getElementById('goalsDisplay').innerHTML = goalsText.replace(/\n/g, '<br>');
+
+                // Reload if on overview tab
+                if (document.querySelector('.tab-content.active')?.id === 'overview') {
+                    loadCurrentWeekOverview();
+                }
+
+            } catch (error) {
+                showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
+            }
+        }
+
+        async function loadWeeklyGoals() {
+            const weekInput = document.getElementById('goalsWeek').value;
+            if (!weekInput) {
+                showMessage(i18n.t('client.select_week_goals'), 'warning');
+                return;
+            }
+
+            try {
+                const [year, week] = weekInput.split('-W');
+                const weekStart = getDateFromWeek(parseInt(year), parseInt(week));
+
+                const response = await fetch(`/api/client/get-goals?week_start=${weekStart}`, {
+                    headers: { 'Accept-Language': i18n.currentLang },
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const display = document.getElementById('goalsDisplay');
+
+                    if (data.goals) {
+                        display.innerHTML = data.goals.replace(/\n/g, '<br>');
+                    } else {
+                        display.innerHTML = `<span style="color: #666; font-style: italic;">${i18n.t('client.no_goals_yet')}</span>`;
+                    }
+
+                    // Make sure editor is hidden
+                    document.getElementById('goalsTextArea').style.display = 'none';
+                    display.style.display = 'block';
+                    document.getElementById('saveGoalsBtn').style.display = 'none';
+                    document.getElementById('goalsCharCount').style.display = 'none';
+                }
+            } catch (error) {
+                showMessage(i18n.t('msg.error'), 'error');
+            }
+        }
+
+        // Brief goals functionality
+        function enableBriefGoalsEditing() {
+            const input = document.getElementById('briefGoalsInput');
+            const display = document.getElementById('briefGoalsDisplay');
+            const saveBtn = document.getElementById('saveBriefGoalsBtn');
+
+            input.style.display = 'block';
+            display.style.display = 'none';
+            saveBtn.style.display = 'block';
+
+            // Load current brief goals
+            const currentText = document.getElementById('briefGoalsText').textContent;
+            if (currentText !== i18n.t('client.click_add_brief')) {
+                input.value = currentText;
+            }
+
+            input.focus();
+        }
+
+        async function saveBriefGoals() {
+            const briefGoals = document.getElementById('briefGoalsInput').value.trim();
+
+            if (!briefGoals) {
+                showMessage(i18n.t('client.goals_empty'), 'error');
+                return;
+            }
+
+            // Count words
+            const wordCount = briefGoals.split(/\s+/).filter(word => word.length > 0).length;
+            if (wordCount > 20) {
+                showMessage(i18n.t('client.brief_goals_too_long'), 'error');
+                return;
+            }
+
+            try {
+                const weekStart = getStartOfWeek(0);
+
+                const response = await fetch('/api/client/save-brief-goals', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept-Language': i18n.currentLang
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        week_start: weekStart.toISOString().split('T')[0],
+                        brief_goals: briefGoals
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to save brief goals');
+
+                showMessage(i18n.t('client.brief_goals_saved'), 'success');
+
+                // Update display
+                document.getElementById('briefGoalsText').textContent = briefGoals;
+                document.getElementById('briefGoalsText').style.color = '#333';
+                document.getElementById('briefGoalsText').style.fontStyle = 'normal';
+
+                // Hide input
+                document.getElementById('briefGoalsInput').style.display = 'none';
+                document.getElementById('briefGoalsDisplay').style.display = 'block';
+                document.getElementById('saveBriefGoalsBtn').style.display = 'none';
+
+            } catch (error) {
+                showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
+            }
+        }
+
+        // Character counter
+        document.addEventListener('DOMContentLoaded', function() {
+            const goalsTextArea = document.getElementById('goalsTextArea');
+            const charCount = document.getElementById('charCount');
+
+            if (goalsTextArea && charCount) {
+                goalsTextArea.addEventListener('input', updateCharCount);
+            }
+        });
+
+        function updateCharCount() {
+            const goalsTextArea = document.getElementById('goalsTextArea');
+            const charCount = document.getElementById('charCount');
+            if (goalsTextArea && charCount) {
+                charCount.textContent = goalsTextArea.value.length;
+            }
+        }
+
+
+
 
 </script>
 </body>

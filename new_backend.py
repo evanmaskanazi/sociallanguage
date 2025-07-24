@@ -14,6 +14,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+
 import random
 import string
 from flask import Flask, request, jsonify, send_file, session
@@ -23,6 +24,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from functools import wraps
 import os
+import time
+from datetime import datetime, date, timedelta
 from pathlib import Path
 import secrets
 import jwt
@@ -787,6 +790,7 @@ class Reminder(db.Model):
     reminder_time = db.Column(db.Time, nullable=False)
     local_reminder_time = db.Column(db.String(5))
     reminder_email = db.Column(db.String(255))
+    reminder_language = db.Column(db.String(2), default='en')
     is_active = db.Column(db.Boolean, default=True)
     last_sent = db.Column(db.DateTime)
 
@@ -1826,7 +1830,7 @@ def login():
 
             attempts = int(redis_client.get(attempts_key) or 0)
             if attempts >= 5:
-                redis_client.setex(lockout_key, 900, '1')  # 15 minute lockout
+                redis_client.setex(lockout_key, 432000, '1')  # 5 day lockout
                 return jsonify({'error': 'Too many failed attempts. Account locked for 15 minutes.'}), 429
 
         # Find user
@@ -2640,6 +2644,187 @@ def get_client_analytics(client_id):
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/therapist/ai-insights/<int:client_id>', methods=['GET'])
+@require_auth(['therapist'])
+def get_client_ai_insights(client_id):
+    """Get AI-powered insights for a specific client"""
+    try:
+        therapist = request.current_user.therapist
+
+        # Verify client belongs to therapist
+        client = Client.query.filter_by(
+            id=client_id,
+            therapist_id=therapist.id,
+            is_active=True
+        ).first()
+
+        if not client:
+            return jsonify({'error': 'Client not found'}), 404
+
+        insights = []
+
+        # Analyze last 30 days for patterns
+        thirty_days_ago = date.today() - timedelta(days=30)
+        all_checkins = client.checkins.filter(
+            DailyCheckin.checkin_date >= thirty_days_ago
+        ).order_by(DailyCheckin.checkin_date).all()
+
+        # Need minimum data
+        if len(all_checkins) < 5:
+            return jsonify({
+                'success': True,
+                'insights': [],
+                'message': 'Not enough data for analysis'
+            })
+
+        # Split into periods for comparison
+        midpoint = len(all_checkins) // 2
+        first_half = all_checkins[:midpoint]
+        second_half = all_checkins[midpoint:]
+
+        # 1. EMOTIONAL DECLINE DETECTION
+        emotional_first = [c.emotional_value for c in first_half if c.emotional_value]
+        emotional_second = [c.emotional_value for c in second_half if c.emotional_value]
+
+        if emotional_first and emotional_second:
+            avg_first = sum(emotional_first) / len(emotional_first)
+            avg_second = sum(emotional_second) / len(emotional_second)
+            decline_percent = ((avg_first - avg_second) / avg_first * 100) if avg_first > 0 else 0
+
+            if decline_percent > 20:  # 20% decline
+                insights.append({
+                    'id': f'{client.id}_emotional_{int(time.time())}',
+                    'client_id': client.id,
+                    'priority': 'critical' if decline_percent > 30 else 'warning',
+                    'title': 'Declining Emotional State',
+                    'description': f'Emotional ratings have decreased by {int(decline_percent)}% over the past month.',
+                    'recommendation': 'Schedule immediate session to discuss recent stressors and coping strategies.',
+                    'trend': 'declining',
+                    'trend_description': f'From {avg_first:.1f} to {avg_second:.1f}'
+                })
+
+        # 2. INCONSISTENT CHECK-INS
+        days_between_checkins = []
+        for i in range(1, len(all_checkins)):
+            days_diff = (all_checkins[i].checkin_date - all_checkins[i - 1].checkin_date).days
+            days_between_checkins.append(days_diff)
+
+        if days_between_checkins:
+            avg_gap = sum(days_between_checkins) / len(days_between_checkins)
+            if avg_gap > 3:  # More than 3 days average between check-ins
+                insights.append({
+                    'id': f'{client.id}_engagement_{int(time.time())}',
+                    'client_id': client.id,
+                    'priority': 'warning',
+                    'title': 'Inconsistent Engagement',
+                    'description': f'Average {avg_gap:.1f} days between check-ins. Regular daily tracking recommended.',
+                    'recommendation': 'Discuss barriers to daily check-ins and set up reminders.',
+                    'trend': 'stable',
+                    'trend_description': f'{len(all_checkins)} check-ins in 30 days'
+                })
+
+        # 3. MEDICATION ADHERENCE
+        med_values = [c.medication_value for c in all_checkins if c.medication_value is not None]
+        if med_values and sum(1 for m in med_values if m < 3) > len(med_values) * 0.3:
+            non_adherent_days = sum(1 for m in med_values if m < 3)
+            insights.append({
+                'id': f'{client.id}_medication_{int(time.time())}',
+                'client_id': client.id,
+                'priority': 'critical',
+                'title': 'Medication Adherence Concerns',
+                'description': f'{non_adherent_days} days with missed or partial doses in the past month.',
+                'recommendation': 'Discuss medication challenges and consider adherence strategies.',
+                'trend': 'declining',
+                'trend_description': f'{int(non_adherent_days / len(med_values) * 100)}% non-adherent days'
+            })
+
+        # 4. POSITIVE PROGRESS
+        if emotional_first and emotional_second:
+            improvement = avg_second - avg_first
+            if improvement > 0.5 and avg_second >= 3.5:
+                insights.append({
+                    'id': f'{client.id}_improvement_{int(time.time())}',
+                    'client_id': client.id,
+                    'priority': 'info',
+                    'title': 'Positive Progress',
+                    'description': f'Emotional wellbeing improved by {int(improvement / avg_first * 100)}%.',
+                    'recommendation': 'Acknowledge progress and identify successful strategies.',
+                    'trend': 'improving',
+                    'trend_description': f'Now averaging {avg_second:.1f}/5'
+                })
+
+        # 5. CRISIS DETECTION
+        if len(emotional_second) >= 3:
+            last_three = emotional_second[-3:]
+            if all(e <= 2 for e in last_three) and len(emotional_first) > 0:
+                avg_first = sum(emotional_first) / len(emotional_first)
+                if avg_first > 3:
+                    insights.append({
+                        'id': f'{client.id}_crisis_{int(time.time())}',
+                        'client_id': client.id,
+                        'priority': 'critical',
+                        'title': 'Potential Crisis',
+                        'description': 'Consistently low mood (≤2) for past 3 check-ins.',
+                        'recommendation': 'Immediate outreach recommended. Consider safety assessment.',
+                        'trend': 'declining',
+                        'trend_description': 'Urgent attention needed'
+                    })
+
+        # 6. SLEEP QUALITY ANALYSIS (if tracking)
+        sleep_responses = []
+        for checkin in all_checkins:
+            sleep_cat = CategoryResponse.query.join(TrackingCategory).filter(
+                CategoryResponse.client_id == client.id,
+                CategoryResponse.response_date == checkin.checkin_date,
+                TrackingCategory.name.ilike('%sleep%')
+            ).first()
+            if sleep_cat:
+                sleep_responses.append(sleep_cat.value)
+
+        if len(sleep_responses) >= 7:
+            poor_sleep_days = sum(1 for s in sleep_responses[-7:] if s <= 2)
+            if poor_sleep_days >= 4:  # Poor sleep 4+ of last 7 days
+                insights.append({
+                    'id': f'{client.id}_sleep_{int(time.time())}',
+                    'client_id': client.id,
+                    'priority': 'warning',
+                    'title': 'Sleep Quality Concerns',
+                    'description': f'Poor sleep reported {poor_sleep_days} of last 7 days.',
+                    'recommendation': 'Discuss sleep hygiene and consider sleep study referral.',
+                    'trend': 'stable',
+                    'trend_description': 'Persistent sleep issues'
+                })
+
+        # Sort by priority
+        priority_order = {'critical': 0, 'warning': 1, 'info': 2}
+        insights.sort(key=lambda x: priority_order.get(x['priority'], 3))
+
+        return jsonify({
+            'success': True,
+            'insights': insights[:10]  # Limit to top 10
+        })
+
+    except Exception as e:
+        logger.error(f"AI insights error for client {client_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/therapist/dismiss-insight/<string:insight_id>', methods=['POST'])
+@require_auth(['therapist'])
+def dismiss_insight(insight_id):
+    """Dismiss an AI insight"""
+    try:
+        # In a real implementation, you'd track dismissed insights in the database
+        # For now, just return success
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
+
 
 
 # ============= EXPORT ENDPOINTS =============
@@ -4464,7 +4649,20 @@ def create_client():
 
         # Create user account for client
         email = data.get('email')
-        password = data.get('password', secrets.token_urlsafe(8))
+        # Generate a secure password that meets requirements
+        if not data.get('password'):
+            # Generate components
+            uppercase = ''.join(random.choice(string.ascii_uppercase) for _ in range(3))
+            lowercase = ''.join(random.choice(string.ascii_lowercase) for _ in range(4))
+            digits = ''.join(random.choice(string.digits) for _ in range(3))
+            special = ''.join(random.choice('@$!%*?&') for _ in range(2))
+
+            # Combine and shuffle
+            password_chars = list(uppercase + lowercase + digits + special)
+            random.shuffle(password_chars)
+            password = ''.join(password_chars)
+        else:
+            password = data.get('password')
 
         logger.info('create_client_attempt', extra={
             'extra_data': {
@@ -5104,6 +5302,99 @@ def submit_checkin():
             phi_accessed=True
         )
 
+        # Send completion email if this is today's checkin
+        if checkin_date == date.today() and not is_update:
+            try:
+                # Get user's language preference
+                lang = get_language_from_header()
+
+                # Generate positive message
+                positive_messages = {
+                    'en': [
+                        "Great job completing your daily check-in! Your consistency is admirable.",
+                        "Well done! Every check-in brings you closer to your wellness goals.",
+                        "Fantastic! Your dedication to tracking your progress is inspiring.",
+                        "Excellent work today! Your therapist will be pleased with your commitment.",
+                        "Amazing! You're building healthy habits one day at a time."
+                    ],
+                    'he': [
+                        "כל הכבוד על השלמת הצ'ק-אין היומי! העקביות שלך ראויה להערכה.",
+                        "עבודה טובה! כל צ'ק-אין מקרב אותך ליעדי הבריאות שלך.",
+                        "מצוין! המסירות שלך למעקב אחר ההתקדמות שלך מעוררת השראה.",
+                        "עבודה מעולה היום! המטפל שלך ישמח לראות את המחויבות שלך.",
+                        "מדהים! אתה בונה הרגלים בריאים יום אחר יום."
+                    ],
+                    'ru': [
+                        "Отличная работа по заполнению ежедневной отметки! Ваша последовательность достойна восхищения.",
+                        "Молодец! Каждая отметка приближает вас к вашим целям благополучия.",
+                        "Фантастика! Ваша преданность отслеживанию прогресса вдохновляет.",
+                        "Отличная работа сегодня! Ваш терапевт будет доволен вашей приверженностью.",
+                        "Потрясающе! Вы формируете здоровые привычки день за днем."
+                    ],
+                    'ar': [
+                        "عمل رائع في إكمال تسجيل الحضور اليومي! ثباتك يستحق الإعجاب.",
+                        "أحسنت! كل تسجيل حضور يقربك من أهداف عافيتك.",
+                        "رائع! تفانيك في تتبع تقدمك ملهم.",
+                        "عمل ممتاز اليوم! سيكون معالجك سعيدًا بالتزامك.",
+                        "مذهل! أنت تبني عادات صحية يومًا بعد يوم."
+                    ]
+                }
+
+                import random
+                messages = positive_messages.get(lang, positive_messages['en'])
+                selected_message = random.choice(messages)
+
+                # Email subject by language
+                subjects = {
+                    'en': "Well done on today's check-in! 🌟",
+                    'he': "כל הכבוד על הצ'ק-אין של היום! 🌟",
+                    'ru': "Молодец, вы выполнили сегодняшнюю отметку! 🌟",
+                    'ar': "أحسنت في تسجيل حضور اليوم! 🌟"
+                }
+
+                subject = subjects.get(lang, subjects['en'])
+
+                # Create email with the positive message
+                email_queue = EmailQueue(
+                    to_email=request.current_user.email,
+                    subject=subject,
+                    body=selected_message,
+                    html_body=f"""
+                            <html>
+                            <body style="font-family: Arial, sans-serif; direction: {'rtl' if lang in ['he', 'ar'] else 'ltr'};">
+                                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                                    <h2 style="color: #4CAF50; text-align: center;">{subject}</h2>
+                                    <p style="font-size: 18px; line-height: 1.6; color: #333;">
+                                        {selected_message}
+                                    </p>
+                                    <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                                    <p style="color: #666; font-size: 14px; text-align: center;">
+                                        {'המסע הטיפולי שלך' if lang == 'he' else
+                    'Ваш терапевтический путь' if lang == 'ru' else
+                    'رحلتك العلاجية' if lang == 'ar' else
+                    'Your Therapeutic Journey'}
+                                    </p>
+                                </div>
+                            </body>
+                            </html>
+                            """,
+                    status='pending'
+                )
+                db.session.add(email_queue)
+                db.session.commit()
+
+                # Trigger email processing
+                if celery:
+                    from celery_app import process_email_queue_task
+                    process_email_queue_task.delay()
+
+            except Exception as e:
+                logger.error(f"Failed to queue completion email: {e}")
+
+
+
+
+
         logger.info('checkin_success', extra={
             'extra_data': {
                 'client_id': client.id,
@@ -5340,6 +5631,168 @@ def complete_mission(mission_id):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/client/save-goals', methods=['POST'])
+@require_auth(['client'])
+def save_goals():
+    """Save goals for a specific week"""
+    try:
+        client = request.current_user.client
+        data = request.json
+
+        week_start_str = data.get('week_start')
+        goals = data.get('goals', '').strip()
+
+        if not week_start_str:
+            return jsonify({'error': 'Week start date is required'}), 400
+
+        if not goals:
+            return jsonify({'error': 'Goals are required'}), 400
+
+        # Validate word count
+        word_count = len(goals.split())
+        if word_count > 500:
+            return jsonify({'error': 'Goals must be 500 words or less'}), 400
+
+        week_start = datetime.strptime(week_start_str, '%Y-%m-%d').date()
+
+        # Check if goals exist for this week
+        existing = TherapistNote.query.filter_by(
+            client_id=client.id,
+            note_type='weekly_goals',
+            created_at=week_start
+        ).first()
+
+        if existing:
+            existing.content = goals
+            existing.updated_at = datetime.utcnow()
+        else:
+            note = TherapistNote(
+                client_id=client.id,
+                therapist_id=client.therapist_id,
+                note_type='weekly_goals',
+                content=goals,
+                is_mission=False,
+                created_at=week_start  # Use week_start as created_at for easy retrieval
+            )
+            db.session.add(note)
+
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': 'Goals saved successfully'})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/client/get-goals', methods=['GET'])
+@require_auth(['client'])
+def get_goals():
+    """Get goals for a specific week"""
+    try:
+        client = request.current_user.client
+        week_start_str = request.args.get('week_start')
+
+        if not week_start_str:
+            return jsonify({'error': 'Week start date is required'}), 400
+
+        week_start = datetime.strptime(week_start_str, '%Y-%m-%d').date()
+
+        goals = TherapistNote.query.filter_by(
+            client_id=client.id,
+            note_type='weekly_goals',
+            created_at=week_start
+        ).first()
+
+        return jsonify({
+            'goals': goals.content if goals else None
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/client/save-brief-goals', methods=['POST'])
+@require_auth(['client'])
+def save_brief_goals():
+    """Save brief goals for the week"""
+    try:
+        client = request.current_user.client
+        data = request.json
+
+        week_start_str = data.get('week_start')
+        brief_goals = data.get('brief_goals', '').strip()
+
+        if not week_start_str:
+            return jsonify({'error': 'Week start date is required'}), 400
+
+        if not brief_goals:
+            return jsonify({'error': 'Brief goals are required'}), 400
+
+        # Validate word count
+        word_count = len(brief_goals.split())
+        if word_count > 20:
+            return jsonify({'error': 'Brief goals must be 20 words or less'}), 400
+
+        week_start = datetime.strptime(week_start_str, '%Y-%m-%d').date()
+
+        # Check if brief goals exist for this week
+        existing = TherapistNote.query.filter_by(
+            client_id=client.id,
+            note_type='brief_goals',
+            created_at=week_start
+        ).first()
+
+        if existing:
+            existing.content = brief_goals
+            existing.updated_at = datetime.utcnow()
+        else:
+            note = TherapistNote(
+                client_id=client.id,
+                therapist_id=client.therapist_id,
+                note_type='brief_goals',
+                content=brief_goals,
+                is_mission=False,
+                created_at=week_start
+            )
+            db.session.add(note)
+
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': 'Brief goals saved successfully'})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/client/get-brief-goals', methods=['GET'])
+@require_auth(['client'])
+def get_brief_goals():
+    """Get brief goals for a specific week"""
+    try:
+        client = request.current_user.client
+        week_start_str = request.args.get('week_start')
+
+        if not week_start_str:
+            return jsonify({'error': 'Week start date is required'}), 400
+
+        week_start = datetime.strptime(week_start_str, '%Y-%m-%d').date()
+
+        brief_goals = TherapistNote.query.filter_by(
+            client_id=client.id,
+            note_type='brief_goals',
+            created_at=week_start
+        ).first()
+
+        return jsonify({
+            'brief_goals': brief_goals.content if brief_goals else None
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # ============= TRACKING CATEGORY MANAGEMENT =============
 
 @app.route('/api/categories', methods=['GET'])
@@ -5534,7 +5987,8 @@ def update_reminder():
         reminder_time = data.get('time')
         reminder_email = data.get('email')
         is_active = data.get('is_active', True)
-        timezone_offset = data.get('timezone_offset', 0)  # in minutes
+        timezone_offset = data.get('timezone_offset', 0)# in minutes
+        reminder_language = data.get('language', 'en')
 
         # Parse time
         hour, minute = map(int, reminder_time.split(':'))
@@ -5643,6 +6097,7 @@ def update_reminder():
             reminder.local_reminder_time = local_time_str
             reminder.is_active = is_active
             reminder.reminder_email = reminder_email
+            reminder.reminder_language = reminder_language
 
             logger.info('reminder_updated', extra={
                 'extra_data': {
@@ -5662,6 +6117,7 @@ def update_reminder():
                 reminder_time=time_obj,
                 local_reminder_time=local_time_str,
                 reminder_email=reminder_email,
+                reminder_language=reminder_language,
                 is_active=is_active
             )
             db.session.add(reminder)

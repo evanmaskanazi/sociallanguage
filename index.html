@@ -72,6 +72,137 @@
             animation: fadeInUp 1s ease-out 0.2s backwards;
         }
 
+
+
+
+/* Research Section */
+        .research {
+            padding: 4rem 2rem;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .research::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .research-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .research-title {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+        }
+
+        .research-description {
+            font-size: 1.2rem;
+            line-height: 1.8;
+            color: #555;
+            margin-bottom: 3rem;
+            padding: 0 2rem;
+        }
+
+        .research-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .research-btn {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border: none;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .research-btn:hover {
+            transform: translateY(-5px) scale(1.1);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .research-btn:active {
+            transform: translateY(-2px) scale(1.05);
+        }
+
+        .research-number {
+            display: block;
+        }
+
+        .research-tooltip {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(44, 62, 80, 0.95);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            max-width: 200px;
+            text-align: center;
+            font-weight: normal;
+        }
+
+        .research-btn:hover .research-tooltip {
+            opacity: 1;
+            visibility: visible;
+            bottom: -50px;
+        }
+
+        @media (max-width: 768px) {
+            .research-buttons {
+                gap: 1rem;
+            }
+
+            .research-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 1.2rem;
+            }
+
+            .research-description {
+                font-size: 1rem;
+                padding: 0 1rem;
+            }
+        }
+
+
+
+
         .cta-buttons {
             display: flex;
             gap: 1rem;
@@ -283,10 +414,53 @@
             <p data-i18n="hero.subtitle">A comprehensive therapy companion system for therapists and clients</p>
             <div class="cta-buttons">
                 <a href="/login.html" class="btn btn-primary" data-i18n="hero.get_started">Get Started</a>
-                <a href="#features" class="btn btn-secondary" data-i18n="hero.learn_more">Learn More</a>
+                <a href="#research" class="btn btn-secondary" data-i18n="hero.learn_more">Learn More</a>
             </div>
         </div>
     </section>
+
+
+<!-- Research Section -->
+    <section id="research" class="research">
+        <div class="container">
+            <div class="research-content">
+                <h2 class="research-title" data-i18n="research.title">Understanding the Science</h2>
+                <p class="research-description" data-i18n="research.description">
+                    An interactive experience for anyone looking to take control of their life and be the greatest possible versions of themselves they can be. Here you can track how you're living your life, the goals you're reaching, your well-being and daily routine. All of this is done with the regular assistance of licensed therapists. Get yourself educated on it here.
+                </p>
+                <div class="research-buttons">
+                    <button class="research-btn" onclick="window.open('https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3918025/', '_blank')">
+                        <span class="research-number">1</span>
+                        <span class="research-tooltip" data-i18n="research.study1">Andersson & Titov (2014) - Internet-based interventions</span>
+                    </button>
+                    <button class="research-btn" onclick="window.open('https://www.jmir.org/2017/5/e156/', '_blank')">
+                        <span class="research-number">2</span>
+                        <span class="research-tooltip" data-i18n="research.study2">Firth et al. (2017) - Smartphone mental health</span>
+                    </button>
+                    <button class="research-btn" onclick="window.open('https://www.nature.com/articles/s41746-020-0233-7', '_blank')">
+                        <span class="research-number">3</span>
+                        <span class="research-tooltip" data-i18n="research.study3">Graham et al. (2019) - Digital tracking effectiveness</span>
+                    </button>
+                    <button class="research-btn" onclick="window.open('https://www.jmir.org/2019/6/e12848/', '_blank')">
+                        <span class="research-number">4</span>
+                        <span class="research-tooltip" data-i18n="research.study4">Lattie et al. (2019) - Digital mental health</span>
+                    </button>
+                    <button class="research-btn" onclick="window.open('https://www.sciencedirect.com/science/article/pii/S2214782916300227', '_blank')">
+                        <span class="research-number">5</span>
+                        <span class="research-tooltip" data-i18n="research.study5">Donker et al. (2013) - Mental health apps</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+
+
+
+
+
 
     <!-- Features Section -->
     <section id="features" class="features">
@@ -432,6 +606,13 @@
                 'how.step3.desc': 'Clients complete brief daily assessments to track their progress.',
                 'how.step4.title': 'Monitor & Support',
                 'how.step4.desc': 'Therapists review progress, add notes, and adjust treatment plans as needed.',
+                'research.title': 'Understanding the Science',
+                'research.description': 'An interactive experience for anyone looking to take control of their life and be the greatest possible versions of themselves they can be. Here you can track how you\'re living your life, the goals you\'re reaching, your well-being and daily routine. All of this is done with the regular assistance of licensed therapists. Get yourself educated on it here.',
+                'research.study1': 'Internet-based interventions',
+                'research.study2': 'Smartphone mental health',
+                'research.study3': 'Digital tracking effectiveness',
+                'research.study4': 'Digital mental health',
+                'research.study5': 'Mental health apps',
                 'footer.copyright': '© 2024 Therapeutic Companion. Supporting wellness journeys with care and technology.'
             });
 
@@ -462,6 +643,13 @@
                 'how.step3.desc': 'מטופלים משלימים הערכות יומיות קצרות למעקב אחר ההתקדמות.',
                 'how.step4.title': 'ניטור ותמיכה',
                 'how.step4.desc': 'מטפלים סוקרים התקדמות, מוסיפים הערות ומתאימים תוכניות טיפול לפי הצורך.',
+                'research.title': 'הבנת המדע',
+                'research.description': 'חוויה אינטראקטיבית לכל מי שמחפש לקחת שליטה על חייו ולהיות הגרסה הטובה ביותר של עצמו. כאן תוכלו לעקוב אחר אופן החיים שלכם, המטרות שאתם משיגים, הרווחה האישית והשגרה היומית שלכם. כל זאת נעשה בסיוע קבוע של מטפלים מורשים. חנכו את עצמכם כאן.',
+                'research.study1': 'התערבויות מבוססות אינטרנט',
+                'research.study2': 'בריאות נפש בסמארטפון',
+                'research.study3': 'יעילות מעקב דיגיטלי',
+                'research.study4': 'בריאות נפש דיגיטלית',
+                'research.study5': 'אפליקציות לבריאות הנפש',
                 'footer.copyright': '© 2024 מלווה טיפולי. תומכים במסעות בריאות עם אכפתיות וטכנולוגיה.'
             });
 
@@ -492,6 +680,13 @@
                 'how.step3.desc': 'Клиенты проходят краткие ежедневные оценки для отслеживания своего прогресса.',
                 'how.step4.title': 'Мониторинг и поддержка',
                 'how.step4.desc': 'Терапевты просматривают прогресс, добавляют заметки и корректируют планы лечения по мере необходимости.',
+                'research.title': 'Понимание науки',
+                'research.description': 'Интерактивный опыт для всех, кто хочет взять под контроль свою жизнь и стать лучшей версией себя. Здесь вы можете отслеживать, как вы живете, какие цели достигаете, ваше благополучие и ежедневную рутину. Все это делается при регулярной помощи лицензированных терапевтов. Узнайте больше здесь.',
+                'research.study1': 'Интернет-интервенции',
+                'research.study2': 'Психическое здоровье на смартфоне',
+                'research.study3': 'Эффективность цифрового отслеживания',
+                'research.study4': 'Цифровое психическое здоровье',
+                'research.study5': 'Приложения для психического здоровья',
                 'footer.copyright': '© 2024 Терапевтический Компаньон. Поддерживаем путь к здоровью с заботой и технологиями.'
             });
 
@@ -522,6 +717,13 @@
                 'how.step3.desc': 'يكمل العملاء تقييمات يومية موجزة لتتبع تقدمهم.',
                 'how.step4.title': 'المراقبة والدعم',
                 'how.step4.desc': 'يراجع المعالجون التقدم ويضيفون الملاحظات ويعدلون خطط العلاج حسب الحاجة.',
+                'research.title': 'فهم العلم',
+                'research.description': 'تجربة تفاعلية لأي شخص يتطلع إلى السيطرة على حياته وأن يكون أفضل نسخة ممكنة من نفسه. هنا يمكنك تتبع كيف تعيش حياتك، والأهداف التي تحققها، ورفاهيتك وروتينك اليومي. كل هذا يتم بمساعدة منتظمة من معالجين مرخصين. ثقف نفسك هنا.',
+                'research.study1': 'التدخلات القائمة على الإنترنت',
+                'research.study2': 'الصحة النفسية على الهاتف الذكي',
+                'research.study3': 'فعالية التتبع الرقمي',
+                'research.study4': 'الصحة النفسية الرقمية',
+                'research.study5': 'تطبيقات الصحة النفسية',
                 'footer.copyright': '© 2024 الرفيق العلاجي. ندعم رحلات العافية بالرعاية والتكنولوجيا.'
             });
 

@@ -210,7 +210,32 @@ def fix_reminder_timezone_issue():
 
 
 
+def add_reminder_language_column():
+    """Add reminder_language column to reminders table"""
+    with app.app_context():
+        try:
+            # Check if column exists
+            result = db.session.execute(text("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name='reminders'
+                AND column_name='reminder_language'
+            """))
 
+            if not result.fetchone():
+                # Column doesn't exist, add it
+                db.session.execute(text("""
+                    ALTER TABLE reminders
+                    ADD COLUMN reminder_language VARCHAR(2) DEFAULT 'en'
+                """))
+                db.session.commit()
+                print("Successfully added reminder_language column to reminders table")
+            else:
+                print("reminder_language column already exists - skipping")
+
+        except Exception as e:
+            print(f"Error checking/adding reminder_language column: {e}")
+            db.session.rollback()
 
 
 
@@ -226,7 +251,8 @@ def initialize_database():
 
         # Add new columns safely
         safe_add_column()
-        add_local_reminder_time_column()  # ADD THIS LINE - This is the new function call
+        add_local_reminder_time_column() # ADD THIS LINE - This is the new function call
+        add_reminder_language_column()
         create_circuit_breaker_table()
         add_email_valid_column()
         fix_existing_reminder_times()
