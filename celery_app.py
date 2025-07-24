@@ -67,8 +67,24 @@ def send_reminder_test(self, email):
         reminder_lang = 'en'
         with app.app_context():
             try:
+                # First try to find user by the email address
                 user = User.query.filter_by(email=email).first()
-                if user and user.client:
+
+                # If not found, it might be a reminder email - search reminders
+                if not user:
+                    reminder = Reminder.query.filter_by(
+                        reminder_email=email,
+                        reminder_type='daily_checkin',
+                        is_active=True
+                    ).first()
+                    if reminder and reminder.client:
+                        user = reminder.client.user
+                        if reminder.reminder_language:
+                            reminder_lang = reminder.reminder_language
+                            print(f"[CELERY] Found language via reminder email: {reminder_lang} for {email}")
+
+                # If we found the user, check their reminders
+                elif user and user.client:
                     reminder = user.client.reminders.filter_by(
                         reminder_type='daily_checkin',
                         is_active=True
@@ -78,8 +94,13 @@ def send_reminder_test(self, email):
                         print(f"[CELERY] Found reminder language: {reminder_lang} for {email}")
                     else:
                         print(f"[CELERY] No reminder language found for {email}, using default: en")
+                else:
+                    print(f"[CELERY] No user found for {email}, using default: en")
+
             except Exception as e:
                 print(f"[CELERY] Error getting language preference: {e}")
+
+        print(f"[CELERY] Sending test email to {email} in language: {reminder_lang}")
 
         # Translated test messages
         test_subjects = {
