@@ -234,120 +234,116 @@ def send_daily_reminders():
                         base_url = os.environ.get('APP_BASE_URL', 'https://therapy-companion.onrender.com')
 
                         # Get reminder language
-                        reminder_lang = reminder.reminder_language if hasattr(reminder, 'reminder_language') else 'en'
+                        reminder_lang = reminder.reminder_language if reminder.reminder_language else 'en'
 
-                        # Translated subjects
-                        subjects = {
-                            'en': "Daily Check-in Reminder - Therapeutic Companion",
-                            'he': "תזכורת יומית לצ'ק-אין - מלווה טיפולי",
-                            'ru': "Ежедневное напоминание об отметке - Терапевтический Компаньон",
-                            'ar': "تذكير يومي بتسجيل الحضور - الرفيق العلاجي"
+                        # Complete translation dictionary including HTML content
+                        translations = {
+                            'en': {
+                                'subject': "Daily Check-in Reminder - Therapeutic Companion",
+                                'greeting': "Hello",
+                                'reminder_text': "This is your daily reminder to complete your therapy check-in.",
+                                'progress_text': "Your therapist is tracking your progress, and your daily input is valuable for your treatment.",
+                                'login_text': "Click here to log in and complete today's check-in:",
+                                'button_text': "Complete Today's Check-in",
+                                'client_id': "Client ID",
+                                'already_completed': "If you've already completed today's check-in, please disregard this message.",
+                                'regards': "Best regards,\nYour Therapy Team",
+                                'title': "Daily Check-in Reminder"
+                            },
+                            'he': {
+                                'subject': "תזכורת יומית לצ'ק-אין - מלווה טיפולי",
+                                'greeting': "שלום",
+                                'reminder_text': "זוהי התזכורת היומית שלך להשלים את הצ'ק-אין הטיפולי שלך.",
+                                'progress_text': "המטפל שלך עוקב אחר ההתקדמות שלך, והקלט היומי שלך חשוב לטיפול שלך.",
+                                'login_text': "לחץ כאן כדי להתחבר ולהשלים את הצ'ק-אין של היום:",
+                                'button_text': "השלם את הצ'ק-אין של היום",
+                                'client_id': "מספר מטופל",
+                                'already_completed': "אם כבר השלמת את הצ'ק-אין של היום, אנא התעלם מהודעה זו.",
+                                'regards': "בברכה,\nצוות הטיפול שלך",
+                                'title': "תזכורת יומית לצ'ק-אין"
+                            },
+                            'ru': {
+                                'subject': "Ежедневное напоминание об отметке - Терапевтический Компаньон",
+                                'greeting': "Здравствуйте",
+                                'reminder_text': "Это ваше ежедневное напоминание о необходимости заполнить терапевтическую отметку.",
+                                'progress_text': "Ваш терапевт отслеживает ваш прогресс, и ваши ежедневные данные важны для вашего лечения.",
+                                'login_text': "Нажмите здесь, чтобы войти и заполнить сегодняшнюю отметку:",
+                                'button_text': "Заполнить сегодняшнюю отметку",
+                                'client_id': "ID клиента",
+                                'already_completed': "Если вы уже заполнили сегодняшнюю отметку, пожалуйста, игнорируйте это сообщение.",
+                                'regards': "С наилучшими пожеланиями,\nВаша терапевтическая команда",
+                                'title': "Ежедневное напоминание об отметке"
+                            },
+                            'ar': {
+                                'subject': "تذكير يومي بتسجيل الحضور - الرفيق العلاجي",
+                                'greeting': "مرحباً",
+                                'reminder_text': "هذا تذكيرك اليومي لإكمال تسجيل الحضور العلاجي الخاص بك.",
+                                'progress_text': "معالجك يتتبع تقدمك، ومدخلاتك اليومية قيمة لعلاجك.",
+                                'login_text': "انقر هنا لتسجيل الدخول وإكمال تسجيل حضور اليوم:",
+                                'button_text': "أكمل تسجيل حضور اليوم",
+                                'client_id': "معرف العميل",
+                                'already_completed': "إذا كنت قد أكملت بالفعل تسجيل حضور اليوم، يرجى تجاهل هذه الرسالة.",
+                                'regards': "مع أطيب التحيات،\nفريق العلاج الخاص بك",
+                                'title': "تذكير يومي بتسجيل الحضور"
+                            }
                         }
 
-                        # Translated bodies
-                        bodies = {
-                            'en': f"""Hello,
+                        # Get the appropriate translation
+                        trans = translations.get(reminder_lang, translations['en'])
 
-                        This is your daily reminder to complete your therapy check-in.
+                        # Create plain text body
+                        body = f"""{trans['greeting']},
 
-                        Your therapist is tracking your progress, and your daily input is valuable for your treatment.
+{trans['reminder_text']}
 
-                        Click here to log in and complete today's check-in:
-                        {base_url}/login.html
+{trans['progress_text']}
 
-                        Client ID: {client.client_serial}
+{trans['login_text']}
+{base_url}/login.html
 
-                        If you've already completed today's check-in, please disregard this message.
+{trans['client_id']}: {client.client_serial}
 
-                        Best regards,
-                        Your Therapy Team""",
-                            'he': f"""שלום,
+{trans['already_completed']}
 
-                        זוהי התזכורת היומית שלך להשלים את הצ'ק-אין הטיפולי שלך.
+{trans['regards']}"""
 
-                        המטפל שלך עוקב אחר ההתקדמות שלך, והקלט היומי שלך חשוב לטיפול שלך.
-
-                        לחץ כאן כדי להתחבר ולהשלים את הצ'ק-אין של היום:
-                        {base_url}/login.html
-
-                        מספר מטופל: {client.client_serial}
-
-                        אם כבר השלמת את הצ'ק-אין של היום, אנא התעלם מהודעה זו.
-
-                        בברכה,
-                        צוות הטיפול שלך""",
-                            'ru': f"""Здравствуйте,
-
-                        Это ваше ежедневное напоминание о необходимости заполнить терапевтическую отметку.
-
-                        Ваш терапевт отслеживает ваш прогресс, и ваши ежедневные данные важны для вашего лечения.
-
-                        Нажмите здесь, чтобы войти и заполнить сегодняшнюю отметку:
-                        {base_url}/login.html
-
-                        ID клиента: {client.client_serial}
-
-                        Если вы уже заполнили сегодняшнюю отметку, пожалуйста, игнорируйте это сообщение.
-
-                        С наилучшими пожеланиями,
-                        Ваша терапевтическая команда""",
-                            'ar': f"""مرحباً،
-
-                        هذا تذكيرك اليومي لإكمال تسجيل الحضور العلاجي الخاص بك.
-
-                        معالجك يتتبع تقدمك، ومدخلاتك اليومية قيمة لعلاجك.
-
-                        انقر هنا لتسجيل الدخول وإكمال تسجيل حضور اليوم:
-                        {base_url}/login.html
-
-                        معرف العميل: {client.client_serial}
-
-                        إذا كنت قد أكملت بالفعل تسجيل حضور اليوم، يرجى تجاهل هذه الرسالة.
-
-                        مع أطيب التحيات،
-                        فريق العلاج الخاص بك"""
-                        }
-
-                        subject = subjects.get(reminder_lang, subjects['en'])
-                        body = bodies.get(reminder_lang, bodies['en'])
-
-
-
-
+                        # Create PROPERLY TRANSLATED HTML body
                         html_body = f"""
-                        <html>
-                        <body style="font-family: Arial, sans-serif; color: #333;">
-                            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                                <h2 style="color: #2c3e50;">Daily Check-in Reminder</h2>
-                                <p>Hello,</p>
-                                <p>This is your daily reminder to complete your therapy check-in.</p>
-                                <p>Your therapist is tracking your progress, and your daily input is valuable for your treatment.</p>
-                                <div style="text-align: center; margin: 40px 0;">
-                                    <a href="{base_url}/login.html"
-                                       style="background-color: #4CAF50; color: white; padding: 15px 40px;
-                                              text-decoration: none; border-radius: 5px; display: inline-block;
-                                              font-weight: bold; font-size: 16px;">
-                                        Complete Today's Check-in
-                                    </a>
-                                </div>
-                                <p style="color: #666; font-size: 14px;">Client ID: {client.client_serial}</p>
-                                <p style="color: #666; font-size: 14px;">
-                                    If you've already completed today's check-in, please disregard this message.
-                                </p>
-                                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-                                <p style="color: #999; font-size: 12px;">
-                                    Best regards,<br>
-                                    Your Therapy Team
-                                </p>
-                            </div>
-                        </body>
-                        </html>
-                        """
+<html>
+<head>
+    <meta charset="utf-8">
+</head>
+<body style="font-family: Arial, sans-serif; color: #333; direction: {'rtl' if reminder_lang in ['he', 'ar'] else 'ltr'};">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #2c3e50;">{trans['title']}</h2>
+        <p>{trans['greeting']},</p>
+        <p>{trans['reminder_text']}</p>
+        <p>{trans['progress_text']}</p>
+        <div style="text-align: center; margin: 40px 0;">
+            <a href="{base_url}/login.html"
+               style="background-color: #4CAF50; color: white; padding: 15px 40px;
+                      text-decoration: none; border-radius: 5px; display: inline-block;
+                      font-weight: bold; font-size: 16px;">
+                {trans['button_text']}
+            </a>
+        </div>
+        <p style="color: #666; font-size: 14px;">{trans['client_id']}: {client.client_serial}</p>
+        <p style="color: #666; font-size: 14px;">
+            {trans['already_completed']}
+        </p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        <p style="color: #999; font-size: 12px;">
+            {trans['regards'].replace(chr(10), '<br>')}
+        </p>
+    </div>
+</body>
+</html>
+"""
 
                         # Create email queue entry
                         email_queue = EmailQueue(
                             to_email=email_to_use,
-                            subject=subject,
+                            subject=trans['subject'],
                             body=body,
                             html_body=html_body,
                             status='pending'
@@ -357,7 +353,7 @@ def send_daily_reminders():
                         # Update last_sent
                         reminder.last_sent = utc_now
                         queued_count += 1
-                        print(f"[CELERY] Queued reminder for {client.user.email}")
+                        print(f"[CELERY] Queued reminder for {email_to_use} in language: {reminder_lang}")
 
                 except Exception as e:
                     print(f"[CELERY] Failed to queue reminder for client {reminder.client.client_serial}: {e}")
@@ -378,37 +374,79 @@ def send_daily_reminders():
 
 
 @celery.task(bind=True, max_retries=3)
-def send_email_task(self, to_email, subject, body, html_body=None):
-    """Send a single email with retry logic"""
-    try:
-        smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
-        smtp_port = int(os.environ.get('SMTP_PORT', 587))
-        smtp_username = os.environ.get('SYSTEM_EMAIL')
-        smtp_password = os.environ.get('SYSTEM_EMAIL_PASSWORD')
+def send_email_task(self, email_queue_id):
+    """Send a single email and update its status in the database"""
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from new_backend import app, db, EmailQueue
 
-        if not smtp_username or not smtp_password:
-            return {'error': 'Email configuration missing'}
+    with app.app_context():
+        try:
+            # Get the email from the queue
+            email = EmailQueue.query.get(email_queue_id)
+            if not email:
+                return {'error': f'Email with ID {email_queue_id} not found'}
 
-        msg = MIMEMultipart('alternative')
-        msg['From'] = smtp_username
-        msg['To'] = to_email
-        msg['Subject'] = subject
+            # Skip if already sent
+            if email.status == 'sent':
+                return {'success': True, 'message': 'Email already sent'}
 
-        msg.attach(MIMEText(body, 'plain'))
-        if html_body:
-            msg.attach(MIMEText(html_body, 'html'))
+            smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
+            smtp_port = int(os.environ.get('SMTP_PORT', 587))
+            smtp_username = os.environ.get('SYSTEM_EMAIL')
+            smtp_password = os.environ.get('SYSTEM_EMAIL_PASSWORD')
 
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(smtp_username, smtp_password)
-        server.send_message(msg)
-        server.quit()
+            if not smtp_username or not smtp_password:
+                email.status = 'failed'
+                email.error_message = 'Email configuration missing'
+                db.session.commit()
+                return {'error': 'Email configuration missing'}
 
-        return {'success': True, 'email': to_email}
+            # Create the email message
+            msg = MIMEMultipart('alternative')
+            msg['From'] = smtp_username
+            msg['To'] = email.to_email
+            msg['Subject'] = email.subject
 
-    except Exception as e:
-        # Retry with exponential backoff
-        raise self.retry(exc=e, countdown=60 * (2 ** self.request.retries))
+            # Add both plain text and HTML parts with UTF-8 encoding
+            msg.attach(MIMEText(email.body, 'plain', 'utf-8'))
+            if email.html_body:
+                msg.attach(MIMEText(email.html_body, 'html', 'utf-8'))
+
+            # Send the email
+            server = smtplib.SMTP(smtp_server, smtp_port)
+            server.starttls()
+            server.login(smtp_username, smtp_password)
+            server.send_message(msg)
+            server.quit()
+
+            # CRITICAL: Mark as sent and update timestamp
+            email.status = 'sent'
+            email.sent_at = datetime.utcnow()
+            email.attempts = (email.attempts or 0) + 1
+            db.session.commit()
+
+            print(f"[CELERY] Successfully sent email to {email.to_email}")
+            return {'success': True, 'email': email.to_email}
+
+        except Exception as e:
+            # Update status on failure
+            try:
+                with app.app_context():
+                    email = EmailQueue.query.get(email_queue_id)
+                    if email:
+                        email.status = 'failed'
+                        email.error_message = str(e)
+                        email.attempts = (email.attempts or 0) + 1
+                        email.last_attempt_at = datetime.utcnow()
+                        db.session.commit()
+            except:
+                pass
+
+            print(f"[CELERY] Failed to send email {email_queue_id}: {str(e)}")
+            # Retry with exponential backoff
+            raise self.retry(exc=e, countdown=60 * (2 ** self.request.retries))
 
 
 @celery.task
@@ -433,12 +471,7 @@ def process_email_queue_task():
 
             for email in pending_emails:
                 # Send each email as a separate Celery task
-                send_email_task.delay(
-                    email.to_email,
-                    email.subject,
-                    email.body,
-                    email.html_body
-                )
+                send_email_task.delay(email.id)
 
                 # Mark as processing
                 email.status = 'processing'
