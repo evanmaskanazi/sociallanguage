@@ -6147,7 +6147,7 @@ def update_reminder():
         local_total_minutes = hour * 60 + minute
 
         # Subtract the offset to get UTC
-        utc_total_minutes = local_total_minutes - timezone_offset
+        utc_total_minutes = local_total_minutes + timezone_offset
 
         # Handle day wraparound
         while utc_total_minutes < 0:
