@@ -4565,6 +4565,9 @@ def initialize_database():
     try:
         # Try to create a lock record in the database
         with db.session.begin_nested():
+            # Create tables if they don't exist
+            db.create_all()
+
             # Check if already initialized
             from sqlalchemy import text
             existing_lock = db.session.execute(
@@ -4573,10 +4576,9 @@ def initialize_database():
 
             if existing_lock >= 8:
                 print("Database already initialized by another process")
+                # Still ensure client names even if categories exist
+                ensure_client_names()
                 return
-
-            # Create tables if they don't exist
-            db.create_all()
 
             # Use advisory lock for PostgreSQL
             db.session.execute("SELECT pg_advisory_lock(12345)")
@@ -4586,6 +4588,8 @@ def initialize_database():
             category_count = TrackingCategory.query.count()
             if category_count >= 8:
                 print("Database already initialized by another process")
+                # Still ensure client names even if categories exist
+                ensure_client_names()
                 return
 
             # Always ensure all default categories exist
