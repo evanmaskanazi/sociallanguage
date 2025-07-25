@@ -1489,14 +1489,18 @@ translations: {
     // Apply RTL if needed
     this.applyRTL();
 
-    // Force initialize language switcher after a short delay to ensure DOM is ready
-    setTimeout(() => {
-        console.log('Attempting to initialize language switcher...');
-        this.initLanguageSwitcher();
-    }, 100);
-
-    // Translate page
+     // Translate page first
     this.translatePage();
+
+    // Then initialize language switcher
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            this.initLanguageSwitcher();
+        });
+    } else {
+        // DOM is already loaded
+        this.initLanguageSwitcher();
+    }
 },
 
     // Get translation
@@ -1616,11 +1620,11 @@ initLanguageSwitcher() {
         const option = document.createElement('option');
         option.value = lang.code;
         option.textContent = `${lang.flag} ${lang.name}`;
-        if (lang.code === this.currentLang) {
-            option.selected = true;
-        }
         switcher.appendChild(option);
     });
+
+    // Set the selected value after all options are added
+    switcher.value = this.currentLang;
 
     // Add change event
     switcher.addEventListener('change', (e) => {

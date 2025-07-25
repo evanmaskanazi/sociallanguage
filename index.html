@@ -413,7 +413,7 @@
             <h1 data-i18n="app.title">Your Journey to Wellness Starts Here</h1>
             <p data-i18n="hero.subtitle">A comprehensive therapy companion system for therapists and clients</p>
             <div class="cta-buttons">
-                <a href="/login.html" class="btn btn-primary" data-i18n="hero.get_started">Get Started</a>
+                <a href="/login.html" class="btn btn-primary" data-i18n="hero.get_started" onclick="preserveLanguage(event, '/login.html')">Get Started</a>
                 <a href="#research" class="btn btn-secondary" data-i18n="hero.learn_more">Learn More</a>
             </div>
         </div>
@@ -757,6 +757,20 @@
                 }
             });
         });
+
+        // Preserve language when navigating
+        function preserveLanguage(event, url) {
+            event.preventDefault();
+            // Ensure current language is saved
+            if (window.i18n && window.i18n.currentLang) {
+                localStorage.setItem('userLanguage', window.i18n.currentLang);
+                document.cookie = `preferred_language=${window.i18n.currentLang};path=/;max-age=${60*60*24*365}`;
+            }
+            window.location.href = url;
+        }
+
+
+
     </script>
 </body>
 </html>
