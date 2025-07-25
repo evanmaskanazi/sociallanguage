@@ -49,6 +49,7 @@ translations: {
         'login.instruction': 'Therapists and clients can login here with their credentials.',
         'login.forgot_coming_soon': 'Password reset functionality coming soon!',
         'login.success': 'Login Successful!',
+        'login.password_requirements_update': 'Your password no longer meets security requirements. Please reset it.',
 
         // Password Reset
         'reset.title': 'Reset Password',
@@ -453,7 +454,8 @@ translations: {
         'login.welcome_back': 'ברוך הבא!',
         'login.instruction': 'מטפלים ומטופלים יכולים להתחבר כאן עם האישורים שלהם.',
         'login.forgot_coming_soon': 'פונקציית איפוס סיסמה תגיע בקרוב!',
-        'login.success': 'Login Successful!',
+        'login.success': 'הכניסה מוצלחת',
+        'login.password_requirements_update': 'הסיסמה שלך אינה עומדת יותר בדרישות האבטחה. אנא אפס אותה.',
 
         'email.dear_therapist': 'מטפל יקר',
         'email.weekly_report_intro': 'הנה דוח ההתקדמות השבועי שלי עבור',
@@ -850,6 +852,7 @@ translations: {
         'login.instruction': 'Терапевты и клиенты могут войти здесь со своими учетными данными.',
         'login.forgot_coming_soon': 'Функция сброса пароля скоро появится!',
         'login.success': 'Вход выполнен успешно!',
+        'login.password_requirements_update': 'Ваш пароль больше не соответствует требованиям безопасности. Пожалуйста, сбросьте его.',
 
         // Password Reset
         'reset.title': 'Сброс пароля',
@@ -1136,6 +1139,7 @@ translations: {
     'login.instruction': 'يمكن للمعالجين والعملاء تسجيل الدخول هنا باستخدام بيانات الاعتماد الخاصة بهم.',
     'login.forgot_coming_soon': 'وظيفة إعادة تعيين كلمة المرور قادمة قريباً!',
           'login.success': 'تم تسجيل الدخول بنجاح!',
+          'login.password_requirements_update': 'كلمة المرور الخاصة بك لم تعد تفي بمتطلبات الأمان. يرجى إعادة تعيينها.',
             // Password Reset
     'reset.title': 'إعادة تعيين كلمة المرور',
     'reset.instruction': 'أدخل عنوان بريدك الإلكتروني وسنرسل لك رابط إعادة تعيين كلمة المرور.',
@@ -1457,11 +1461,21 @@ translations: {
     init() {
     console.log('i18n.init() called');
 
-    // Set initial language from localStorage or browser
+    // Get language from cookie first
+    const getCookie = (name) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    };
+
+    const cookieLang = getCookie('preferred_language');
     const savedLang = localStorage.getItem('userLanguage');
     const browserLang = navigator.language.split('-')[0];
 
-    if (savedLang && this.translations[savedLang]) {
+    if (cookieLang && this.translations[cookieLang]) {
+        this.currentLang = cookieLang;
+        localStorage.setItem('userLanguage', cookieLang); // Sync with localStorage
+    } else if (savedLang && this.translations[savedLang]) {
         this.currentLang = savedLang;
     } else if (this.translations[browserLang]) {
         this.currentLang = browserLang;
@@ -1512,6 +1526,8 @@ translations: {
     if (this.translations[lang]) {
         this.currentLang = lang;
         localStorage.setItem('userLanguage', lang);
+        // Also set a cookie for cross-page persistence
+        document.cookie = `preferred_language=${lang};path=/;max-age=${60*60*24*365}`;
         this.applyRTL();
         this.translatePage();
 
