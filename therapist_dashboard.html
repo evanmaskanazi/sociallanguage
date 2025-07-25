@@ -870,7 +870,7 @@
                 <table>
                     <thead>
                         <tr>
-                            <th data-i18n="client.serial">Client Serial</th>
+                            <th data-i18n="therapist.client_name_header">Client Name</th>
                             <th data-i18n="client.start_date">Start Date</th>
                             <th data-i18n="client.status">Status</th>
                             <th data-i18n="client.last_checkin">Last Check-in</th>
@@ -902,9 +902,14 @@
                     <input type="email" id="clientEmail" class="form-input" placeholder="client@example.com" required>
                 </div>
 
-                <div class="form-group">
+                  <div class="form-group">
                     <label for="tempPassword" data-i18n="therapist.temp_password">Temporary Password (optional)</label>
                     <input type="text" id="tempPassword" class="form-input" data-i18n-placeholder="therapist.auto_generate_note">
+                </div>
+
+                <div class="form-group">
+                    <label for="clientName" data-i18n="therapist.client_name">Client Name</label>
+                    <input type="text" id="clientName" class="form-input" data-i18n-placeholder="therapist.client_name_placeholder">
                 </div>
             </div>
 
@@ -1075,7 +1080,13 @@
                 'therapist.client_created': 'Client created successfully!',
                 'therapist.serial': 'Serial',
                 'therapist.email': 'Email',
+                'therapist.started': 'Started',
                 'therapist.temp_password_label': 'Temporary password',
+                'therapist.client_name': 'Client Name',
+                'therapist.client_name_placeholder': 'Leave blank to use email as name',
+                'therapist.client_name_label': 'Client Name',
+                'therapist.client_name_header': 'Client Name',
+                'therapist.save_credentials': 'Please save these credentials for the client. This message will remain visible until you leave this tab.',
                 'therapist.goal_added': 'Goal added successfully!',
                 'therapist.enter_goal': 'Enter the goal for this week:',
                 'therapist.note_added': 'Note added successfully!',
@@ -1204,6 +1215,12 @@
                 'therapist.client_created': 'המטופל נוצר בהצלחה!',
                 'therapist.serial': 'מספר סידורי',
                 'therapist.email': 'דוא״ל',
+                'therapist.started': 'התחיל',
+                'therapist.client_name': 'שם המטופל',
+                'therapist.client_name_placeholder': 'השאר ריק כדי להשתמש בדוא״ל כשם',
+                'therapist.client_name_label': 'שם המטופל',
+                'therapist.client_name_header': 'שם המטופל',
+                'therapist.save_credentials': 'אנא שמור את הפרטים האלה עבור המטופל. הודעה זו תישאר גלויה עד שתעזוב את הלשונית הזו.',
                 'therapist.temp_password_label': 'סיסמה זמנית',
                 'therapist.goal_added': 'היעד נוסף בהצלחה!',
                 'therapist.enter_goal': 'הזן את היעד לשבוע זה:',
@@ -1310,6 +1327,12 @@
                 'therapist.client_created': 'Клиент успешно создан!',
                 'therapist.serial': 'Серийный номер',
                 'therapist.email': 'Email',
+                'therapist.started': 'Начал',
+                'therapist.client_name': 'Имя клиента',
+                'therapist.client_name_placeholder': 'Оставьте пустым, чтобы использовать email как имя',
+                'therapist.client_name_label': 'Имя клиента',
+                'therapist.client_name_header': 'Имя клиента',
+                'therapist.save_credentials': 'Пожалуйста, сохраните эти учетные данные для клиента. Это сообщение будет видно, пока вы не покинете эту вкладку.',
                 'therapist.temp_password_label': 'Временный пароль',
                 'therapist.goal_added': 'Цель успешно добавлена!',
                 'therapist.enter_goal': 'Введите цель на эту неделю:',
@@ -1439,6 +1462,12 @@
                 'therapist.client_created': 'تم إنشاء العميل بنجاح!',
                 'therapist.serial': 'الرقم التسلسلي',
                 'therapist.email': 'البريد الإلكتروني',
+                'therapist.started': 'بدأ',
+                'therapist.client_name': 'اسم العميل',
+                'therapist.client_name_placeholder': 'اتركه فارغاً لاستخدام البريد الإلكتروني كاسم',
+                'therapist.client_name_label': 'اسم العميل',
+                'therapist.client_name_header': 'اسم العميل',
+                'therapist.save_credentials': 'يرجى حفظ بيانات الاعتماد هذه للعميل. ستبقى هذه الرسالة مرئية حتى تغادر هذه التبويبة.',
                 'therapist.temp_password_label': 'كلمة المرور المؤقتة',
                 'therapist.goal_added': 'تمت إضافة الهدف بنجاح!',
                 'therapist.declining_emotional_state': 'تراجع الحالة العاطفية',
@@ -1944,9 +1973,9 @@ function updatePaginationControls(pagination) {
                 // The tracking_categories array already contains translated names from the backend
                 const trackingDisplay = client.tracking_categories.join(', ');
 
-                return `
+                 return `
                     <tr>
-                        <td class="client-serial">${client.serial}</td>
+                        <td class="client-serial">${client.client_name}</td>
                         <td>${new Date(client.start_date).toLocaleDateString()}</td>
                         <td>
                             <span class="status-badge ${client.is_active ? 'active' : 'inactive'}">
@@ -1992,7 +2021,7 @@ credentials: 'include'
                 const client = data.client;
 
                 // Update modal
-                document.getElementById('modalClientSerial').textContent = `${i18n.t('nav.clients')}: ${client.serial}`;
+                document.getElementById('modalClientSerial').textContent = `${i18n.t('nav.clients')}: ${client.client_name || client.serial}`;
 
                 const modalBody = document.getElementById('modalBody');
                 modalBody.innerHTML = `
@@ -2136,6 +2165,7 @@ credentials: 'include'
             try {
                 const email = document.getElementById('clientEmail').value;
                 const password = document.getElementById('tempPassword').value;
+                const clientName = document.getElementById('clientName').value.trim();
 
                 if (!email) {
                     showMessage(i18n.t('therapist.please_enter_email'), 'error');
@@ -2159,6 +2189,7 @@ credentials: 'include'
                 const data = {
                     email: email,
                     password: password || undefined,
+                    client_name: clientName || undefined,
                     tracking_categories: selectedCategories,
                     initial_goals: goals
                 };
@@ -2186,13 +2217,15 @@ credentials: 'include',
                     <strong>${i18n.t('therapist.serial')}:</strong> ${result.client.serial}<br>
                     <strong>${i18n.t('therapist.email')}:</strong> ${result.client.email}<br>
                     <strong>${i18n.t('therapist.temp_password_label')}:</strong> ${result.client.temporary_password}<br>
+                    <strong>${i18n.t('therapist.client_name_label')}:</strong> ${result.client.client_name}<br>
                     <br>
                     <em>${i18n.t('therapist.save_credentials')}</em>
                 `, 'important', true);
 
-                // Clear form
+                 // Clear form
                 document.getElementById('clientEmail').value = '';
                 document.getElementById('tempPassword').value = '';
+                document.getElementById('clientName').value = '';
                 document.querySelectorAll('#initialGoalsContainer input').forEach(input => {
                     input.value = '';
                 });
@@ -2279,11 +2312,11 @@ credentials: 'include',
         }
 
         // Update report client select
-        function updateReportClientSelect() {
+         function updateReportClientSelect() {
             const select = document.getElementById('reportClient');
             select.innerHTML = `<option value="">${i18n.t('therapist.select_client_option')}</option>` +
                 clientsList.map(client =>
-                    `<option value="${client.id}">${client.serial} - ${i18n.t('therapist.started')} ${new Date(client.start_date).toLocaleDateString()}</option>`
+                    `<option value="${client.id}">${client.client_name} - ${i18n.t('therapist.started')} ${new Date(client.start_date).toLocaleDateString()}</option>`
                 ).join('');
         }
 
@@ -2294,7 +2327,7 @@ credentials: 'include',
             const select = document.getElementById('insightClientSelect');
             select.innerHTML = `<option value="">${i18n.t('therapist.select_client_option')}</option>` +
                 clientsList.map(client =>
-                    `<option value="${client.id}">${client.serial} - ${i18n.t('therapist.started')} ${new Date(client.start_date).toLocaleDateString()}</option>`
+                    `<option value="${client.id}">${client.client_name} - ${i18n.t('therapist.started')} ${new Date(client.start_date).toLocaleDateString()}</option>`
                 ).join('');
         }
 

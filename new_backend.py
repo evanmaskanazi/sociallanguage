@@ -662,6 +662,7 @@ class Client(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), unique=True)
     client_serial = db.Column(db.String(50), unique=True, nullable=False)
+    client_name = db.Column(db.String(255), nullable=True)
     therapist_id = db.Column(db.Integer, db.ForeignKey('therapists.id'))
     start_date = db.Column(db.Date, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
@@ -1745,6 +1746,7 @@ def register():
             client = Client(
                 user_id=user.id,
                 client_serial=generate_client_serial(),
+                client_name=email,  # Use the email they registered with as their name
                 therapist_id=data.get('therapist_id'),
                 start_date=date.today()
             )
@@ -2321,6 +2323,7 @@ def get_therapist_clients():
             client_data.append({
                 'id': client.id,
                 'serial': client.client_serial,
+                'client_name': client.client_name if client.client_name else client.client_serial,
                 'start_date': client.start_date.isoformat(),
                 'is_active': client.is_active,
                 'last_checkin': last_checkin_date.isoformat() if last_checkin_date else None,
@@ -2488,13 +2491,14 @@ def get_client_details(client_id):
             'success': True,
             'client': {
                 'id': client.id,
-                'serial': client.client_serial,
-                'start_date': client.start_date.isoformat(),
-                'is_active': client.is_active,
-                'tracking_plans': tracking_plans,
-                'active_goals': active_goals,
-                'recent_checkins': recent_checkins,
-                'notes': notes
+        'serial': client.client_serial,
+        'client_name': client.client_name if client.client_name else client.client_serial,
+        'start_date': client.start_date.isoformat(),
+        'is_active': client.is_active,
+        'tracking_plans': tracking_plans,
+        'active_goals': active_goals,
+        'recent_checkins': recent_checkins,
+        'notes': notes
             }
         })
 
@@ -4495,6 +4499,53 @@ def favicon():
 
 
 # ============= INITIALIZATION =============
+def ensure_client_names():
+    """Ensure all clients have names - use email as default"""
+    try:
+        # Check if client_name column exists
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('clients')]
+
+        if 'client_name' not in columns:
+            # Add the column if it doesn't exist
+            db.session.execute(text('ALTER TABLE clients ADD COLUMN client_name VARCHAR(255)'))
+            db.session.commit()
+            print("Added client_name column to clients table")
+
+        # Update all clients without names
+        clients_without_names = Client.query.filter(
+            or_(Client.client_name == None, Client.client_name == '')
+        ).all()
+
+        updated_count = 0
+        for client in clients_without_names:
+            user = User.query.get(client.user_id)
+            if user:
+                client.client_name = user.email
+                updated_count += 1
+                print(f"Updated client {client.client_serial} with name: {user.email}")
+            else:
+                # Fallback to serial if user not found
+                client.client_name = client.client_serial
+                updated_count += 1
+                print(f"Updated client {client.client_serial} with name: {client.client_serial}")
+
+        if updated_count > 0:
+            db.session.commit()
+            print(f"Updated {updated_count} clients with names")
+
+    except Exception as e:
+        print(f"Error ensuring client names: {e}")
+        db.session.rollback()
+
+
+
+
+
+
+
+
 
 # Flag to ensure single initialization
 _initialized = False
@@ -4543,8 +4594,12 @@ def initialize_database():
             # Automatically fix any existing clients
             fix_existing_clients()
 
+            # Ensure all clients have names
+            ensure_client_names()
+
             print("Database initialized with all default tracking categories")
             print("All existing clients have been updated with missing categories")
+            print("All existing clients have been updated with names")
 
             # Commit the transaction
             db.session.commit()
@@ -4637,14 +4692,7 @@ if not os.environ.get('PRODUCTION'):
 
 # ============= MAIN ENTRY POINT =============
 
-if __name__ == '__main__':
-    # Ensure database is created when running directly
-    with app.app_context():
-        db.create_all()
-        initialize_database()
-        migrate_existing_data_if_needed()
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=not os.environ.get('PRODUCTION'))
+
 
 
 @app.route('/api/therapist/create-client', methods=['POST'])
@@ -4657,6 +4705,11 @@ def create_client():
 
         # Create user account for client
         email = data.get('email')
+        client_name = data.get('client_name', '').strip()
+
+        # If no client name provided, use email
+        if not client_name:
+            client_name = email
         # Generate a secure password that meets requirements
         if not data.get('password'):
             # Generate components
@@ -4708,6 +4761,7 @@ def create_client():
         client = Client(
             user_id=user.id,
             client_serial=generate_client_serial(),
+            client_name=client_name,
             therapist_id=therapist.id,
             start_date=date.today()
         )
@@ -4809,8 +4863,9 @@ def create_client():
         return jsonify({
             'success': True,
             'client': {
-                'id': client.id,
+                 'id': client.id,
                 'serial': client.client_serial,
+                'client_name': client.client_name,
                 'email': email,
                 'temporary_password': password,
                 'categories_assigned': client_categories,
@@ -4996,9 +5051,10 @@ def client_dashboard():
         return jsonify({
             'success': True,
             'client': {
-                'serial': client.client_serial,  # Use client_serial, not serial
+                 'serial': client.client_serial,  # Use client_serial, not serial
                 'client_serial': client.client_serial,  # Also provide as client_serial for compatibility
-                'start_date': client.start_date.isoformat()
+                'client_name': client.client_name if client.client_name else client.client_serial,
+                 'start_date': client.start_date.isoformat()
             },
             'today': {
                 'has_checkin': today_checkin is not None,
@@ -6582,10 +6638,11 @@ def export_client_data(client_id):
         # Compile all client data
         export_data = {
             'client': {
-                'serial': client.client_serial,
-                'start_date': client.start_date.isoformat(),
-                'is_active': client.is_active,
-                'created_at': client.created_at.isoformat()
+                 'serial': client.client_serial,
+        'client_name': client.client_name if client.client_name else client.client_serial,
+        'start_date': client.start_date.isoformat(),
+        'is_active': client.is_active,
+        'created_at': client.created_at.isoformat()
             },
             'checkins': [],
             'category_responses': [],
@@ -7629,7 +7686,7 @@ if __name__ == '__main__':
         db.create_all()
         initialize_database()
         migrate_existing_data_if_needed()
-        initialize_app_data()  # Run once at startup
+        ensure_client_names()  # Ensure all clients have names
 
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=not os.environ.get('PRODUCTION'))

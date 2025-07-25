@@ -1496,20 +1496,20 @@ credentials: 'include'
         // Update UI with data
         function updateUI() {
             // Update client info
-            //console.log('updateUI called');
-            //console.log('clientData:', clientData);
-           //console.log('clientSerial element:', document.getElementById('clientSerial'));
             console.log('clientData:', clientData);
-            console.log('clientData.serial:', clientData.serial);
-            console.log('clientData.client_serial:', clientData.client_serial);
-            //document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${clientData.serial}`;
-            if (clientData && clientData.serial) {
-    document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${clientData.serial}`;
-} else if (clientData && clientData.client_serial) {
-    document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${clientData.client_serial}`;
-} else {
-    document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${i18n.t('msg.loading')}`;
-}
+            console.log('clientData.client_name:', clientData.client_name);
+
+            // Display client name instead of serial
+            if (clientData && clientData.client_name) {
+                document.getElementById('clientSerial').textContent = clientData.client_name;
+            } else if (clientData && clientData.serial) {
+                // Fallback for clients without client_name
+                document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${clientData.serial}`;
+            } else if (clientData && clientData.client_serial) {
+                document.getElementById('clientSerial').textContent = `${i18n.t('client.serial')}: ${clientData.client_serial}`;
+            } else {
+                document.getElementById('clientSerial').textContent = i18n.t('msg.loading');
+            }
 
 
 
