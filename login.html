@@ -775,5 +775,22 @@ async function handleResetPassword(event) {
         showMessage('Password reset token detected. This feature will be available soon.', 'info');
     }
 </script>
+<script>
+    // Force translation after everything is loaded
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            if (window.i18n && window.i18n.currentLang !== 'en') {
+                console.log('Force translating to:', window.i18n.currentLang);
+                window.i18n.translatePage();
+
+                // Also force update the language switcher
+                const switcher = document.getElementById('languageSwitcher');
+                if (switcher && switcher.value !== window.i18n.currentLang) {
+                    switcher.value = window.i18n.currentLang;
+                }
+            }
+        }, 250); // Wait 250ms to ensure everything is loaded
+    });
+</script>
 </body>
 </html>

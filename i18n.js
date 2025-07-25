@@ -1559,7 +1559,23 @@ translations: {
     },
 
     // Translate entire page
+       // Translate entire page
     translatePage() {
+        console.log('=== translatePage called ===');
+        console.log('Current language:', this.currentLang);
+        console.log('Document ready state:', document.readyState);
+
+        // Count elements before translation
+        const elementsWithDataI18n = document.querySelectorAll('[data-i18n]');
+        console.log('Elements with data-i18n found:', elementsWithDataI18n.length);
+
+        // Show first few elements
+        elementsWithDataI18n.forEach((element, index) => {
+            if (index < 5) {
+                console.log(`Element ${index}:`, element.tagName, 'data-i18n=', element.getAttribute('data-i18n'), 'current text=', element.textContent);
+            }
+        });
+
         // Translate elements with data-i18n attribute
         document.querySelectorAll('[data-i18n]').forEach(element => {
             const key = element.getAttribute('data-i18n');
@@ -1590,6 +1606,8 @@ translations: {
             const baseTitle = titleElement.textContent.split(' - ')[1] || '';
             titleElement.textContent = this.t('app.title') + (baseTitle ? ' - ' + baseTitle : '');
         }
+
+        console.log('=== translatePage completed ===');
     },
 
     // Initialize language switcher
@@ -1763,7 +1781,7 @@ if (document.readyState === 'loading') {
                 console.log('Re-translating page to:', i18n.currentLang);
                 i18n.translatePage();
             }
-        }, 100);
+        }, 500);
     });
 } else {
     console.log('DOM already loaded, initializing i18n immediately...');
@@ -1774,7 +1792,7 @@ if (document.readyState === 'loading') {
             console.log('Re-translating page to:', i18n.currentLang);
             i18n.translatePage();
         }
-    }, 100);
+    }, 500);
 }
 
 // Export for use in other scripts

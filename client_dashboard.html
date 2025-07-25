@@ -3170,5 +3170,22 @@ async function loadConsentStatus() {
 
 
 </script>
+<script>
+    // Force translation after everything is loaded
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            if (window.i18n && window.i18n.currentLang !== 'en') {
+                console.log('Force translating to:', window.i18n.currentLang);
+                window.i18n.translatePage();
+
+                // Also force update the language switcher
+                const switcher = document.getElementById('languageSwitcher');
+                if (switcher && switcher.value !== window.i18n.currentLang) {
+                    switcher.value = window.i18n.currentLang;
+                }
+            }
+        }, 250);
+    });
+</script>
 </body>
 </html>
