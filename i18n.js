@@ -1490,16 +1490,16 @@ translations: {
     this.applyRTL();
 
      // Translate page first
-    this.translatePage();
-
-    // Then initialize language switcher
+     // Initialize language switcher first
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             this.initLanguageSwitcher();
+            this.translatePage(); // Translate after DOM is ready
         });
     } else {
         // DOM is already loaded
         this.initLanguageSwitcher();
+        this.translatePage();
     }
 },
 
@@ -1616,15 +1616,26 @@ initLanguageSwitcher() {
         { code: 'ar', name: 'العربية', flag: '🇸🇦' }
     ];
 
-    languages.forEach(lang => {
+     languages.forEach(lang => {
         const option = document.createElement('option');
         option.value = lang.code;
         option.textContent = `${lang.flag} ${lang.name}`;
+        // Force selection for current language
+        if (lang.code === this.currentLang) {
+            option.selected = true;
+        }
         switcher.appendChild(option);
     });
 
-    // Set the selected value after all options are added
-    switcher.value = this.currentLang;
+    // Double-check the selected value after all options are added
+    if (switcher.value !== this.currentLang) {
+        console.warn('Language switcher value mismatch. Expected:', this.currentLang, 'Got:', switcher.value);
+        // Force set it again
+        Array.from(switcher.options).forEach(option => {
+            option.selected = (option.value === this.currentLang);
+        });
+    }
+
 
     // Add change event
     switcher.addEventListener('change', (e) => {
@@ -1746,10 +1757,24 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         console.log('DOM loaded, initializing i18n...');
         i18n.init();
+        // Force a re-translation after a short delay to catch any late-loading elements
+        setTimeout(() => {
+            if (i18n.currentLang !== 'en') {
+                console.log('Re-translating page to:', i18n.currentLang);
+                i18n.translatePage();
+            }
+        }, 100);
     });
 } else {
     console.log('DOM already loaded, initializing i18n immediately...');
     i18n.init();
+    // Force a re-translation after a short delay to catch any late-loading elements
+    setTimeout(() => {
+        if (i18n.currentLang !== 'en') {
+            console.log('Re-translating page to:', i18n.currentLang);
+            i18n.translatePage();
+        }
+    }, 100);
 }
 
 // Export for use in other scripts
