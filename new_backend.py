@@ -4621,6 +4621,9 @@ def initialize_database():
                 pass
 
 
+
+
+
 def migrate_existing_data_if_needed():
     """Automatically encrypt existing data on first run"""
     try:
@@ -4690,9 +4693,44 @@ def initialize_app_data():
 
 # Don't initialize on import for production
 # Let init_db.py handle it during deployment
+# Initialize based on environment
 if not os.environ.get('PRODUCTION'):
+    # Development mode
     with app.app_context():
         initialize_database()
+else:
+    # Production mode - ensure all initialization runs
+    with app.app_context():
+        try:
+            from sqlalchemy import inspect
+
+            inspector = inspect(db.engine)
+
+            if 'users' in inspector.get_table_names():
+                # Tables exist, run full initialization
+                print("Running production startup initialization...")
+
+                # Create any missing tables
+                db.create_all()
+
+                # Initialize database with categories
+                initialize_database()
+
+                # Ensure all clients have names
+                ensure_client_names()
+
+                # Run migrations if needed
+                migrate_existing_data_if_needed()
+
+                print("Production startup initialization complete")
+            else:
+                print("Database tables don't exist yet in production")
+
+        except Exception as e:
+            print(f"Error during production initialization: {e}")
+            import traceback
+
+            traceback.print_exc()
 
 # ============= MAIN ENTRY POINT =============
 
