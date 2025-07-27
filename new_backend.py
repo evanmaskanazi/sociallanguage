@@ -1456,8 +1456,58 @@ def check_client_inactivity():
                     if client.therapist and client.therapist.user:
                         therapist_email = client.therapist.user.email
 
-                        subject = f"Client Inactivity Alert - {client.client_serial}"
-                        body = f"""Dear {client.therapist.name},
+                        # Get therapist's language preference
+                        # You might want to store this in the Therapist model
+                        # For now, default to English
+                        lang = 'en'  # TODO: Get from therapist preferences
+
+                        # Translated subjects
+                        subjects = {
+                            'en': f"Client Inactivity Alert - {client.client_serial}",
+                            'he': f"התראת חוסר פעילות - מטופל {client.client_serial}",
+                            'ru': f"Предупреждение о неактивности клиента - {client.client_serial}",
+                            'ar': f"تنبيه عدم نشاط العميل - {client.client_serial}"
+                        }
+
+                        # Translated bodies
+                        if lang == 'he':
+                            body = f"""שלום {client.therapist.name},
+
+המטופל שלך {client.client_serial} לא השלים צ'ק-אין במשך יותר מ-7 ימים.
+
+צ'ק-אין אחרון: {last_checkin.checkin_date.strftime('%d/%m/%Y') if last_checkin else 'אף פעם'}
+תאריך התחלת טיפול: {client.start_date.strftime('%d/%m/%Y')}
+
+אנא שקול ליצור קשר כדי לבדוק את ההתקדמות שלהם.
+
+בברכה,
+מערכת הליווי הטיפולי"""
+                        elif lang == 'ru':
+                            body = f"""Уважаемый {client.therapist.name},
+
+Ваш клиент {client.client_serial} не выполнял отметку более 7 дней.
+
+Последняя отметка: {last_checkin.checkin_date.strftime('%d.%m.%Y') if last_checkin else 'Никогда'}
+Дата начала терапии: {client.start_date.strftime('%d.%m.%Y')}
+
+Пожалуйста, подумайте о том, чтобы связаться с ним для проверки прогресса.
+
+С уважением,
+Система терапевтического сопровождения"""
+                        elif lang == 'ar':
+                            body = f"""عزيزي {client.therapist.name}،
+
+لم يكمل عميلك {client.client_serial} تسجيل الحضور لأكثر من 7 أيام.
+
+آخر تسجيل حضور: {last_checkin.checkin_date.strftime('%d/%m/%Y') if last_checkin else 'أبداً'}
+تاريخ بدء العلاج: {client.start_date.strftime('%d/%m/%Y')}
+
+يرجى التفكير في التواصل معهم للتحقق من تقدمهم.
+
+مع أطيب التحيات،
+نظام المرافقة العلاجية"""
+                        else:  # English
+                            body = f"""Dear {client.therapist.name},
 
 Your client {client.client_serial} has not completed a check-in for over 7 days.
 
@@ -1468,6 +1518,8 @@ Please consider reaching out to check on their progress.
 
 Best regards,
 Therapeutic Companion System"""
+
+                        subject = subjects.get(lang, subjects['en'])
 
                         if send_email(therapist_email, subject, body):
                             notifications_sent += 1
@@ -3938,7 +3990,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
         </head>
         <body>
             <h1>{trans('weekly_report_title')} - {trans('client')} {client.client_name if client.client_name else client.client_serial}</h1>
-            <p class="subtitle">{trans('week')} {week_num}, {year} ({week_start.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')})</p>
+            <p class="subtitle">{trans('week')} {week_num}, {year} ({get_translated_month(week_start, lang)} {week_start.day} - {get_translated_month(week_end, lang)} {week_end.day}, {year})</p>
 
             <h2>{trans('daily_checkins')}</h2>
             <table>
@@ -4218,7 +4270,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
         </head>
         <body>
             <h1>{trans('weekly_report_title')} - {trans('client')} {client.client_name if client.client_name else client.client_serial}</h1>
-            <p class="subtitle">{trans('week')} {week_num}, {year} ({week_start.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')})</p>
+            <p class="subtitle">{trans('week')} {week_num}, {year} ({get_translated_month(week_start, lang)} {week_start.day} - {get_translated_month(week_end, lang)} {week_end.day}, {year})</p>
 
             <h2>{trans('daily_checkins')}</h2>
             <table>
@@ -4745,7 +4797,7 @@ def email_therapy_report():
 
 מצורף דוח הטיפול השבועי עבור מטופל {client.client_serial}.
 
-תקופת הדוח: {week_start.strftime('%d/%m/%Y')} - {week_end.strftime('%d/%m/%Y')} (שבוע {week_num}, {year})
+תקופת הדוח: {week_start.day} {get_translated_month(week_start, lang)} - {week_end.day} {get_translated_month(week_end, lang)}, {year} (שבוע {week_num})
 
 סיכום:
 - צ'ק-אינים שהושלמו: {checkins_completed}/7 ימים
@@ -4769,7 +4821,7 @@ def email_therapy_report():
 
 Прилагается еженедельный терапевтический отчет для клиента {client.client_serial}.
 
-Период отчета: {week_start.strftime('%d.%m.%Y')} - {week_end.strftime('%d.%m.%Y')} (Неделя {week_num}, {year})
+Период отчета: {week_start.day} {get_translated_month(week_start, lang)} - {week_end.day} {get_translated_month(week_end, lang)} {year} (Неделя {week_num})
 
 Сводка:
 - Выполнено отметок: {checkins_completed}/7 дней
@@ -4793,7 +4845,7 @@ def email_therapy_report():
 
 يرجى الاطلاع على التقرير العلاجي الأسبوعي المرفق للعميل {client.client_serial}.
 
-فترة التقرير: {week_start.strftime('%d/%m/%Y')} - {week_end.strftime('%d/%m/%Y')} (الأسبوع {week_num}، {year})
+:فترة التقرير: {week_start.day} {get_translated_month(week_start, lang)} - {week_end.day} {get_translated_month(week_end, lang)} {year} (الأسبوع {week_num})
 
 الملخص:
 - تسجيلات الحضور المكتملة: {checkins_completed}/7 أيام
@@ -7384,7 +7436,7 @@ def client_email_report():
             subject = f"Weekly Therapy Report - {client.client_serial} - Week {week_num}, {year}"
             content = f"""Dear {therapist_name},
 
-Here is my weekly progress report for {week_start.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')}.
+Here is my weekly progress report for {get_translated_month(week_start, lang)} {week_start.day} - {get_translated_month(week_end, lang)} {week_end.day}, {year}.
 
 CLIENT: {client.client_serial}
 WEEK: {week_num}, {year}
