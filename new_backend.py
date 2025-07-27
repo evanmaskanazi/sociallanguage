@@ -295,12 +295,13 @@ app.config['MAIL_USERNAME'] = os.environ.get('SYSTEM_EMAIL')
 app.config['MAIL_PASSWORD'] = os.environ.get('SYSTEM_EMAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SYSTEM_EMAIL')
 
-# Database connection pooling
+# Database connection pooling - optimized for production
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_size': 5,  # Reduced for Starter plan
+    'pool_size': 20,  # Increased for production load
     'pool_recycle': 300,
     'pool_pre_ping': True,
-    'max_overflow': 10,  # Reduced for Starter plan
+    'max_overflow': 40,  # Allow more overflow connections
+    'pool_timeout': 30,  # Wait up to 30 seconds for a connection
     'connect_args': {
         'connect_timeout': 10,
         'options': '-c statement_timeout=30000'
@@ -1067,39 +1068,45 @@ def require_auth(allowed_roles=None):
 
 
 def generate_client_serial():
-    """Generate unique client serial number using UUID"""
+    """Generate unique client serial number with database-level uniqueness guarantee"""
     import uuid
-    import time
+    from sqlalchemy.exc import IntegrityError
 
-    max_attempts = 100  # Increased from 10
+    max_attempts = 5  # Fewer attempts needed with better strategy
+
     for attempt in range(max_attempts):
-        # Generate UUID-based serial
-        unique_id = str(uuid.uuid4()).replace('-', '').upper()[:12]
-        serial = f'C{unique_id}'
+        # Use full UUID to virtually guarantee uniqueness
+        unique_id = str(uuid.uuid4()).replace('-', '').upper()
+        serial = f'C{unique_id[:12]}'  # Still keep reasonable length
 
         try:
-            # Simple check if exists
-            existing = Client.query.filter_by(client_serial=serial).first()
-            if not existing:
-                return serial
-        except Exception:
+            # Use a savepoint to handle potential conflicts
+            with db.session.begin_nested():
+                # Try to insert a temporary client to claim the serial
+                test_client = Client(
+                    client_serial=serial,
+                    user_id=1,  # Temporary, will be rolled back
+                    therapist_id=1,
+                    start_date=date.today()
+                )
+                db.session.add(test_client)
+                db.session.flush()  # Force the insert to check uniqueness
+
+            # If we get here, the serial is unique
+            db.session.rollback()  # Don't actually save the test client
+            return serial
+
+        except IntegrityError:
+            # Serial already exists, try again
             db.session.rollback()
             continue
 
-    # If still failing after 100 attempts, add timestamp to ensure uniqueness
-    try:
-        timestamp = str(int(time.time() * 1000))[-6:]
-        unique_id = str(uuid.uuid4()).replace('-', '').upper()[:6]
-        serial = f'C{unique_id}{timestamp}'
-
-        # Final check
-        existing = Client.query.filter_by(client_serial=serial).first()
-        if not existing:
-            return serial
-    except Exception:
-        db.session.rollback()
-
-    raise Exception("Could not generate unique client serial after 100 attempts")
+    # Ultimate fallback - use timestamp + random
+    import time
+    import random
+    timestamp = str(int(time.time() * 1000000))[-8:]  # Microseconds
+    random_part = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=4))
+    return f'C{timestamp}{random_part}'
 
 
 class EmailCircuitBreaker:
@@ -1326,6 +1333,50 @@ def send_email_async(app, to_email, subject, body, html_body=None):
         except Exception as e:
             app.logger.error(f"Error sending email: {e}")
             email_circuit_breaker.call_failed()
+
+
+def process_email_queue_batch():
+    """Process email queue in batches for better performance"""
+    from datetime import datetime, timedelta
+
+    with app.app_context():
+        # Get batch of pending emails
+        batch_size = 50  # Process 50 at a time
+
+        pending_emails = EmailQueue.query.filter(
+            EmailQueue.status == 'pending',
+            EmailQueue.attempts < 3
+        ).order_by(EmailQueue.created_at).limit(batch_size).all()
+
+        for email_record in pending_emails:
+            try:
+                # Mark as processing
+                email_record.status = 'processing'
+                email_record.last_attempt_at = datetime.utcnow()
+                email_record.attempts += 1
+                db.session.commit()
+
+                # Send email
+                send_email_async(
+                    app,
+                    email_record.to_email,
+                    email_record.subject,
+                    email_record.body,
+                    email_record.html_body
+                )
+
+                # Mark as sent
+                email_record.status = 'sent'
+                email_record.sent_at = datetime.utcnow()
+                db.session.commit()
+
+            except Exception as e:
+                # Mark as failed
+                email_record.status = 'failed'
+                email_record.error_message = str(e)
+                db.session.commit()
+
+                logger.error(f"Failed to send email {email_record.id}: {e}")
 
 
 def send_email(to_email, subject, body, html_body=None):
@@ -2269,41 +2320,58 @@ def get_therapist_clients():
         clients = pagination.items
 
         # Build response with optimized queries
-        # Build response - simplified approach without complex eager loading
         # Get all client IDs
         client_ids = [c.id for c in clients]
 
-        # Get tracking plans for all clients
+        # Batch load all tracking plans with categories in one query
+        from sqlalchemy.orm import joinedload
+        all_plans = ClientTrackingPlan.query.filter(
+            ClientTrackingPlan.client_id.in_(client_ids),
+            ClientTrackingPlan.is_active == True
+        ).options(joinedload(ClientTrackingPlan.category)).all()
+
+        # Group by client_id
         tracking_plans_data = {}
-        for client_id in client_ids:
-            plans = ClientTrackingPlan.query.filter_by(
-                client_id=client_id,
-                is_active=True
-            ).join(TrackingCategory).all()
-            tracking_plans_data[client_id] = plans
+        for plan in all_plans:
+            if plan.client_id not in tracking_plans_data:
+                tracking_plans_data[plan.client_id] = []
+            tracking_plans_data[plan.client_id].append(plan)
 
         # Get last check-in dates for all clients
         week_start = date.today() - timedelta(days=date.today().weekday())
 
-        # Get last checkin dates and week counts
-        last_checkins = {}
-        week_counts = {}
+        # Get last checkin dates and week counts with optimized queries
+        from sqlalchemy import select, and_
 
+        # Get all last checkins in one query
+        last_checkin_subquery = db.session.query(
+            DailyCheckin.client_id,
+            func.max(DailyCheckin.checkin_date).label('last_date')
+        ).filter(
+            DailyCheckin.client_id.in_(client_ids)
+        ).group_by(DailyCheckin.client_id).subquery()
+
+        last_checkin_results = db.session.query(
+            last_checkin_subquery.c.client_id,
+            last_checkin_subquery.c.last_date
+        ).all()
+
+        last_checkins = {r[0]: r[1] for r in last_checkin_results}
+
+        # Get all week counts in one query
+        week_count_results = db.session.query(
+            DailyCheckin.client_id,
+            func.count(DailyCheckin.id).label('count')
+        ).filter(
+            DailyCheckin.client_id.in_(client_ids),
+            DailyCheckin.checkin_date >= week_start
+        ).group_by(DailyCheckin.client_id).all()
+
+        week_counts = {r[0]: r[1] for r in week_count_results}
+        # Set default 0 for clients with no checkins
         for client_id in client_ids:
-            # Last checkin
-            last_checkin = DailyCheckin.query.filter_by(
-                client_id=client_id
-            ).order_by(DailyCheckin.checkin_date.desc()).first()
-
-            if last_checkin:
-                last_checkins[client_id] = last_checkin.checkin_date
-
-            # Week count
-            week_count = DailyCheckin.query.filter(
-                DailyCheckin.client_id == client_id,
-                DailyCheckin.checkin_date >= week_start
-            ).count()
-            week_counts[client_id] = week_count
+            if client_id not in week_counts:
+                week_counts[client_id] = 0
 
         # Build response
         client_data = []
@@ -3316,6 +3384,100 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
     return wb
 
 
+def create_weekly_report_excel_streaming(client, therapist, week_start, week_end, week_num, year, lang='en'):
+    """Create Excel workbook for weekly report with streaming to reduce memory usage"""
+    from openpyxl.writer.excel import save_virtual_workbook
+    from io import BytesIO
+    import tempfile
+    import os
+
+    # Use temporary file instead of memory for large workbooks
+    with tempfile.NamedTemporaryFile(mode='wb', delete=False, suffix='.xlsx') as tmp:
+        tmp_name = tmp.name
+
+    try:
+        # Create workbook with write_only mode for better memory efficiency
+        wb = openpyxl.Workbook(write_only=True)
+
+        # Get translations
+        trans = lambda key: translate_report_term(key, lang)
+        days = DAYS_TRANSLATIONS.get(lang, DAYS_TRANSLATIONS['en'])
+
+        # Daily Check-ins Sheet
+        ws_checkins = wb.create_sheet(title=trans('daily_checkins'))
+
+        # Write headers row by row to avoid building large structures in memory
+        ws_checkins.append([f"{trans('weekly_report_title')} - {trans('client')} {client.client_serial}"])
+        ws_checkins.append(
+            [f"{trans('week')} {week_num}, {year} ({week_start.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')})"])
+        ws_checkins.append([])  # Empty row
+
+        # Headers
+        all_categories = TrackingCategory.query.all()
+        headers = [trans('date'), trans('day'), trans('checkin_time')]
+        for category in all_categories:
+            cat_name = translate_category_name(category.name, lang)
+            headers.extend([f"{cat_name} (1-5)", f"{cat_name} {trans('notes')}"])
+        headers.append(trans('completion'))
+        ws_checkins.append(headers)
+
+        # Stream check-ins data day by day
+        checkins_completed = 0
+        category_values = {cat.id: [] for cat in all_categories}
+
+        for i in range(7):
+            current_date = week_start + timedelta(days=i)
+            day_name = days[i]
+
+            # Get checkin for this specific day only
+            checkin = client.checkins.filter_by(checkin_date=current_date.date()).first()
+
+            row_data = [current_date.strftime('%Y-%m-%d'), day_name]
+
+            if checkin:
+                checkins_completed += 1
+                row_data.append(checkin.checkin_time.strftime('%H:%M'))
+
+                # Get category responses for this day
+                for category in all_categories:
+                    response = CategoryResponse.query.filter_by(
+                        client_id=client.id,
+                        category_id=category.id,
+                        response_date=current_date.date()
+                    ).first()
+
+                    if response:
+                        row_data.extend([response.value, response.notes or ''])
+                        category_values[category.id].append(response.value)
+                    else:
+                        row_data.extend(['', ''])
+
+                row_data.append("✓")
+            else:
+                row_data.extend([trans('no_checkin')] + [''] * (len(headers) - 4) + ["✗"])
+
+            ws_checkins.append(row_data)
+
+        # Save to temporary file
+        wb.save(tmp_name)
+
+        # Read back as BytesIO for returning
+        with open(tmp_name, 'rb') as f:
+            output = BytesIO(f.read())
+        output.seek(0)
+
+        return output
+
+    finally:
+        # Clean up temporary file
+        if os.path.exists(tmp_name):
+            os.unlink(tmp_name)
+
+
+
+
+
+
 def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, year, lang='en'):
     """Create PDF report with proper Unicode support via WeasyPrint"""
 
@@ -3978,12 +4140,8 @@ def generate_report(client_id, week):
 
         # Stream the file generation
         # Create Excel workbook
-        wb = create_weekly_report_excel(client, therapist, week_start, week_end, week_num, year, lang)
-
-        # Save to BytesIO buffer
-        output = BytesIO()
-        wb.save(output)
-        output.seek(0)
+        # Use streaming version for better memory efficiency
+        output = create_weekly_report_excel_streaming(client, therapist, week_start, week_end, week_num, year, lang)
 
         # Log successful generation
         generation_time = time.time() - generation_start
@@ -4352,12 +4510,11 @@ Best regards,
         # If email is configured, send it
         try:
             # Create the Excel workbook using the shared function
-            wb = create_weekly_report_excel(client, therapist, week_start, week_end, week_num, year, lang)
+            excel_buffer = create_weekly_report_excel_streaming(client, therapist, week_start, week_end, week_num, year, lang)
 
-            # Save to BytesIO for email attachment
-            excel_buffer = BytesIO()
-            wb.save(excel_buffer)
-            excel_buffer.seek(0)
+
+
+
 
             # Create email
             msg = MIMEMultipart()

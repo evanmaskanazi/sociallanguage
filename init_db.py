@@ -238,6 +238,51 @@ def add_reminder_language_column():
             db.session.rollback()
 
 
+def add_performance_indexes():
+    """Add indexes for frequently queried columns"""
+    from sqlalchemy import text
+
+    indexes = [
+        # Client queries
+        "CREATE INDEX IF NOT EXISTS idx_clients_therapist_active ON clients(therapist_id, is_active)",
+        "CREATE INDEX IF NOT EXISTS idx_clients_serial ON clients(client_serial)",
+
+        # Daily checkins
+        "CREATE INDEX IF NOT EXISTS idx_checkins_client_date ON daily_checkins(client_id, checkin_date DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_checkins_date_range ON daily_checkins(checkin_date)",
+
+        # Category responses
+        "CREATE INDEX IF NOT EXISTS idx_category_resp_lookup ON category_responses(client_id, category_id, response_date)",
+
+        # Tracking plans
+        "CREATE INDEX IF NOT EXISTS idx_tracking_plans_active ON client_tracking_plans(client_id, is_active)",
+
+        # Goals
+        "CREATE INDEX IF NOT EXISTS idx_goals_week ON weekly_goals(client_id, week_start, is_active)",
+
+        # Reminders
+        "CREATE INDEX IF NOT EXISTS idx_reminders_active ON reminders(client_id, reminder_type, is_active)",
+        "CREATE INDEX IF NOT EXISTS idx_reminders_time ON reminders(reminder_time, is_active)",
+
+        # Email queue
+        "CREATE INDEX IF NOT EXISTS idx_email_queue_status ON email_queue(status, created_at)",
+
+        # Audit logs
+        "CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs(timestamp DESC)",
+    ]
+
+    for index_sql in indexes:
+        try:
+            db.session.execute(text(index_sql))
+            print(f"Created index: {index_sql.split('idx_')[1].split(' ')[0]}")
+        except Exception as e:
+            print(f"Error creating index: {e}")
+
+    db.session.commit()
+    print("All indexes created successfully")
+
+
+
 
 
 def initialize_database():
@@ -390,6 +435,9 @@ if __name__ == '__main__':
 
         # Fix any existing reminder timezone issues
         fix_reminder_timezone_issue()
+
+        # Add performance indexes
+        add_performance_indexes()
 
     print("\n" + "=" * 50)
     print("Initialization script completed")

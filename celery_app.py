@@ -35,6 +35,10 @@ celery.conf.update(
             'task': 'celery_app.process_email_queue_task',
             'schedule': 60.0,  # Run every minute
         },
+        'process-email-queue-batch': {
+            'task': 'celery_app.process_email_queue_batch_task',
+            'schedule': 300.0,  # Run every 5 minutes
+        },
         'cleanup-old-emails': {
             'task': 'celery_app.cleanup_old_emails',
             'schedule': 86400.0,  # Run daily
@@ -509,6 +513,24 @@ def cleanup_old_emails():
 
         except Exception as e:
             return {'error': str(e)}
+
+
+@celery.task
+def process_email_queue_batch_task():
+    """Process email queue in batches for better performance"""
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+    from new_backend import process_email_queue_batch
+
+    try:
+        process_email_queue_batch()
+        return {'success': True}
+    except Exception as e:
+        return {'error': str(e)}
+
+
 
 
 @celery.task
