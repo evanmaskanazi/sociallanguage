@@ -2920,8 +2920,17 @@ credentials: 'include'
                     })
                 });
 
-                const result = await response.json();
-                console.log('Email report result:', result);
+                let result;
+                try {
+                    const responseText = await response.text();
+                    console.log('Raw response:', responseText);
+                    result = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('Failed to parse response:', parseError);
+                    throw new Error('Invalid response format');
+                }
+
+                console.log('Parsed result:', result);
 
                 if (response.ok && result.success) {
                     // Show email preview
