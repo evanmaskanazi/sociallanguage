@@ -3386,7 +3386,6 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
 
 def create_weekly_report_excel_streaming(client, therapist, week_start, week_end, week_num, year, lang='en'):
     """Create Excel workbook for weekly report with streaming to reduce memory usage"""
-    from openpyxl.writer.excel import save_virtual_workbook
     from io import BytesIO
     import tempfile
     import os
@@ -3457,6 +3456,121 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
                 row_data.extend([trans('no_checkin')] + [''] * (len(headers) - 4) + ["✗"])
 
             ws_checkins.append(row_data)
+
+        # Weekly Summary Sheet
+        ws_summary = wb.create_sheet(trans('weekly_summary'))
+
+        # Summary title and headers
+        ws_summary.append([trans('weekly_summary')])
+        ws_summary.append([])  # Empty row
+        ws_summary.append(['Metric', 'Value', 'Percentage', 'Rating', trans('notes')])
+
+        # Calculate statistics
+        completion_rate = (checkins_completed / 7) * 100
+
+        # Check-in completion row
+        ws_summary.append([
+            trans('checkin_completion'),
+            f"{checkins_completed}/7 {trans('days')}",
+            f"{completion_rate:.1f}%",
+            trans('excellent') if completion_rate >= 80 else trans('good') if completion_rate >= 60 else trans(
+                'needs_improvement'),
+            ''
+        ])
+
+        # Category averages
+        for category in all_categories:
+            if category_values[category.id]:
+                avg_value = sum(category_values[category.id]) / len(category_values[category.id])
+                cat_name = translate_category_name(category.name, lang)
+
+                # Check if this is anxiety category
+                if 'anxiety' in category.name.lower():
+                    rating = trans('excellent') if avg_value <= 2 else trans('good') if avg_value <= 3 else trans(
+                        'needs_support')
+                else:
+                    rating = trans('excellent') if avg_value >= 4 else trans('good') if avg_value >= 3 else trans(
+                        'needs_support')
+
+                ws_summary.append([
+                    f"{trans('average_rating')} - {cat_name}",
+                    f"{avg_value:.2f}/5",
+                    f"{(avg_value / 5) * 100:.1f}%",
+                    rating,
+                    ''
+                ])
+
+        # Weekly Goals Sheet
+        ws_goals = wb.create_sheet(trans('weekly_goals'))
+
+        ws_goals.append([f"{trans('weekly_goals')} & {trans('completion')}"])
+        ws_goals.append([])  # Empty row
+
+        # Goals headers
+        goal_headers = ['Goal'] + [day[:3] for day in days] + [trans('completion_rate')]
+        ws_goals.append(goal_headers)
+
+        # Get weekly goals
+        weekly_goals = client.goals.filter_by(
+            week_start=week_start.date(),
+            is_active=True
+        ).all()
+
+        for goal in weekly_goals:
+            row_data = [goal.goal_text]
+
+            # Get completions for each day
+            completions = goal.completions.filter(
+                GoalCompletion.completion_date.between(week_start.date(), week_end.date())
+            ).all()
+
+            completed_days = 0
+            for day_idx in range(7):
+                current_date = week_start.date() + timedelta(days=day_idx)
+                completion = next((c for c in completions if c.completion_date == current_date), None)
+
+                if completion:
+                    if completion.completed:
+                        row_data.append("✓")
+                        completed_days += 1
+                    else:
+                        row_data.append("✗")
+                else:
+                    row_data.append("-")
+
+            # Completion rate
+            completion_rate = (completed_days / 7) * 100
+            row_data.append(f"{completed_days}/7 ({completion_rate:.0f}%)")
+
+            ws_goals.append(row_data)
+
+        # Therapist Notes Sheet (only if therapist is provided)
+        if therapist:
+            ws_notes = wb.create_sheet(trans('therapist_notes'))
+
+            ws_notes.append([f"{trans('therapist_notes')} & {trans('mission')}s"])
+            ws_notes.append([])  # Empty row
+            ws_notes.append([trans('date'), trans('type'), trans('content'), trans('status')])
+
+            # Get therapist notes for the week
+            week_start_datetime = datetime.combine(week_start.date(), datetime.min.time())
+            week_end_datetime = datetime.combine(week_end.date(), datetime.max.time())
+
+            notes = TherapistNote.query.filter(
+                TherapistNote.client_id == client.id,
+                TherapistNote.therapist_id == therapist.id,
+                TherapistNote.created_at.between(week_start_datetime, week_end_datetime)
+            ).order_by(TherapistNote.created_at).all()
+
+            for note in notes:
+                row_data = [
+                    note.created_at.strftime('%Y-%m-%d %H:%M'),
+                    trans('mission') if note.is_mission else note.note_type.title(),
+                    note.content,
+                    trans('completed') if note.is_mission and note.mission_completed else trans(
+                        'pending') if note.is_mission else "-"
+                ]
+                ws_notes.append(row_data)
 
         # Save to temporary file
         wb.save(tmp_name)
