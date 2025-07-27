@@ -500,6 +500,8 @@ REPORT_TRANSLATIONS = {
         'percentage': 'Percentage',
         'rating': 'Rating',
         'goal': 'Goal',
+        'months': ['January', 'February', 'March', 'April', 'May', 'June',
+                   'July', 'August', 'September', 'October', 'November', 'December'],
         'needs_encouragement': 'Needs Encouragement'
     },
     'he': {
@@ -539,6 +541,8 @@ REPORT_TRANSLATIONS = {
         'percentage': 'אחוז',
         'rating': 'דירוג',
         'goal': 'יעד',
+        'months': ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
+                   'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'],
         'needs_encouragement': 'זקוק לעידוד'
     },
     'ru': {
@@ -578,6 +582,8 @@ REPORT_TRANSLATIONS = {
         'percentage': 'Процент',
         'rating': 'Рейтинг',
         'goal': 'Цель',
+        'months': ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+                   'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
         'needs_encouragement': 'Нуждается в поощрении'
     },
     'ar': {
@@ -617,6 +623,8 @@ REPORT_TRANSLATIONS = {
         'percentage': 'النسبة المئوية',
         'rating': 'التقييم',
         'goal': 'الهدف',
+        'months': ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+                   'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
         'needs_encouragement': 'يحتاج إلى تشجيع'
     }
 }
@@ -1531,6 +1539,15 @@ def translate_category_name(name, lang='en'):
 def translate_report_term(term, lang='en'):
     """Translate report term to specified language"""
     return REPORT_TRANSLATIONS.get(lang, {}).get(term, term)
+
+
+def get_translated_month(date_obj, lang='en'):
+    """Get translated month name"""
+    months = REPORT_TRANSLATIONS.get(lang, {}).get('months', None)
+    if months:
+        return months[date_obj.month - 1]
+    return date_obj.strftime('%B')
+
 
 
 def translate_day_name(day_index, lang='en'):
@@ -3024,14 +3041,16 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
     # Title
     ws_checkins.merge_cells('A1:J1')
     title_cell = ws_checkins['A1']
-    title_cell.value = f"{trans('weekly_report_title')} - {trans('client')} {client.client_serial}"
+    title_cell.value = f"{trans('weekly_report_title')} - {trans('client')} {client.client_name if client.client_name else client.client_serial}"
     title_cell.font = Font(bold=True, size=16)
     title_cell.alignment = header_alignment
 
     # Week info
     ws_checkins.merge_cells('A2:J2')
     week_cell = ws_checkins['A2']
-    week_cell.value = f"{trans('week')} {week_num}, {year} ({week_start.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')})"
+    start_month = get_translated_month(week_start, lang)
+    end_month = get_translated_month(week_end, lang)
+    week_cell.value = f"{trans('week')} {week_num}, {year} ({start_month} {week_start.day} - {end_month} {week_end.day}, {year})"
     week_cell.font = Font(size=14)
     week_cell.alignment = header_alignment
 
@@ -3423,14 +3442,16 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
         # Title
         ws_checkins.merge_cells('A1:J1')
         title_cell = ws_checkins['A1']
-        title_cell.value = f"{trans('weekly_report_title')} - {trans('client')} {client.client_serial}"
+        title_cell.value = f"{trans('weekly_report_title')} - {trans('client')} {client.client_name if client.client_name else client.client_serial}"
         title_cell.font = Font(bold=True, size=16)
         title_cell.alignment = header_alignment
 
         # Week info
         ws_checkins.merge_cells('A2:J2')
         week_cell = ws_checkins['A2']
-        week_cell.value = f"{trans('week')} {week_num}, {year} ({week_start.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')})"
+        start_month = get_translated_month(week_start, lang)
+        end_month = get_translated_month(week_end, lang)
+        week_cell.value = f"{trans('week')} {week_num}, {year} ({start_month} {week_start.day} - {end_month} {week_end.day}, {year})"
         week_cell.font = Font(size=14)
         week_cell.alignment = header_alignment
 
@@ -3916,7 +3937,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
             </style>
         </head>
         <body>
-            <h1>{trans('weekly_report_title')} - {trans('client')} {client.client_serial}</h1>
+            <h1>{trans('weekly_report_title')} - {trans('client')} {client.client_name if client.client_name else client.client_serial}</h1>
             <p class="subtitle">{trans('week')} {week_num}, {year} ({week_start.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')})</p>
 
             <h2>{trans('daily_checkins')}</h2>
@@ -4196,7 +4217,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
             </style>
         </head>
         <body>
-            <h1>{trans('weekly_report_title')} - {trans('client')} {client.client_serial}</h1>
+            <h1>{trans('weekly_report_title')} - {trans('client')} {client.client_name if client.client_name else client.client_serial}</h1>
             <p class="subtitle">{trans('week')} {week_num}, {year} ({week_start.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')})</p>
 
             <h2>{trans('daily_checkins')}</h2>
