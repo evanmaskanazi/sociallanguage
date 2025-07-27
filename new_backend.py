@@ -2651,6 +2651,21 @@ def get_client_details(client_id):
                 'created_at': note.created_at.isoformat()
             })
 
+        # Get custom categories for this client
+        custom_categories = CustomCategory.query.filter_by(
+            client_id=client_id,
+            is_active=True
+        ).all()
+
+        custom_categories_data = []
+        for cat in custom_categories:
+            custom_categories_data.append({
+                'id': cat.id,
+                'name': cat.name,
+                'description': cat.description,
+                'reverse_scoring': cat.reverse_scoring
+            })
+
         return jsonify({
             'success': True,
             'client': {
@@ -2662,7 +2677,8 @@ def get_client_details(client_id):
         'tracking_plans': tracking_plans,
         'active_goals': active_goals,
         'recent_checkins': recent_checkins,
-        'notes': notes
+        'notes': notes,
+        'custom_categories': custom_categories_data
             }
         })
 
@@ -5712,73 +5728,7 @@ def add_therapist_note():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/therapist/client/<int:client_id>/add-custom-categories', methods=['POST'])
-@require_auth(['therapist'])
-def add_custom_categories_to_existing_client(client_id):
-    """Add custom categories to an existing client"""
-    try:
-        therapist = request.current_user.therapist
-        data = request.json
 
-        # Verify client belongs to therapist
-        client = Client.query.filter_by(
-            id=client_id,
-            therapist_id=therapist.id
-        ).first()
-
-        if not client:
-            return jsonify({'error': 'Client not found'}), 404
-
-        # Count existing custom categories
-        existing_count = CustomCategory.query.filter_by(
-            client_id=client_id,
-            is_active=True
-        ).count()
-
-        if existing_count >= 4:
-            return jsonify({'error': 'Client already has maximum custom categories'}), 400
-
-        # Add new custom categories
-        custom_categories = data.get('custom_categories', [])
-        added_categories = []
-
-        for custom_cat_data in custom_categories[:4 - existing_count]:
-            if custom_cat_data.get('name'):
-                # Check for duplicate name
-                existing = CustomCategory.query.filter_by(
-                    client_id=client_id,
-                    name=custom_cat_data['name'],
-                    is_active=True
-                ).first()
-
-                if existing:
-                    continue
-
-                custom_category = CustomCategory(
-                    therapist_id=therapist.id,
-                    client_id=client_id,
-                    name=custom_cat_data['name'],
-                    description=custom_cat_data.get('description', ''),
-                    reverse_scoring=custom_cat_data.get('reverse_scoring', False)
-                )
-                db.session.add(custom_category)
-                added_categories.append(custom_category)
-
-        db.session.commit()
-
-        return jsonify({
-            'success': True,
-            'added_count': len(added_categories),
-            'categories': [{
-                'id': cat.id,
-                'name': cat.name,
-                'description': cat.description
-            } for cat in added_categories]
-        })
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
 
 
 
@@ -5880,6 +5830,7 @@ def create_custom_category():
         return jsonify({'error': str(e)}), 500
 
 
+
 @app.route('/api/therapist/client/<int:client_id>/add-custom-categories', methods=['POST'])
 @require_auth(['therapist'])
 def add_custom_categories_to_existing_client(client_id):
@@ -5951,7 +5902,6 @@ def add_custom_categories_to_existing_client(client_id):
 
 
 
-
 # ============= CLIENT ENDPOINTS =============
 
 @app.route('/api/client/dashboard', methods=['GET'])
@@ -5999,21 +5949,26 @@ def client_dashboard():
 
         for custom_cat in custom_categories:
             # Get today's response
-            today_response = CategoryResponse.query.filter_by(
-                client_id=client.id,
-                custom_category_id=custom_cat.id,
-                response_date=date.today()
-            ).first()
+            try:
+                # Get today's response
+                today_response = CategoryResponse.query.filter_by(
+                    client_id=client.id,
+                    custom_category_id=custom_cat.id,
+                    response_date=date.today()
+                ).first()
 
-            tracking_categories.append({
-                'id': f'custom_{custom_cat.id}',
-                'name': custom_cat.name,
-                'original_name': custom_cat.name,
-                'description': custom_cat.description,
-                'today_value': today_response.value if today_response else None,
-                'is_custom': True,
-                'reverse_scoring': custom_cat.reverse_scoring
-            })
+                tracking_categories.append({
+                    'id': f'custom_{custom_cat.id}',
+                    'name': custom_cat.name,
+                    'original_name': custom_cat.name,
+                    'description': custom_cat.description or '',
+                    'today_value': today_response.value if today_response else None,
+                    'is_custom': True,
+                    'reverse_scoring': custom_cat.reverse_scoring
+                })
+            except Exception as e:
+                logger.error(f"Error loading custom category {custom_cat.id}: {e}")
+                continue
 
         # Get this week's goals
         week_start = date.today() - timedelta(days=date.today().weekday())
@@ -6265,28 +6220,31 @@ def submit_checkin():
             if notes:
                 category_notes[cat_id] = sanitize_input(notes)[:500]  # Also enforce length
 
-        # Validate category responses
+            # Validate category responses
         category_responses = data.get('category_responses', {})
         validated_responses = {}
         client_category_ids = set()
         for plan in client.tracking_plans.filter_by(is_active=True):
             client_category_ids.add(plan.category_id)
+
         for cat_id, value in category_responses.items():
             try:
                 value_int = int(value)
-                # Accept 0-5 for medication category (0 = N/A), 1-5 for others
-                cat_id_int = int(cat_id)
                 if value_int < 0 or value_int > 5:
                     return jsonify({'error': f'Invalid value for category {cat_id}. Must be between 0 and 5.'}), 400
-                validated_responses[cat_id_int] = value_int
+
+                # Keep custom category IDs as strings
+                if isinstance(cat_id, str) and cat_id.startswith('custom_'):
+                    validated_responses[cat_id] = value_int
+                else:
+                    cat_id_int = int(cat_id)
+                    if cat_id_int in client_category_ids:
+                        validated_responses[cat_id_int] = value_int
             except (ValueError, TypeError):
                 return jsonify({'error': f'Invalid value for category {cat_id}. Must be a number.'}), 400
 
         # Use validated responses
         category_responses = validated_responses
-
-        validated_responses = {k: v for k, v in validated_responses.items()
-                               if k in client_category_ids}
 
         # Process category responses
         responses_logged = []
@@ -6331,27 +6289,27 @@ def submit_checkin():
                     custom_category_id=None,
                     response_date=checkin_date,
                     value=value,
-                    notes=category_notes.get(cat_id, '')
+                    notes=category_notes.get(str(cat_id), '')
                 )
                 db.session.add(response)
 
                 responses_logged.append({
                     'category': category.name,
                     'value': value,
-                    'has_notes': bool(category_notes.get(cat_id, '')),
+                    'has_notes': bool(category_notes.get(str(cat_id), '')),
                     'is_custom': False
                 })
 
-            # Also update the legacy fields in daily_checkins for backward compatibility
-            if 'emotion' in category.name.lower():
-                existing.emotional_value = value
-                existing.emotional_notes = category_notes.get(cat_id, '')
-            elif 'medication' in category.name.lower():
-                existing.medication_value = value
-                existing.medication_notes = category_notes.get(cat_id, '')
-            elif 'physical activity' in category.name.lower() or 'activity' in category.name.lower():
-                existing.activity_value = value
-                existing.activity_notes = category_notes.get(cat_id, '')
+                # Also update the legacy fields in daily_checkins for backward compatibility
+                if 'emotion' in category.name.lower():
+                    existing.emotional_value = value
+                    existing.emotional_notes = category_notes.get(str(cat_id), '')
+                elif 'medication' in category.name.lower():
+                    existing.medication_value = value
+                    existing.medication_notes = category_notes.get(str(cat_id), '')
+                elif 'physical activity' in category.name.lower() or 'activity' in category.name.lower():
+                    existing.activity_value = value
+                    existing.activity_notes = category_notes.get(str(cat_id), '')
 
         # Save goal completions
         goal_completions = data.get('goal_completions', {})

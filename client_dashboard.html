@@ -1494,7 +1494,17 @@ credentials: 'include'
 
                 const data = await response.json();
                 clientData = data.client;
-                trackingCategories = data.tracking_categories;
+
+                // Process tracking categories to identify custom ones
+                trackingCategories = data.tracking_categories.map(cat => {
+                    // Add is_custom flag if it's a custom category
+                    if (cat.id && typeof cat.id === 'string' && cat.id.startsWith('custom_')) {
+                        cat.is_custom = true;
+                        cat.original_name = cat.name; // Custom categories use their own names
+                    }
+                    return cat;
+                });
+
                 weeklyGoals = data.weekly_goals;
 
                 updateUI();
@@ -1611,16 +1621,19 @@ credentials: 'include'
             const isCustom = cat.is_custom || false;
             let translatedName, translatedDesc;
 
-            if (isCustom) {
-                // Custom categories use their own names/descriptions
-                translatedName = cat.name;
-                translatedDesc = cat.description;
-            } else {
-                // Standard categories get translated
-                const originalName = cat.original_name || cat.name;
-                translatedName = translateCategoryName(originalName);
-                translatedDesc = translateCategoryDescription(originalName, cat.description);
-            }
+            // To this:
+const originalName = isCustom ? cat.name : (cat.original_name || cat.name);
+let translatedName, translatedDesc;
+
+if (isCustom) {
+    // Custom categories use their own names/descriptions
+    translatedName = cat.name;
+    translatedDesc = cat.description;
+} else {
+    // Standard categories get translated
+    translatedName = translateCategoryName(originalName);
+    translatedDesc = translateCategoryDescription(originalName, cat.description);
+}
 
         // Debug: Log medication category details
         if (originalName.toLowerCase().includes('medication')) {
@@ -1688,7 +1701,7 @@ credentials: 'include'
             `;
          } else {
                 // Regular 1-5 scale for other categories
-                const categoryKey = isCustom ? `custom_${cat.id}` : originalName.toLowerCase().replace(/\s+/g, '_');
+                const categoryKey = originalName.toLowerCase().replace(/\s+/g, '_');
                 const scaleLabel = hasReverseScoring ?
                     `<small style="color: #666;">${i18n.t('client.lower_better')}</small>` :
                     `<small style="color: #666;">${i18n.t('client.higher_better')}</small>`;
@@ -1902,15 +1915,22 @@ credentials: 'include'
 
                 // Process each category
                 trackingCategories.forEach(cat => {
-                    const selected = document.querySelector(`.rating-button[data-category="${cat.id}"].selected`);
+                    // Handle both standard and custom categories
+                    const catId = cat.is_custom ? `custom_${cat.id}` : cat.id;
+                    const selected = document.querySelector(`.rating-button[data-category="${catId}"].selected`);
+
                     if (selected) {
-                        categoryResponses[cat.id] = parseInt(selected.dataset.value);
+                        // Always use numeric ID for backend
+                        const backendId = cat.id;
+                        categoryResponses[backendId] = parseInt(selected.dataset.value);
                     }
 
-                    // Get notes
-                    const notesElement = document.getElementById(`category-${cat.id}-notes`);
+                    // Get notes - use the display ID for DOM element
+                    const notesElement = document.getElementById(`category-${catId}-notes`);
                     if (notesElement && notesElement.value) {
-                        categoryNotes[cat.id] = notesElement.value;
+                        // Always use numeric ID for backend
+                        const backendId = cat.id;
+                        categoryNotes[backendId] = notesElement.value;
                     }
                 });
 
