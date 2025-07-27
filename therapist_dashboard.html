@@ -2316,23 +2316,91 @@ credentials: 'include',
 
         // Update report client select
          function updateReportClientSelect() {
+    // Fetch ALL clients without pagination
+    fetch('/api/therapist/clients?page=1&per_page=1000', {
+        headers: {
+            'Accept-Language': i18n.currentLang
+        },
+        credentials: 'include'
+    })
+    .then(response => {
+        if (!response.ok) {
+            console.error('Failed to load all clients for dropdown');
+            // Fallback to current clientsList if fetch fails
             const select = document.getElementById('reportClient');
             select.innerHTML = `<option value="">${i18n.t('therapist.select_client_option')}</option>` +
                 clientsList.map(client =>
                     `<option value="${client.id}">${client.client_name} - ${i18n.t('therapist.started')} ${new Date(client.start_date).toLocaleDateString()}</option>`
                 ).join('');
+            return;
         }
+        return response.json();
+    })
+    .then(data => {
+        if (data) {
+            const allClients = data.clients;
+            const select = document.getElementById('reportClient');
+            select.innerHTML = `<option value="">${i18n.t('therapist.select_client_option')}</option>` +
+                allClients.map(client =>
+                    `<option value="${client.id}">${client.client_name} - ${i18n.t('therapist.started')} ${new Date(client.start_date).toLocaleDateString()}</option>`
+                ).join('');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading clients for report dropdown:', error);
+        // Fallback to current clientsList
+        const select = document.getElementById('reportClient');
+        select.innerHTML = `<option value="">${i18n.t('therapist.select_client_option')}</option>` +
+            clientsList.map(client =>
+                `<option value="${client.id}">${client.client_name} - ${i18n.t('therapist.started')} ${new Date(client.start_date).toLocaleDateString()}</option>`
+            ).join('');
+    });
+}
 
 
 
 // Populate AI insights client selector
-        function populateInsightClientSelect() {
+function populateInsightClientSelect() {
+    // Fetch ALL clients without pagination
+    fetch('/api/therapist/clients?page=1&per_page=1000', {
+        headers: {
+            'Accept-Language': i18n.currentLang
+        },
+        credentials: 'include'
+    })
+    .then(response => {
+        if (!response.ok) {
+            console.error('Failed to load all clients for insights dropdown');
+            // Fallback to current clientsList if fetch fails
             const select = document.getElementById('insightClientSelect');
             select.innerHTML = `<option value="">${i18n.t('therapist.select_client_option')}</option>` +
                 clientsList.map(client =>
                     `<option value="${client.id}">${client.client_name} - ${i18n.t('therapist.started')} ${new Date(client.start_date).toLocaleDateString()}</option>`
                 ).join('');
+            return;
         }
+        return response.json();
+    })
+    .then(data => {
+        if (data) {
+            const allClients = data.clients;
+            const select = document.getElementById('insightClientSelect');
+            select.innerHTML = `<option value="">${i18n.t('therapist.select_client_option')}</option>` +
+                allClients.map(client =>
+                    `<option value="${client.id}">${client.client_name} - ${i18n.t('therapist.started')} ${new Date(client.start_date).toLocaleDateString()}</option>`
+                ).join('');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading clients for insights dropdown:', error);
+        // Fallback to current clientsList
+        const select = document.getElementById('insightClientSelect');
+        select.innerHTML = `<option value="">${i18n.t('therapist.select_client_option')}</option>` +
+            clientsList.map(client =>
+                `<option value="${client.id}">${client.client_name} - ${i18n.t('therapist.started')} ${new Date(client.start_date).toLocaleDateString()}</option>`
+            ).join('');
+    });
+}
 
         // Load AI insights for selected client
         async function loadClientInsights() {
