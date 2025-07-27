@@ -55,6 +55,7 @@ from flask import g
 import uuid
 import time
 
+
 import bleach
 import html
 import redis
@@ -3650,6 +3651,43 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
 
                     col_idx += 2
 
+                    # Handle custom category responses
+                for custom_cat in custom_categories:
+                    response = CategoryResponse.query.filter_by(
+                        client_id=client.id,
+                        custom_category_id=custom_cat.id,  # Note: using custom_category_id field
+                        response_date=current_date.date()
+                    ).first()
+
+                    if response:
+                        # Value cell
+                        value_cell = ws_checkins.cell(row=row, column=col_idx)
+                        value_cell.value = response.value
+
+                        # Apply color coding based on reverse scoring
+                        if custom_cat.reverse_scoring:
+                            if response.value <= 2:
+                                value_cell.fill = excellent_fill
+                            elif response.value == 3:
+                                value_cell.fill = good_fill
+                            else:
+                                value_cell.fill = poor_fill
+                        else:
+                            if response.value >= 4:
+                                value_cell.fill = excellent_fill
+                            elif response.value == 3:
+                                value_cell.fill = good_fill
+                            else:
+                                value_cell.fill = poor_fill
+
+                        # Notes cell
+                        ws_checkins.cell(row=row, column=col_idx + 1).value = response.notes or ''
+
+                    col_idx += 2
+
+
+
+
                 ws_checkins.cell(row=row, column=len(headers)).value = "✓"
                 ws_checkins.cell(row=row, column=len(headers)).fill = excellent_fill
             else:
@@ -4169,6 +4207,43 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
                         html_content += f'<td class="{css_class}">{value}</td>'
                     else:
                         html_content += '<td>-</td>'
+
+                for custom_cat in custom_categories:
+                    response = CategoryResponse.query.filter_by(
+                        client_id=client.id,
+                        custom_category_id=custom_cat.id,  # Note: using custom_category_id field
+                        response_date=current_date.date()
+                    ).first()
+
+                    if response:
+                        value = response.value
+
+                        # Determine CSS class based on reverse scoring
+                        if custom_cat.reverse_scoring:
+                            # Reverse colors (low is good)
+                            if value <= 2:
+                                css_class = 'good'
+                            elif value == 3:
+                                css_class = 'medium'
+                            else:
+                                css_class = 'poor'
+                        else:
+                            # Normal colors (high is good)
+                            if value >= 4:
+                                css_class = 'good'
+                            elif value == 3:
+                                css_class = 'medium'
+                            else:
+                                css_class = 'poor'
+
+                        html_content += f'<td class="{css_class}">{value}</td>'
+                    else:
+                        html_content += '<td>-</td>'
+
+
+
+
+
             else:
                 # No check-in this day
                 html_content += f'<td colspan="{len(all_categories)}" class="no-checkin">{trans("no_checkin")}</td>'
@@ -4475,6 +4550,42 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
                         html_content += f'<td class="{css_class}">{value}</td>'
                     else:
                         html_content += '<td>-</td>'
+
+                for custom_cat in custom_categories:
+                    response = CategoryResponse.query.filter_by(
+                        client_id=client.id,
+                        custom_category_id=custom_cat.id,  # Note: using custom_category_id field
+                        response_date=current_date.date()
+                    ).first()
+
+                    if response:
+                        value = response.value
+
+                        # Determine CSS class based on reverse scoring
+                        if custom_cat.reverse_scoring:
+                            # Reverse colors (low is good)
+                            if value <= 2:
+                                css_class = 'good'
+                            elif value == 3:
+                                css_class = 'medium'
+                            else:
+                                css_class = 'poor'
+                        else:
+                            # Normal colors (high is good)
+                            if value >= 4:
+                                css_class = 'good'
+                            elif value == 3:
+                                css_class = 'medium'
+                            else:
+                                css_class = 'poor'
+
+                        html_content += f'<td class="{css_class}">{value}</td>'
+                    else:
+                        html_content += '<td>-</td>'
+
+
+
+
             else:
                 # No check-in this day
                 html_content += f'<td colspan="{len(all_categories)}" class="no-checkin">{trans("no_checkin")}</td>'
