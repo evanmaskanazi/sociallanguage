@@ -1446,7 +1446,39 @@
 
          // Check authentication - keep for now as fallback
 
+ // Global functions that need to be accessible from HTML onclick
+        function logout() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userRole');
+            window.location.href = '/login.html';
+        }
 
+        function showTab(tabName, event) {
+            // Update nav tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+
+            // Load tab-specific content
+            if (tabName === 'progress') {
+                loadProgress();
+            } else if (tabName === 'goals') {
+                loadWeeklyGoals();
+            } else if (tabName === 'settings') {
+                loadReminderSettings();
+            } else if (tabName === 'consent') {
+                loadConsentStatus();
+            }
+        }
         // Initialize
 document.addEventListener('DOMContentLoaded', async function() {
     try {
@@ -1495,11 +1527,10 @@ credentials: 'include'
                 const data = await response.json();
                 clientData = data.client;
 
-                // Process tracking categories to identify custom ones
+                // Process tracking categories
                 trackingCategories = data.tracking_categories.map(cat => {
-                    // Add is_custom flag if it's a custom category
-                    if (cat.id && typeof cat.id === 'string' && cat.id.startsWith('custom_')) {
-                        cat.is_custom = true;
+                    // Check if this is a custom category based on the presence of is_custom flag from backend
+                    if (cat.is_custom === true) {
                         cat.original_name = cat.name; // Custom categories use their own names
                     }
                     return cat;
@@ -1574,32 +1605,17 @@ credentials: 'include'
                     }
         }
 
-        function showTab(tabName, event) {
-    // Update nav tabs
-    document.querySelectorAll('.nav-tab').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    if (event && event.target) {
-        event.target.classList.add('active');
-    }
 
-    // Update content
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-    document.getElementById(tabName).classList.add('active');
 
-    // Load tab-specific content
-    if (tabName === 'progress') {
-        loadProgress();
-    } else if (tabName === 'goals') {
-        loadWeeklyGoals();
-    } else if (tabName === 'settings') {
-        loadReminderSettings();
-    } else if (tabName === 'consent') {
-        loadConsentStatus();  // Add this line
-    }
-}
+
+
+
+
+
+
+
+
+
 
         // Setup all categories dynamically
         function setupAllCategories() {
@@ -1619,21 +1635,19 @@ credentials: 'include'
         categoriesDiv.innerHTML = trackingCategories.map(cat => {
             // Check if this is a custom category
             const isCustom = cat.is_custom || false;
-            let translatedName, translatedDesc;
 
-            // To this:
-const originalName = isCustom ? cat.name : (cat.original_name || cat.name);
-let translatedName, translatedDesc;
+            const originalName = isCustom ? cat.name : (cat.original_name || cat.name);
+            let catTranslatedName, catTranslatedDesc;
 
-if (isCustom) {
-    // Custom categories use their own names/descriptions
-    translatedName = cat.name;
-    translatedDesc = cat.description;
-} else {
-    // Standard categories get translated
-    translatedName = translateCategoryName(originalName);
-    translatedDesc = translateCategoryDescription(originalName, cat.description);
-}
+            if (isCustom) {
+                // Custom categories use their own names/descriptions
+                catTranslatedName = cat.name;
+                catTranslatedDesc = cat.description;
+            } else {
+                // Standard categories get translated
+                catTranslatedName = translateCategoryName(originalName);
+                catTranslatedDesc = translateCategoryDescription(originalName, cat.description);
+            }
 
         // Debug: Log medication category details
         if (originalName.toLowerCase().includes('medication')) {
@@ -1663,7 +1677,7 @@ if (isCustom) {
             else if (isCustom) emoji = '⭐'; // Default for custom categories
 
         // Get placeholder text
-        const placeholderText = i18n.t('client.notes_placeholder', { category: translatedName });
+        const placeholderText = i18n.t('client.notes_placeholder', { category: catTranslatedName });
 
         // Special handling for medication category
         // Check if category has reverse scoring
@@ -1678,7 +1692,7 @@ if (isCustom) {
 
             return `
                 <div class="form-section" data-category-id="${cat.id}" data-category-name="${originalName}">
-                    <h3><span class="rating-emoji">${emoji}</span> <span data-i18n="category.medication">${translatedName}</span></h3>
+                    <h3><span class="rating-emoji">${emoji}</span> <span data-i18n="category.medication">${catTranslatedName}</span></h3>
                     <p style="color: #666; font-size: 0.9rem;" data-i18n="checkin.medication">${medicationQuestion}</p>
                     <div class="rating-scale">
                         <button type="button" class="rating-button" data-category="${cat.id}" data-value="0" onclick="selectRating(this)">
@@ -1708,8 +1722,8 @@ if (isCustom) {
 
                 return `
                 <div class="form-section" data-category-id="${cat.id}" data-category-name="${originalName}">
-                    <h3><span class="rating-emoji">${emoji}</span> <span data-i18n="category.${categoryKey}">${translatedName}</span></h3>
-                    <p style="color: #666; font-size: 0.9rem;" data-i18n="category.${categoryKey}_desc">${translatedDesc}</p>
+                    <h3><span class="rating-emoji">${emoji}</span> <span data-i18n="category.${categoryKey}">${catTranslatedName}</span></h3>
+                    <p style="color: #666; font-size: 0.9rem;" data-i18n="category.${categoryKey}_desc">${catTranslatedDesc}</p>
                     <div class="rating-scale">
                         ${[1,2,3,4,5].map(val => `
                             <button type="button"
@@ -1915,22 +1929,18 @@ if (isCustom) {
 
                 // Process each category
                 trackingCategories.forEach(cat => {
-                    // Handle both standard and custom categories
-                    const catId = cat.is_custom ? `custom_${cat.id}` : cat.id;
+                    // Always use the numeric ID from the category
+                    const catId = cat.id;
                     const selected = document.querySelector(`.rating-button[data-category="${catId}"].selected`);
 
                     if (selected) {
-                        // Always use numeric ID for backend
-                        const backendId = cat.id;
-                        categoryResponses[backendId] = parseInt(selected.dataset.value);
+                        categoryResponses[catId] = parseInt(selected.dataset.value);
                     }
 
-                    // Get notes - use the display ID for DOM element
+                    // Get notes
                     const notesElement = document.getElementById(`category-${catId}-notes`);
                     if (notesElement && notesElement.value) {
-                        // Always use numeric ID for backend
-                        const backendId = cat.id;
-                        categoryNotes[backendId] = notesElement.value;
+                        categoryNotes[catId] = notesElement.value;
                     }
                 });
 
