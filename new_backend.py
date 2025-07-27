@@ -495,6 +495,11 @@ REPORT_TRANSLATIONS = {
         'good': 'Good',
         'needs_improvement': 'Needs Improvement',
         'needs_support': 'Needs Support',
+        'metric': 'Metric',
+        'value': 'Value',
+        'percentage': 'Percentage',
+        'rating': 'Rating',
+        'goal': 'Goal',
         'needs_encouragement': 'Needs Encouragement'
     },
     'he': {
@@ -529,6 +534,11 @@ REPORT_TRANSLATIONS = {
         'good': 'טוב',
         'needs_improvement': 'דורש שיפור',
         'needs_support': 'זקוק לתמיכה',
+        'metric': 'מדד',
+        'value': 'ערך',
+        'percentage': 'אחוז',
+        'rating': 'דירוג',
+        'goal': 'יעד',
         'needs_encouragement': 'זקוק לעידוד'
     },
     'ru': {
@@ -563,6 +573,11 @@ REPORT_TRANSLATIONS = {
         'good': 'Хорошо',
         'needs_improvement': 'Требует улучшения',
         'needs_support': 'Нуждается в поддержке',
+        'metric': 'Метрика',
+        'value': 'Значение',
+        'percentage': 'Процент',
+        'rating': 'Рейтинг',
+        'goal': 'Цель',
         'needs_encouragement': 'Нуждается в поощрении'
     },
     'ar': {
@@ -597,6 +612,11 @@ REPORT_TRANSLATIONS = {
         'good': 'جيد',
         'needs_improvement': 'يحتاج إلى تحسين',
         'needs_support': 'يحتاج إلى دعم',
+        'metric': 'المقياس',
+        'value': 'القيمة',
+        'percentage': 'النسبة المئوية',
+        'rating': 'التقييم',
+        'goal': 'الهدف',
         'needs_encouragement': 'يحتاج إلى تشجيع'
     }
 }
@@ -3516,7 +3536,18 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
         summary_title.alignment = header_alignment
 
         # Summary headers
-        summary_headers = ['Metric', 'Value', 'Percentage', 'Rating', trans('notes')]
+        summary_headers = [
+            trans('metric'),
+            trans('value'),
+            trans('percentage'),
+            trans('rating'),
+            trans('notes')
+        ]
+
+
+
+
+
         for col, header in enumerate(summary_headers, 1):
             cell = ws_summary.cell(row=3, column=col)
             cell.value = header
@@ -3602,7 +3633,7 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
         goals_title.alignment = header_alignment
 
         # Goals headers
-        goal_headers = ['Goal'] + [day[:3] for day in days] + [trans('completion_rate')]
+        goal_headers = [trans('goal')] + [day[:3] for day in days] + [trans('completion_rate')]
         for col, header in enumerate(goal_headers, 1):
             cell = ws_goals.cell(row=3, column=col)
             cell.value = header
