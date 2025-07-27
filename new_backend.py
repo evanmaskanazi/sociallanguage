@@ -1068,45 +1068,26 @@ def require_auth(allowed_roles=None):
 
 
 def generate_client_serial():
-    """Generate unique client serial number with database-level uniqueness guarantee"""
+    """Generate unique client serial number"""
     import uuid
-    from sqlalchemy.exc import IntegrityError
 
-    max_attempts = 5  # Fewer attempts needed with better strategy
+    max_attempts = 10
 
     for attempt in range(max_attempts):
-        # Use full UUID to virtually guarantee uniqueness
-        unique_id = str(uuid.uuid4()).replace('-', '').upper()
-        serial = f'C{unique_id[:12]}'  # Still keep reasonable length
+        # Generate UUID-based serial
+        unique_id = str(uuid.uuid4()).replace('-', '').upper()[:12]
+        serial = f'C{unique_id}'
 
-        try:
-            # Use a savepoint to handle potential conflicts
-            with db.session.begin_nested():
-                # Try to insert a temporary client to claim the serial
-                test_client = Client(
-                    client_serial=serial,
-                    user_id=1,  # Temporary, will be rolled back
-                    therapist_id=1,
-                    start_date=date.today()
-                )
-                db.session.add(test_client)
-                db.session.flush()  # Force the insert to check uniqueness
-
-            # If we get here, the serial is unique
-            db.session.rollback()  # Don't actually save the test client
+        # Check if exists
+        existing = Client.query.filter_by(client_serial=serial).first()
+        if not existing:
             return serial
 
-        except IntegrityError:
-            # Serial already exists, try again
-            db.session.rollback()
-            continue
-
-    # Ultimate fallback - use timestamp + random
+    # Fallback with timestamp
     import time
-    import random
-    timestamp = str(int(time.time() * 1000000))[-8:]  # Microseconds
-    random_part = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=4))
-    return f'C{timestamp}{random_part}'
+    timestamp = str(int(time.time() * 1000000))[-8:]
+    unique_id = str(uuid.uuid4()).replace('-', '').upper()[:4]
+    return f'C{unique_id}{timestamp}'
 
 
 class EmailCircuitBreaker:
@@ -3395,49 +3376,87 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
         tmp_name = tmp.name
 
     try:
-        # Create workbook with write_only mode for better memory efficiency
-        wb = openpyxl.Workbook(write_only=True)
+        # Create workbook normally (NOT write_only) to support formatting
+        wb = openpyxl.Workbook()
 
         # Get translations
         trans = lambda key: translate_report_term(key, lang)
         days = DAYS_TRANSLATIONS.get(lang, DAYS_TRANSLATIONS['en'])
 
-        # Daily Check-ins Sheet
-        ws_checkins = wb.create_sheet(title=trans('daily_checkins'))
+        # 1. Daily Check-ins Sheet
+        ws_checkins = wb.active
+        ws_checkins.title = trans('daily_checkins')
 
-        # Write headers row by row to avoid building large structures in memory
-        ws_checkins.append([f"{trans('weekly_report_title')} - {trans('client')} {client.client_serial}"])
-        ws_checkins.append(
-            [f"{trans('week')} {week_num}, {year} ({week_start.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')})"])
-        ws_checkins.append([])  # Empty row
+        # Header styles
+        header_font = Font(bold=True, size=12, color="FFFFFF")
+        header_fill = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center")
 
-        # Headers
+        # Cell styles
+        cell_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+
+        # Title
+        ws_checkins.merge_cells('A1:J1')
+        title_cell = ws_checkins['A1']
+        title_cell.value = f"{trans('weekly_report_title')} - {trans('client')} {client.client_serial}"
+        title_cell.font = Font(bold=True, size=16)
+        title_cell.alignment = header_alignment
+
+        # Week info
+        ws_checkins.merge_cells('A2:J2')
+        week_cell = ws_checkins['A2']
+        week_cell.value = f"{trans('week')} {week_num}, {year} ({week_start.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')})"
+        week_cell.font = Font(size=14)
+        week_cell.alignment = header_alignment
+
+        # Headers - dynamically based on categories
         all_categories = TrackingCategory.query.all()
         headers = [trans('date'), trans('day'), trans('checkin_time')]
+
+        # Add category headers
         for category in all_categories:
             cat_name = translate_category_name(category.name, lang)
-            headers.extend([f"{cat_name} (1-5)", f"{cat_name} {trans('notes')}"])
-        headers.append(trans('completion'))
-        ws_checkins.append(headers)
+            headers.append(f"{cat_name} (1-5)")
+            headers.append(f"{cat_name} {trans('notes')}")
 
-        # Stream check-ins data day by day
+        headers.append(trans('completion'))
+
+        for col, header in enumerate(headers, 1):
+            cell = ws_checkins.cell(row=4, column=col)
+            cell.value = header
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+            cell.border = cell_border
+
+        # Color fills for ratings
+        excellent_fill = PatternFill(start_color="C8E6C9", end_color="C8E6C9", fill_type="solid")
+        good_fill = PatternFill(start_color="FFF9C4", end_color="FFF9C4", fill_type="solid")
+        poor_fill = PatternFill(start_color="FFCDD2", end_color="FFCDD2", fill_type="solid")
+
+        # Populate daily check-ins
+        row = 5
         checkins_completed = 0
         category_values = {cat.id: [] for cat in all_categories}
 
         for i in range(7):
             current_date = week_start + timedelta(days=i)
-            day_name = days[i]
-
-            # Get checkin for this specific day only
             checkin = client.checkins.filter_by(checkin_date=current_date.date()).first()
 
-            row_data = [current_date.strftime('%Y-%m-%d'), day_name]
+            ws_checkins.cell(row=row, column=1).value = current_date.strftime('%Y-%m-%d')
+            ws_checkins.cell(row=row, column=2).value = days[i]
 
             if checkin:
                 checkins_completed += 1
-                row_data.append(checkin.checkin_time.strftime('%H:%M'))
+                ws_checkins.cell(row=row, column=3).value = checkin.checkin_time.strftime('%H:%M')
 
-                # Get category responses for this day
+                # Get category responses
+                col_idx = 4
                 for category in all_categories:
                     response = CategoryResponse.query.filter_by(
                         client_id=client.id,
@@ -3446,37 +3465,78 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
                     ).first()
 
                     if response:
-                        row_data.extend([response.value, response.notes or ''])
+                        # Value cell
+                        value_cell = ws_checkins.cell(row=row, column=col_idx)
+                        value_cell.value = response.value
                         category_values[category.id].append(response.value)
-                    else:
-                        row_data.extend(['', ''])
 
-                row_data.append("✓")
+                        # Apply color coding
+                        if 'anxiety' in category.name.lower():
+                            if response.value <= 2:
+                                value_cell.fill = excellent_fill
+                            elif response.value == 3:
+                                value_cell.fill = good_fill
+                            else:
+                                value_cell.fill = poor_fill
+                        else:
+                            if response.value >= 4:
+                                value_cell.fill = excellent_fill
+                            elif response.value == 3:
+                                value_cell.fill = good_fill
+                            else:
+                                value_cell.fill = poor_fill
+
+                        # Notes cell
+                        ws_checkins.cell(row=row, column=col_idx + 1).value = response.notes or ''
+
+                    col_idx += 2
+
+                ws_checkins.cell(row=row, column=len(headers)).value = "✓"
+                ws_checkins.cell(row=row, column=len(headers)).fill = excellent_fill
             else:
-                row_data.extend([trans('no_checkin')] + [''] * (len(headers) - 4) + ["✗"])
+                ws_checkins.cell(row=row, column=3).value = trans('no_checkin')
+                ws_checkins.cell(row=row, column=3).font = Font(italic=True, color="999999")
+                ws_checkins.cell(row=row, column=len(headers)).value = "✗"
+                ws_checkins.cell(row=row, column=len(headers)).fill = poor_fill
 
-            ws_checkins.append(row_data)
+            # Apply borders to all cells
+            for col in range(1, len(headers) + 1):
+                ws_checkins.cell(row=row, column=col).border = cell_border
 
-        # Weekly Summary Sheet
+            row += 1
+
+        # 2. Weekly Summary Sheet
         ws_summary = wb.create_sheet(trans('weekly_summary'))
 
-        # Summary title and headers
-        ws_summary.append([trans('weekly_summary')])
-        ws_summary.append([])  # Empty row
-        ws_summary.append(['Metric', 'Value', 'Percentage', 'Rating', trans('notes')])
+        # Summary title
+        ws_summary.merge_cells('A1:E1')
+        summary_title = ws_summary['A1']
+        summary_title.value = trans('weekly_summary')
+        summary_title.font = Font(bold=True, size=16)
+        summary_title.alignment = header_alignment
+
+        # Summary headers
+        summary_headers = ['Metric', 'Value', 'Percentage', 'Rating', trans('notes')]
+        for col, header in enumerate(summary_headers, 1):
+            cell = ws_summary.cell(row=3, column=col)
+            cell.value = header
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+            cell.border = cell_border
 
         # Calculate statistics
-        completion_rate = (checkins_completed / 7) * 100
+        summary_data = []
 
-        # Check-in completion row
-        ws_summary.append([
-            trans('checkin_completion'),
-            f"{checkins_completed}/7 {trans('days')}",
-            f"{completion_rate:.1f}%",
-            trans('excellent') if completion_rate >= 80 else trans('good') if completion_rate >= 60 else trans(
-                'needs_improvement'),
-            ''
-        ])
+        # Check-in completion
+        completion_rate = (checkins_completed / 7) * 100
+        summary_data.append({
+            'metric': trans('checkin_completion'),
+            'value': f"{checkins_completed}/7 {trans('days')}",
+            'percentage': f"{completion_rate:.1f}%",
+            'rating': trans('excellent') if completion_rate >= 80 else trans('good') if completion_rate >= 60 else trans('needs_improvement'),
+            'notes': ''
+        })
 
         # Category averages
         for category in all_categories:
@@ -3484,31 +3544,72 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
                 avg_value = sum(category_values[category.id]) / len(category_values[category.id])
                 cat_name = translate_category_name(category.name, lang)
 
-                # Check if this is anxiety category
                 if 'anxiety' in category.name.lower():
-                    rating = trans('excellent') if avg_value <= 2 else trans('good') if avg_value <= 3 else trans(
-                        'needs_support')
+                    rating = trans('excellent') if avg_value <= 2 else trans('good') if avg_value <= 3 else trans('needs_support')
                 else:
-                    rating = trans('excellent') if avg_value >= 4 else trans('good') if avg_value >= 3 else trans(
-                        'needs_support')
+                    rating = trans('excellent') if avg_value >= 4 else trans('good') if avg_value >= 3 else trans('needs_support')
 
-                ws_summary.append([
-                    f"{trans('average_rating')} - {cat_name}",
-                    f"{avg_value:.2f}/5",
-                    f"{(avg_value / 5) * 100:.1f}%",
-                    rating,
-                    ''
-                ])
+                summary_data.append({
+                    'metric': f"{trans('average_rating')} - {cat_name}",
+                    'value': f"{avg_value:.2f}/5",
+                    'percentage': f"{(avg_value / 5) * 100:.1f}%",
+                    'rating': rating,
+                    'notes': ''
+                })
 
-        # Weekly Goals Sheet
+        # Write summary data
+        row = 4
+        for data in summary_data:
+            ws_summary.cell(row=row, column=1).value = data['metric']
+            ws_summary.cell(row=row, column=2).value = data['value']
+            ws_summary.cell(row=row, column=3).value = data['percentage']
+
+            rating_cell = ws_summary.cell(row=row, column=4)
+            rating_cell.value = data['rating']
+
+            # Apply color based on rating
+            if 'anxiety' in data['metric'].lower() or any(term in data['metric'] for term in ['חרדה', 'тревожности', 'القلق']):
+                if trans('excellent') in data['rating']:
+                    rating_cell.fill = excellent_fill
+                elif trans('good') in data['rating']:
+                    rating_cell.fill = good_fill
+                else:
+                    rating_cell.fill = poor_fill
+            else:
+                if trans('excellent') in data['rating']:
+                    rating_cell.fill = excellent_fill
+                elif trans('good') in data['rating']:
+                    rating_cell.fill = good_fill
+                else:
+                    rating_cell.fill = poor_fill
+
+            ws_summary.cell(row=row, column=5).value = data['notes']
+
+            # Apply borders
+            for col in range(1, 6):
+                ws_summary.cell(row=row, column=col).border = cell_border
+
+            row += 1
+
+        # 3. Weekly Goals Sheet
         ws_goals = wb.create_sheet(trans('weekly_goals'))
 
-        ws_goals.append([f"{trans('weekly_goals')} & {trans('completion')}"])
-        ws_goals.append([])  # Empty row
+        # Goals title
+        ws_goals.merge_cells('A1:I1')
+        goals_title = ws_goals['A1']
+        goals_title.value = f"{trans('weekly_goals')} & {trans('completion')}"
+        goals_title.font = Font(bold=True, size=16)
+        goals_title.alignment = header_alignment
 
         # Goals headers
         goal_headers = ['Goal'] + [day[:3] for day in days] + [trans('completion_rate')]
-        ws_goals.append(goal_headers)
+        for col, header in enumerate(goal_headers, 1):
+            cell = ws_goals.cell(row=3, column=col)
+            cell.value = header
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+            cell.border = cell_border
 
         # Get weekly goals
         weekly_goals = client.goals.filter_by(
@@ -3516,8 +3617,9 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
             is_active=True
         ).all()
 
+        row = 4
         for goal in weekly_goals:
-            row_data = [goal.goal_text]
+            ws_goals.cell(row=row, column=1).value = goal.goal_text
 
             # Get completions for each day
             completions = goal.completions.filter(
@@ -3529,28 +3631,59 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
                 current_date = week_start.date() + timedelta(days=day_idx)
                 completion = next((c for c in completions if c.completion_date == current_date), None)
 
+                cell = ws_goals.cell(row=row, column=day_idx + 2)
                 if completion:
                     if completion.completed:
-                        row_data.append("✓")
+                        cell.value = "✓"
+                        cell.fill = excellent_fill
                         completed_days += 1
                     else:
-                        row_data.append("✗")
+                        cell.value = "✗"
+                        cell.fill = poor_fill
                 else:
-                    row_data.append("-")
+                    cell.value = "-"
+                    cell.fill = PatternFill(start_color="F5F5F5", end_color="F5F5F5", fill_type="solid")
+
+                cell.alignment = Alignment(horizontal="center")
+                cell.border = cell_border
 
             # Completion rate
             completion_rate = (completed_days / 7) * 100
-            row_data.append(f"{completed_days}/7 ({completion_rate:.0f}%)")
+            rate_cell = ws_goals.cell(row=row, column=9)
+            rate_cell.value = f"{completed_days}/7 ({completion_rate:.0f}%)"
+            if completion_rate >= 80:
+                rate_cell.fill = excellent_fill
+            elif completion_rate >= 50:
+                rate_cell.fill = good_fill
+            else:
+                rate_cell.fill = poor_fill
+            rate_cell.border = cell_border
 
-            ws_goals.append(row_data)
+            # Apply borders to goal text
+            ws_goals.cell(row=row, column=1).border = cell_border
 
-        # Therapist Notes Sheet (only if therapist is provided)
+            row += 1
+
+        # 4. Therapist Notes Sheet (only if therapist is provided)
         if therapist:
             ws_notes = wb.create_sheet(trans('therapist_notes'))
 
-            ws_notes.append([f"{trans('therapist_notes')} & {trans('mission')}s"])
-            ws_notes.append([])  # Empty row
-            ws_notes.append([trans('date'), trans('type'), trans('content'), trans('status')])
+            # Notes title
+            ws_notes.merge_cells('A1:D1')
+            notes_title = ws_notes['A1']
+            notes_title.value = f"{trans('therapist_notes')} & {trans('mission')}s"
+            notes_title.font = Font(bold=True, size=16)
+            notes_title.alignment = header_alignment
+
+            # Notes headers
+            note_headers = [trans('date'), trans('type'), trans('content'), trans('status')]
+            for col, header in enumerate(note_headers, 1):
+                cell = ws_notes.cell(row=3, column=col)
+                cell.value = header
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = header_alignment
+                cell.border = cell_border
 
             # Get therapist notes for the week
             week_start_datetime = datetime.combine(week_start.date(), datetime.min.time())
@@ -3562,15 +3695,55 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
                 TherapistNote.created_at.between(week_start_datetime, week_end_datetime)
             ).order_by(TherapistNote.created_at).all()
 
+            row = 4
             for note in notes:
-                row_data = [
-                    note.created_at.strftime('%Y-%m-%d %H:%M'),
-                    trans('mission') if note.is_mission else note.note_type.title(),
-                    note.content,
-                    trans('completed') if note.is_mission and note.mission_completed else trans(
-                        'pending') if note.is_mission else "-"
-                ]
-                ws_notes.append(row_data)
+                ws_notes.cell(row=row, column=1).value = note.created_at.strftime('%Y-%m-%d %H:%M')
+
+                type_cell = ws_notes.cell(row=row, column=2)
+                if note.is_mission:
+                    type_cell.value = trans('mission')
+                    type_cell.font = Font(bold=True, color="E91E63")
+                else:
+                    type_cell.value = note.note_type.title()
+
+                ws_notes.cell(row=row, column=3).value = note.content
+
+                status_cell = ws_notes.cell(row=row, column=4)
+                if note.is_mission:
+                    if note.mission_completed:
+                        status_cell.value = trans('completed')
+                        status_cell.fill = excellent_fill
+                    else:
+                        status_cell.value = trans('pending')
+                        status_cell.fill = good_fill
+                else:
+                    status_cell.value = "-"
+
+                # Apply borders
+                for col in range(1, 5):
+                    ws_notes.cell(row=row, column=col).border = cell_border
+
+                row += 1
+
+        # Adjust column widths for all sheets
+        for ws in wb.worksheets:
+            for column in ws.columns:
+                max_length = 0
+                column_letter = None
+
+                for cell in column:
+                    try:
+                        if hasattr(cell, 'column_letter'):
+                            if column_letter is None:
+                                column_letter = cell.column_letter
+                            if cell.value and len(str(cell.value)) > max_length:
+                                max_length = len(str(cell.value))
+                    except:
+                        pass
+
+                if column_letter:
+                    adjusted_width = min(max_length + 2, 50)
+                    ws.column_dimensions[column_letter].width = adjusted_width
 
         # Save to temporary file
         wb.save(tmp_name)
