@@ -2816,7 +2816,7 @@ function populateInsightClientSelect() {
                 showMessage(i18n.t('therapist.generating_report'), 'success');
 
                 const response = await fetch(`/api/reports/generate/${clientId}/${week}`, {
-                    hheaders: {
+                    headers: {
     'Accept-Language': i18n.currentLang
 },
 credentials: 'include'
@@ -2896,8 +2896,10 @@ credentials: 'include'
 
         // Prepare email report - FIXED
         async function prepareEmailReport() {
+            console.log('prepareEmailReport called'); // ADD THIS
             const clientId = document.getElementById('reportClient').value;
             const week = document.getElementById('reportWeek').value;
+            console.log('Client ID:', clientId, 'Week:', week); // ADD THIS TOO
 
             if (!clientId || !week) {
                 showMessage(i18n.t('therapist.select_both'), 'error');
@@ -2988,37 +2990,32 @@ credentials: 'include'
 
 
         // CSRF Token function
-        async function getCSRFToken() {
-            // Check if it's already defined globally
-            if (window.csrfToken) {
-                return window.csrfToken;
-            }
+       async function getCSRFToken() {
+    // Check if token is already cached
+    if (window.csrfToken) {
+        return window.csrfToken;
+    }
 
-            // Check for existing CSRF token function
-            if (window.getCSRFToken && typeof window.getCSRFToken === 'function') {
-                return await window.getCSRFToken();
-            }
+    // Try to get from meta tag first
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    if (csrfMeta) {
+        window.csrfToken = csrfMeta.content;
+        return csrfMeta.content;
+    }
 
-            // Otherwise, get it from the meta tag or API
-            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-            if (csrfMeta) {
-                window.csrfToken = csrfMeta.content;
-                return csrfMeta.content;
-            }
-
-            // Fallback to API call
-            try {
-                const response = await fetch('/api/csrf-token', {
-                    credentials: 'same-origin'
-                });
-                const data = await response.json();
-                window.csrfToken = data.csrf_token;
-                return data.csrf_token;
-            } catch (error) {
-                console.error('Failed to get CSRF token:', error);
-                return null;
-            }
-        }
+    // Fallback to API call
+    try {
+        const response = await fetch('/api/csrf-token', {
+            credentials: 'same-origin'
+        });
+        const data = await response.json();
+        window.csrfToken = data.csrf_token;
+        return data.csrf_token;
+    } catch (error) {
+        console.error('Failed to get CSRF token:', error);
+        return null;
+    }
+}
 
 
 
