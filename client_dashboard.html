@@ -1003,6 +1003,8 @@
                 'client.email_preview': 'Email Report Preview',
                 'client.copy_email': 'Copy this email content to send to your therapist',
                 'client.checkin_success': 'Check-in submitted successfully! 🎉',
+                 'client.lower_better': 'Lower scores are better',
+                'client.higher_better': 'Higher scores are better',
                 'client.checkin_error': 'Cannot submit check-in for future dates',
                 'client.select_client_week': 'Please select a week',
                 'client.report_generated': 'Report generated and downloaded successfully!',
@@ -1115,6 +1117,8 @@
                 'client.email_preview': 'תצוגה מקדימה של דוח דוא״ל',
                 'client.copy_email': 'העתק תוכן זה כדי לשלוח למטפל שלך',
                 'client.checkin_success': 'הצ׳ק-אין נשלח בהצלחה! 🎉',
+                'client.lower_better': 'ציונים נמוכים יותר טובים יותר',
+                'client.higher_better': 'ציונים גבוהים יותר טובים יותר',
                 'client.checkin_error': 'לא ניתן לשלוח צ׳ק-אין לתאריכים עתידיים',
                 'client.select_client_week': 'אנא בחר שבוע',
                 'client.report_generated': 'הדוח נוצר והורד בהצלחה!',
@@ -1227,6 +1231,8 @@
                 'client.email_preview': 'Предварительный просмотр email отчета',
                 'client.copy_email': 'Скопируйте это содержимое для отправки вашему терапевту',
                 'client.checkin_success': 'Отметка успешно отправлена! 🎉',
+                'client.lower_better': 'Более низкие баллы лучше',
+                'client.higher_better': 'Более высокие баллы лучше',
                 'client.checkin_error': 'Невозможно отправить отметку для будущих дат',
                 'client.select_client_week': 'Пожалуйста, выберите неделю',
                 'client.report_generated': 'Отчет создан и загружен успешно!',
@@ -1339,6 +1345,8 @@
                 'client.email_preview': 'معاينة تقرير البريد الإلكتروني',
                 'client.copy_email': 'انسخ هذا المحتوى لإرساله إلى معالجك',
                 'client.checkin_success': 'تم إرسال تسجيل الحضور بنجاح! 🎉',
+                'client.lower_better': 'الدرجات الأقل أفضل',
+                'client.higher_better': 'الدرجات الأعلى أفضل',
                 'client.checkin_error': 'لا يمكن إرسال تسجيل الحضور للتواريخ المستقبلية',
                 'client.select_client_week': 'يرجى اختيار أسبوع',
                 'client.report_generated': 'تم إنشاء التقرير وتنزيله بنجاح!',
@@ -1598,11 +1606,21 @@ credentials: 'include'
     console.log('Current language:', window.i18n ? window.i18n.currentLang : 'N/A');
 
     // Create HTML for all categories
-    categoriesDiv.innerHTML = trackingCategories.map(cat => {
-        // Translate both name and description on the frontend
-        const originalName = cat.original_name || cat.name;
-        const translatedName = translateCategoryName(originalName);
-        const translatedDesc = translateCategoryDescription(originalName, cat.description);
+        categoriesDiv.innerHTML = trackingCategories.map(cat => {
+            // Check if this is a custom category
+            const isCustom = cat.is_custom || false;
+            let translatedName, translatedDesc;
+
+            if (isCustom) {
+                // Custom categories use their own names/descriptions
+                translatedName = cat.name;
+                translatedDesc = cat.description;
+            } else {
+                // Standard categories get translated
+                const originalName = cat.original_name || cat.name;
+                translatedName = translateCategoryName(originalName);
+                translatedDesc = translateCategoryDescription(originalName, cat.description);
+            }
 
         // Debug: Log medication category details
         if (originalName.toLowerCase().includes('medication')) {
@@ -1615,21 +1633,31 @@ credentials: 'include'
         }
 
         // Choose emoji based on original category name
-        let emoji = '📊';
-        if (originalName.toLowerCase().includes('emotion')) emoji = '😊';
-        else if (originalName.toLowerCase().includes('medication')) emoji = '💊';
-        else if (originalName.toLowerCase().includes('social')) emoji = '😊';
-        else if (originalName.toLowerCase().includes('activity') || originalName.toLowerCase().includes('physical')) emoji = '🏃';
-        else if (originalName.toLowerCase().includes('energy')) emoji = '⚡';
-        else if (originalName.toLowerCase().includes('sleep')) emoji = '😴';
-        else if (originalName.toLowerCase().includes('anxiety')) emoji = '😰';
-        else if (originalName.toLowerCase().includes('motivation')) emoji = '🎯';
+          let emoji = '📊';
+            const catName = (isCustom ? cat.name : originalName).toLowerCase();
+
+            if (catName.includes('emotion')) emoji = '😊';
+            else if (catName.includes('medication')) emoji = '💊';
+            else if (catName.includes('social')) emoji = '😊';
+            else if (catName.includes('activity') || catName.includes('physical')) emoji = '🏃';
+            else if (catName.includes('energy')) emoji = '⚡';
+            else if (catName.includes('sleep')) emoji = '😴';
+            else if (catName.includes('anxiety')) emoji = '😰';
+            else if (catName.includes('motivation')) emoji = '🎯';
+            else if (catName.includes('mindful')) emoji = '🧘';
+            else if (catName.includes('diet') || catName.includes('food')) emoji = '🥗';
+            else if (catName.includes('water') || catName.includes('hydration')) emoji = '💧';
+            else if (isCustom) emoji = '⭐'; // Default for custom categories
 
         // Get placeholder text
         const placeholderText = i18n.t('client.notes_placeholder', { category: translatedName });
 
         // Special handling for medication category
-        if (originalName.toLowerCase().includes('medication')) {
+        // Check if category has reverse scoring
+            const hasReverseScoring = cat.reverse_scoring || false;
+
+            // Special handling for medication category
+            if (!isCustom && originalName.toLowerCase().includes('medication')) {
             // Get the medication question directly
             const medicationQuestion = window.i18n && window.i18n.t ?
                 window.i18n.t('checkin.medication') :
@@ -1658,10 +1686,14 @@ credentials: 'include'
                               placeholder="${placeholderText}"></textarea>
                 </div>
             `;
-        } else {
-            // Regular 1-5 scale for other categories
-            const categoryKey = originalName.toLowerCase().replace(/\s+/g, '_');
-            return `
+         } else {
+                // Regular 1-5 scale for other categories
+                const categoryKey = isCustom ? `custom_${cat.id}` : originalName.toLowerCase().replace(/\s+/g, '_');
+                const scaleLabel = hasReverseScoring ?
+                    `<small style="color: #666;">${i18n.t('client.lower_better')}</small>` :
+                    `<small style="color: #666;">${i18n.t('client.higher_better')}</small>`;
+
+                return `
                 <div class="form-section" data-category-id="${cat.id}" data-category-name="${originalName}">
                     <h3><span class="rating-emoji">${emoji}</span> <span data-i18n="category.${categoryKey}">${translatedName}</span></h3>
                     <p style="color: #666; font-size: 0.9rem;" data-i18n="category.${categoryKey}_desc">${translatedDesc}</p>

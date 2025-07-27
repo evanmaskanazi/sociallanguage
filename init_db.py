@@ -282,7 +282,41 @@ def add_performance_indexes():
     print("All indexes created successfully")
 
 
+def create_custom_categories_table():
+    """Create custom categories table"""
+    with app.app_context():
+        try:
+            db.session.execute(text("""
+                CREATE TABLE IF NOT EXISTS custom_categories (
+                    id SERIAL PRIMARY KEY,
+                    therapist_id INTEGER NOT NULL REFERENCES therapists(id),
+                    client_id INTEGER NOT NULL REFERENCES clients(id),
+                    name VARCHAR(100) NOT NULL,
+                    description TEXT,
+                    scale_min INTEGER DEFAULT 1,
+                    scale_max INTEGER DEFAULT 5,
+                    reverse_scoring BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    is_active BOOLEAN DEFAULT TRUE
+                )
+            """))
 
+            # Add indexes
+            db.session.execute(text("""
+                CREATE INDEX IF NOT EXISTS idx_custom_cat_client ON custom_categories(client_id, is_active)
+            """))
+
+            # Add custom_category_id to category_responses
+            db.session.execute(text("""
+                ALTER TABLE category_responses
+                ADD COLUMN IF NOT EXISTS custom_category_id INTEGER REFERENCES custom_categories(id)
+            """))
+
+            db.session.commit()
+            print("Successfully created custom_categories table")
+        except Exception as e:
+            print(f"Error creating custom_categories table: {e}")
+            db.session.rollback()
 
 
 def initialize_database():
@@ -432,6 +466,9 @@ if __name__ == '__main__':
 
     with app.app_context():
         initialize_database()
+
+        create_custom_categories_table()
+
 
         # Fix any existing reminder timezone issues
         fix_reminder_timezone_issue()

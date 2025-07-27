@@ -916,12 +916,23 @@
                 </div>
             </div>
 
-            <div class="form-section">
+           <div class="form-section">
                 <h3 data-i18n="therapist.tracking_categories">Tracking Categories</h3>
                 <p style="color: #666; margin-bottom: 1rem;" data-i18n="therapist.select_categories">Select which categories this client should track:</p>
                 <div id="trackingCategoriesSelection">
                     <!-- Categories will be loaded dynamically -->
                 </div>
+            </div>
+
+            <div class="form-section">
+                <h3 data-i18n="therapist.custom_categories">Custom Categories (Optional)</h3>
+                <p style="color: #666; margin-bottom: 1rem;" data-i18n="therapist.custom_categories_desc">Create up to 4 custom tracking categories for this client:</p>
+                <div id="customCategoriesContainer">
+                    <!-- Custom categories will be added here -->
+                </div>
+                <button class="btn btn-secondary btn-small" onclick="addCustomCategoryInput()">
+                    <span data-i18n="therapist.add_custom_category">+ Add Custom Category</span>
+                </button>
             </div>
 
             <div class="form-section">
@@ -983,7 +994,7 @@
         </div>
     </div>
 
-    <!-- Client Detail Modal -->
+   <!-- Client Detail Modal -->
     <div id="clientModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -992,6 +1003,28 @@
             </div>
             <div class="modal-body" id="modalBody">
                 <!-- Client details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for adding custom categories to existing client -->
+    <div id="addCustomCategoryModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddCustomCategoryModal()">&times;</span>
+            <h2 data-i18n="therapist.add_custom_categories_title">Add Custom Categories</h2>
+            <div id="existingClientCustomCategories">
+                <!-- Custom category inputs will go here -->
+            </div>
+            <button class="btn btn-secondary btn-small" onclick="addExistingClientCustomCategory()">
+                <span data-i18n="therapist.add_another_category">+ Add Another Category</span>
+            </button>
+            <div style="margin-top: 2rem;">
+                <button class="btn btn-primary" onclick="saveCustomCategoriesForExisting()">
+                    <span data-i18n="therapist.save_categories">Save Categories</span>
+                </button>
+                <button class="btn btn-secondary" onclick="closeAddCustomCategoryModal()">
+                    <span data-i18n="common.cancel">Cancel</span>
+                </button>
             </div>
         </div>
     </div>
@@ -1111,6 +1144,17 @@
                 'therapist.all_categories_note': 'Note: All categories are selected by default. Uncheck any you don\'t want the client to track.',
                 'therapist.view_client': 'View',
                 'therapist.add_goal': 'Add Goal',
+                'therapist.custom_categories': 'Custom Categories (Optional)',
+                'therapist.custom_categories_desc': 'Create up to 4 custom tracking categories for this client:',
+                'therapist.add_custom_category': '+ Add Custom Category',
+                'therapist.category_name': 'Category Name',
+                'therapist.category_name_placeholder': 'e.g., Mindfulness Practice',
+                'therapist.category_description': 'Description',
+                'therapist.category_desc_placeholder': 'Brief description of what to track',
+                'therapist.reverse_scoring': 'Reverse scoring (like anxiety - lower is better)',
+                'therapist.reverse_scoring_desc': 'Check this if lower values indicate improvement',
+                'therapist.remove_category': 'Remove',
+                'therapist.max_custom_categories': 'Maximum 4 custom categories can be added',
                 'therapist.select_client': 'Select Client',
                 'therapist.select_client_for_insights': 'Select a client to view AI-powered insights',
                 'therapist.error_loading_insights': 'Error loading insights',
@@ -1261,6 +1305,17 @@
 'therapist.trend_declining': 'מגמת ירידה',
 'therapist.trend_stable': 'מגמה יציבה',
                 'therapist.add_goal': 'הוסף יעד',
+                 'therapist.custom_categories': 'קטגוריות מותאמות אישית (אופציונלי)',
+                'therapist.custom_categories_desc': 'צור עד 4 קטגוריות מעקב מותאמות אישית עבור מטופל זה:',
+                'therapist.add_custom_category': '+ הוסף קטגוריה מותאמת',
+                'therapist.category_name': 'שם הקטגוריה',
+                'therapist.category_name_placeholder': 'לדוגמה, תרגול מיינדפולנס',
+                'therapist.category_description': 'תיאור',
+                'therapist.category_desc_placeholder': 'תיאור קצר של מה לעקוב',
+                'therapist.reverse_scoring': 'ניקוד הפוך (כמו חרדה - נמוך יותר טוב יותר)',
+                'therapist.reverse_scoring_desc': 'סמן אם ערכים נמוכים מצביעים על שיפור',
+                'therapist.remove_category': 'הסר',
+                'therapist.max_custom_categories': 'ניתן להוסיף מקסימום 4 קטגוריות מותאמות',
                 'pagination.previous': 'הקודם',
 'pagination.next': 'הבא',
 'pagination.page_info': 'עמוד {page} מתוך {pages}',
@@ -1382,6 +1437,17 @@
                 'therapist.sleep_hygiene_rec': 'Обсудите гигиену сна и рассмотрите направление на исследование сна.',
                 'therapist.persistent_sleep': 'Постоянные проблемы со сном',
                 'therapist.add_goal': 'Добавить цель',
+                'therapist.custom_categories': 'Пользовательские категории (необязательно)',
+                'therapist.custom_categories_desc': 'Создайте до 4 пользовательских категорий отслеживания для этого клиента:',
+                'therapist.add_custom_category': '+ Добавить пользовательскую категорию',
+                'therapist.category_name': 'Название категории',
+                'therapist.category_name_placeholder': 'например, Практика осознанности',
+                'therapist.category_description': 'Описание',
+                'therapist.category_desc_placeholder': 'Краткое описание того, что отслеживать',
+                'therapist.reverse_scoring': 'Обратная оценка (как тревожность - чем ниже, тем лучше)',
+                'therapist.reverse_scoring_desc': 'Отметьте, если более низкие значения указывают на улучшение',
+                'therapist.remove_category': 'Удалить',
+                'therapist.max_custom_categories': 'Максимум можно добавить 4 пользовательские категории',
                 'therapist.ai_insights': 'Аналитика клиентов на основе ИИ',
 'therapist.analyzing_patterns': 'Анализ паттернов клиентов...',
 'therapist.no_insights': 'Значительные паттерны не обнаружены.',
@@ -1518,6 +1584,17 @@
                 'therapist.all_categories_note': 'ملاحظة: جميع الفئات محددة بشكل افتراضي. قم بإلغاء تحديد أي فئة لا تريد أن يتتبعها العميل.',
                 'therapist.view_client': 'عرض',
                 'therapist.add_goal': 'إضافة هدف',
+                'therapist.custom_categories': 'فئات مخصصة (اختياري)',
+                'therapist.custom_categories_desc': 'أنشئ ما يصل إلى 4 فئات تتبع مخصصة لهذا العميل:',
+                'therapist.add_custom_category': '+ إضافة فئة مخصصة',
+                'therapist.category_name': 'اسم الفئة',
+                'therapist.category_name_placeholder': 'مثال: ممارسة التأمل الواعي',
+                'therapist.category_description': 'الوصف',
+                'therapist.category_desc_placeholder': 'وصف موجز لما يجب تتبعه',
+                'therapist.reverse_scoring': 'تسجيل عكسي (مثل القلق - الأقل أفضل)',
+                'therapist.reverse_scoring_desc': 'حدد هذا إذا كانت القيم الأقل تشير إلى تحسن',
+                'therapist.remove_category': 'إزالة',
+                'therapist.max_custom_categories': 'يمكن إضافة 4 فئات مخصصة كحد أقصى',
                 'therapist.select_client_for_insights': 'اختر عميلاً لعرض الرؤى المدعومة بالذكاء الاصطناعي',
 'therapist.error_loading_insights': 'خطأ في تحميل الرؤى',
 'therapist.ai_insights': 'رؤى العملاء المدعومة بالذكاء الاصطناعي',
@@ -2096,7 +2173,34 @@ credentials: 'include'
                             }
                         </div>
                     </div>
+
+<div class="form-section" id="customCategoriesSection">
+                        <h3>${i18n.t('therapist.custom_categories_management')}</h3>
+                        <div id="existingCustomCategories">
+                            ${client.custom_categories && client.custom_categories.length > 0 ?
+                                `<p>${i18n.t('therapist.current_custom_categories')}:</p>
+                                <ul>
+                                    ${client.custom_categories.map(cat =>
+                                        `<li>${cat.name} - ${cat.description} ${cat.reverse_scoring ? '(Lower is better)' : ''}</li>`
+                                    ).join('')}
+                                </ul>` :
+                                `<p style="color: #999;">${i18n.t('therapist.no_custom_categories')}</p>`
+                            }
+                        </div>
+                        <button class="btn btn-secondary" onclick="showAddCustomCategoryModal()">
+                            <span>${i18n.t('therapist.add_custom_category_existing')}</span>
+                        </button>
+                    </div>
+
+
                 `;
+
+
+
+
+
+
+
 
                 // Show modal
                 document.getElementById('clientModal').classList.add('active');
@@ -2163,6 +2267,62 @@ credentials: 'include'
             }
         }
 
+
+
+
+        // Add custom category input
+        function addCustomCategoryInput() {
+            const container = document.getElementById('customCategoriesContainer');
+            const categoryCount = container.querySelectorAll('.custom-category-group').length;
+
+            if (categoryCount < 4) {
+                const div = document.createElement('div');
+                div.className = 'custom-category-group';
+                div.style.cssText = 'border: 1px solid #e0e0e0; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; background: #fafafa;';
+
+                const categoryNum = categoryCount + 1;
+                div.innerHTML = `
+                    <div class="form-group">
+                        <label>${i18n.t('therapist.category_name')} ${categoryNum}</label>
+                        <input type="text" class="form-input custom-category-name"
+                               placeholder="${i18n.t('therapist.category_name_placeholder')}" maxlength="50">
+                    </div>
+                    <div class="form-group">
+                        <label>${i18n.t('therapist.category_description')}</label>
+                        <input type="text" class="form-input custom-category-desc"
+                               placeholder="${i18n.t('therapist.category_desc_placeholder')}" maxlength="200">
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" class="custom-category-reverse">
+                            ${i18n.t('therapist.reverse_scoring')}
+                        </label>
+                        <small style="display: block; color: #666; margin-top: 0.25rem;">
+                            ${i18n.t('therapist.reverse_scoring_desc')}
+                        </small>
+                    </div>
+                    <button class="btn btn-secondary btn-small" onclick="removeCustomCategory(this)">
+                        ${i18n.t('therapist.remove_category')}
+                    </button>
+                `;
+                container.appendChild(div);
+            } else {
+                showMessage(i18n.t('therapist.max_custom_categories'), 'error');
+            }
+        }
+
+        // Remove custom category
+        function removeCustomCategory(button) {
+            button.closest('.custom-category-group').remove();
+        }
+
+
+
+
+
+
+
+
         // Create client
         async function createClient() {
             try {
@@ -2176,9 +2336,26 @@ credentials: 'include'
                 }
 
                 // Get selected categories
+               // Get selected categories
                 const selectedCategories = [];
                 document.querySelectorAll('#trackingCategoriesSelection input:checked').forEach(input => {
                     selectedCategories.push(parseInt(input.value));
+                });
+
+                // Get custom categories
+                const customCategories = [];
+                document.querySelectorAll('.custom-category-group').forEach(group => {
+                    const name = group.querySelector('.custom-category-name').value.trim();
+                    const desc = group.querySelector('.custom-category-desc').value.trim();
+                    const reverse = group.querySelector('.custom-category-reverse').checked;
+
+                    if (name) {
+                        customCategories.push({
+                            name: name,
+                            description: desc || name,
+                            reverse_scoring: reverse
+                        });
+                    }
                 });
 
                 // Get goals
@@ -2194,6 +2371,7 @@ credentials: 'include'
                     password: password || undefined,
                     client_name: clientName || undefined,
                     tracking_categories: selectedCategories,
+                    custom_categories: customCategories,
                     initial_goals: goals
                 };
 
@@ -2225,13 +2403,14 @@ credentials: 'include',
                     <em>${i18n.t('therapist.save_credentials')}</em>
                 `, 'important', true);
 
-                 // Clear form
+                  // Clear form
                 document.getElementById('clientEmail').value = '';
                 document.getElementById('tempPassword').value = '';
                 document.getElementById('clientName').value = '';
                 document.querySelectorAll('#initialGoalsContainer input').forEach(input => {
                     input.value = '';
                 });
+                document.getElementById('customCategoriesContainer').innerHTML = '';
 
                 // Reload clients
                 loadClients();
@@ -2774,6 +2953,97 @@ credentials: 'include'
             localStorage.removeItem('userRole');
             window.location.href = '/login.html';
         }
+
+          // Custom Categories for Existing Clients Functions
+        function showAddCustomCategoryModal() {
+            document.getElementById('addCustomCategoryModal').style.display = 'block';
+            document.getElementById('existingClientCustomCategories').innerHTML = '';
+            addExistingClientCustomCategory(); // Add first input
+        }
+
+        function closeAddCustomCategoryModal() {
+            document.getElementById('addCustomCategoryModal').style.display = 'none';
+        }
+
+        function addExistingClientCustomCategory() {
+            const container = document.getElementById('existingClientCustomCategories');
+            const existing = container.querySelectorAll('.custom-category-input').length;
+
+            // Check current custom categories count
+            const currentCustom = window.currentClientData?.custom_categories?.length || 0;
+
+            if (existing + currentCustom >= 4) {
+                showMessage(i18n.t('therapist.max_custom_reached'), 'error');
+                return;
+            }
+
+            const div = document.createElement('div');
+            div.className = 'custom-category-input';
+            div.style.cssText = 'border: 1px solid #e0e0e0; padding: 1rem; margin-bottom: 1rem; border-radius: 8px;';
+            div.innerHTML = `
+                <div class="form-group">
+                    <label>${i18n.t('therapist.category_name')}</label>
+                    <input type="text" class="form-input category-name" maxlength="50" required>
+                </div>
+                <div class="form-group">
+                    <label>${i18n.t('therapist.category_description')}</label>
+                    <input type="text" class="form-input category-desc" maxlength="200">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" class="category-reverse">
+                        ${i18n.t('therapist.reverse_scoring')}
+                    </label>
+                </div>
+                <button class="btn btn-small" onclick="this.parentElement.remove()">Remove</button>
+            `;
+            container.appendChild(div);
+        }
+
+        async function saveCustomCategoriesForExisting() {
+            const categories = [];
+            document.querySelectorAll('#existingClientCustomCategories .custom-category-input').forEach(div => {
+                const name = div.querySelector('.category-name').value.trim();
+                const desc = div.querySelector('.category-desc').value.trim();
+                const reverse = div.querySelector('.category-reverse').checked;
+
+                if (name) {
+                    categories.push({ name, description: desc, reverse_scoring: reverse });
+                }
+            });
+
+            if (categories.length === 0) {
+                showMessage(i18n.t('therapist.no_categories_to_add'), 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/therapist/client/${window.currentClientId}/add-custom-categories`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept-Language': i18n.currentLang
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ custom_categories: categories })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showMessage(i18n.t('therapist.categories_added_success'), 'success');
+                    closeAddCustomCategoryModal();
+                    viewClientDetails(window.currentClientId); // Refresh the view
+                } else {
+                    showMessage(data.error || i18n.t('common.error_occurred'), 'error');
+                }
+            } catch (error) {
+                showMessage(i18n.t('common.error_occurred'), 'error');
+            }
+        }
+
+
+
+
     </script>
 <script>
     // Force translation after everything is loaded

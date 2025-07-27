@@ -728,6 +728,30 @@ class ClientTrackingPlan(db.Model):
     category = db.relationship('TrackingCategory', backref='client_plans')
 
 
+class CustomCategory(db.Model):
+    __tablename__ = 'custom_categories'
+
+    id = db.Column(db.Integer, primary_key=True)
+    therapist_id = db.Column(db.Integer, db.ForeignKey('therapists.id'), nullable=False)
+    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    scale_min = db.Column(db.Integer, default=1)
+    scale_max = db.Column(db.Integer, default=5)
+    reverse_scoring = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+
+    # Relationships
+    therapist = db.relationship('Therapist', backref='custom_categories')
+    client = db.relationship('Client', backref='custom_categories')
+
+
+
+
+
+
+
 class WeeklyGoal(db.Model):
     __tablename__ = 'weekly_goals'
 
@@ -789,13 +813,15 @@ class CategoryResponse(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.Integer, db.ForeignKey('clients.id'))
-    category_id = db.Column(db.Integer, db.ForeignKey('tracking_categories.id'))
+    category_id = db.Column(db.Integer, db.ForeignKey('tracking_categories.id'), nullable=True)
+    custom_category_id = db.Column(db.Integer, db.ForeignKey('custom_categories.id'), nullable=True)
     response_date = db.Column(db.Date, nullable=False)
     value = db.Column(db.Integer, nullable=False)
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     category = db.relationship('TrackingCategory', backref='responses')
+    custom_category = db.relationship('CustomCategory', backref='responses')
 
 
 class GoalCompletion(db.Model):
@@ -3108,13 +3134,27 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
 
     # Headers - dynamically based on categories
     all_categories = TrackingCategory.query.all()
+    custom_categories = CustomCategory.query.filter_by(
+        client_id=client.id,
+        is_active=True
+    ).all()
+
     headers = [trans('date'), trans('day'), trans('checkin_time')]
 
-    # Add category headers
+    # Add default category headers
     for category in all_categories:
         cat_name = translate_category_name(category.name, lang)
         headers.append(f"{cat_name} (1-5)")
         headers.append(f"{cat_name} {trans('notes')}")
+
+        # Add custom category headers
+    for custom_cat in custom_categories:
+            headers.append(f"{custom_cat.name} (1-5)")
+            headers.append(f"{custom_cat.name} {trans('notes')}")
+
+
+
+
 
     headers.append(trans('completion'))
 
@@ -3509,13 +3549,23 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
 
         # Headers - dynamically based on categories
         all_categories = TrackingCategory.query.all()
+        custom_categories = CustomCategory.query.filter_by(
+            client_id=client.id,
+            is_active=True
+        ).all()
+
         headers = [trans('date'), trans('day'), trans('checkin_time')]
 
-        # Add category headers
+        # Add default category headers
         for category in all_categories:
             cat_name = translate_category_name(category.name, lang)
             headers.append(f"{cat_name} (1-5)")
             headers.append(f"{cat_name} {trans('notes')}")
+
+        # Add custom category headers
+        for custom_cat in custom_categories:
+            headers.append(f"{custom_cat.name} (1-5)")
+            headers.append(f"{custom_cat.name} {trans('notes')}")
 
         headers.append(trans('completion'))
 
@@ -4000,15 +4050,41 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
         """
 
         # Get all categories
-        all_categories = TrackingCategory.query.all()
+        # Get all categories (default + custom for this client)
+        all_categories = list(TrackingCategory.query.all())
+
+        # Add custom categories for this client
+        custom_categories = CustomCategory.query.filter_by(
+            client_id=client.id,
+            is_active=True
+        ).all()
+
+        # Combine all categories
+        all_category_data = []
+        for cat in all_categories:
+            all_category_data.append({
+                'id': cat.id,
+                'name': cat.name,
+                'is_custom': False,
+                'reverse_scoring': 'anxiety' in cat.name.lower()
+            })
+
+        for custom_cat in custom_categories:
+            all_category_data.append({
+                'id': f'custom_{custom_cat.id}',
+                'name': custom_cat.name,
+                'is_custom': True,
+                'reverse_scoring': custom_cat.reverse_scoring
+            })
 
         # Calculate column width for categories
         remaining_width = 76  # 100% - 24% (date + day columns)
-        col_width = remaining_width // len(all_categories)
+        col_width = remaining_width // len(all_category_data) if all_category_data else remaining_width
 
         # Add category headers
-        for category in all_categories:
-            cat_name = translate_category_name(category.name, lang)
+        for cat_data in all_category_data:
+            cat_name = translate_category_name(cat_data['name'], lang) if not cat_data['is_custom'] else cat_data[
+                'name']
             # Shorten very long category names to fit
             if len(cat_name) > 15:
                 cat_name = cat_name[:13] + '..'
@@ -4280,15 +4356,41 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
         """
 
         # Get all categories
-        all_categories = TrackingCategory.query.all()
+        # Get all categories (default + custom for this client)
+        all_categories = list(TrackingCategory.query.all())
+
+        # Add custom categories for this client
+        custom_categories = CustomCategory.query.filter_by(
+            client_id=client.id,
+            is_active=True
+        ).all()
+
+        # Combine all categories
+        all_category_data = []
+        for cat in all_categories:
+            all_category_data.append({
+                'id': cat.id,
+                'name': cat.name,
+                'is_custom': False,
+                'reverse_scoring': 'anxiety' in cat.name.lower()
+            })
+
+        for custom_cat in custom_categories:
+            all_category_data.append({
+                'id': f'custom_{custom_cat.id}',
+                'name': custom_cat.name,
+                'is_custom': True,
+                'reverse_scoring': custom_cat.reverse_scoring
+            })
 
         # Calculate column width for categories
         remaining_width = 76  # 100% - 24% (date + day columns)
-        col_width = remaining_width // len(all_categories)
+        col_width = remaining_width // len(all_category_data) if all_category_data else remaining_width
 
         # Add category headers
-        for category in all_categories:
-            cat_name = translate_category_name(category.name, lang)
+        for cat_data in all_category_data:
+            cat_name = translate_category_name(cat_data['name'], lang) if not cat_data['is_custom'] else cat_data[
+                'name']
             # Shorten very long category names to fit
             if len(cat_name) > 15:
                 cat_name = cat_name[:13] + '..'
@@ -5432,9 +5534,41 @@ def create_client():
         )
         db.session.add(welcome_note)
 
+        # Create custom categories if provided
+        custom_categories = data.get('custom_categories', [])
+        custom_categories_created = 0
+
+        for custom_cat_data in custom_categories[:4]:  # Limit to 4 custom categories
+            if custom_cat_data.get('name'):
+                custom_category = CustomCategory(
+                    therapist_id=therapist.id,
+                    client_id=client.id,
+                    name=custom_cat_data['name'],
+                    description=custom_cat_data.get('description', ''),
+                    reverse_scoring=custom_cat_data.get('reverse_scoring', False)
+                )
+                db.session.add(custom_category)
+                custom_categories_created += 1
+
+                # Create custom categories if provided
+        custom_categories = data.get('custom_categories', [])
+        custom_categories_created = 0
+
+        for custom_cat_data in custom_categories[:4]:  # Limit to 4 custom categories
+                    if custom_cat_data.get('name'):
+                        custom_category = CustomCategory(
+                            therapist_id=therapist.id,
+                            client_id=client.id,
+                            name=custom_cat_data['name'],
+                            description=custom_cat_data.get('description', ''),
+                            reverse_scoring=custom_cat_data.get('reverse_scoring', False)
+                        )
+                        db.session.add(custom_category)
+                        custom_categories_created += 1
+
         db.session.commit()
 
-        # Final verification
+                # Final verification
         client_categories = ClientTrackingPlan.query.filter_by(client_id=client.id).count()
 
         logger.info('create_client_success', extra={
@@ -5578,6 +5712,246 @@ def add_therapist_note():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/therapist/client/<int:client_id>/add-custom-categories', methods=['POST'])
+@require_auth(['therapist'])
+def add_custom_categories_to_existing_client(client_id):
+    """Add custom categories to an existing client"""
+    try:
+        therapist = request.current_user.therapist
+        data = request.json
+
+        # Verify client belongs to therapist
+        client = Client.query.filter_by(
+            id=client_id,
+            therapist_id=therapist.id
+        ).first()
+
+        if not client:
+            return jsonify({'error': 'Client not found'}), 404
+
+        # Count existing custom categories
+        existing_count = CustomCategory.query.filter_by(
+            client_id=client_id,
+            is_active=True
+        ).count()
+
+        if existing_count >= 4:
+            return jsonify({'error': 'Client already has maximum custom categories'}), 400
+
+        # Add new custom categories
+        custom_categories = data.get('custom_categories', [])
+        added_categories = []
+
+        for custom_cat_data in custom_categories[:4 - existing_count]:
+            if custom_cat_data.get('name'):
+                # Check for duplicate name
+                existing = CustomCategory.query.filter_by(
+                    client_id=client_id,
+                    name=custom_cat_data['name'],
+                    is_active=True
+                ).first()
+
+                if existing:
+                    continue
+
+                custom_category = CustomCategory(
+                    therapist_id=therapist.id,
+                    client_id=client_id,
+                    name=custom_cat_data['name'],
+                    description=custom_cat_data.get('description', ''),
+                    reverse_scoring=custom_cat_data.get('reverse_scoring', False)
+                )
+                db.session.add(custom_category)
+                added_categories.append(custom_category)
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'added_count': len(added_categories),
+            'categories': [{
+                'id': cat.id,
+                'name': cat.name,
+                'description': cat.description
+            } for cat in added_categories]
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+
+
+
+
+
+
+
+@app.route('/api/therapist/create-custom-category', methods=['POST'])
+@require_auth(['therapist'])
+def create_custom_category():
+    """Create custom category for a specific client"""
+    try:
+        therapist = request.current_user.therapist
+        data = request.json
+
+        client_id = data.get('client_id')
+        name = data.get('name')
+        description = data.get('description', '')
+        reverse_scoring = data.get('reverse_scoring', False)
+        scale_min = data.get('scale_min', 1)
+        scale_max = data.get('scale_max', 5)
+
+        # Verify client belongs to therapist
+        client = Client.query.filter_by(
+            id=client_id,
+            therapist_id=therapist.id
+        ).first()
+
+        if not client:
+            return jsonify({'error': 'Client not found'}), 404
+
+        # Check if custom category with same name exists for this client
+        existing = CustomCategory.query.filter_by(
+            client_id=client_id,
+            name=name,
+            is_active=True
+        ).first()
+
+        if existing:
+            return jsonify({'error': 'Category with this name already exists for this client'}), 400
+
+        # Create custom category
+        custom_category = CustomCategory(
+            therapist_id=therapist.id,
+            client_id=client_id,
+            name=name,
+            description=description,
+            scale_min=scale_min,
+            scale_max=scale_max,
+            reverse_scoring=reverse_scoring
+        )
+        db.session.add(custom_category)
+        db.session.flush()
+
+        # Add to client's tracking plan
+        plan = ClientTrackingPlan(
+            client_id=client_id,
+            category_id=None,  # NULL for custom categories
+            is_active=True
+        )
+        db.session.add(plan)
+        db.session.commit()
+
+        logger.info('custom_category_created', extra={
+            'extra_data': {
+                'therapist_id': therapist.id,
+                'client_id': client_id,
+                'category_name': name,
+                'custom_category_id': custom_category.id,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
+
+        return jsonify({
+            'success': True,
+            'custom_category': {
+                'id': custom_category.id,
+                'name': custom_category.name,
+                'description': custom_category.description,
+                'reverse_scoring': custom_category.reverse_scoring
+            }
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error('create_custom_category_error', extra={
+            'extra_data': {
+                'error': str(e),
+                'therapist_id': therapist.id,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        }, exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/therapist/client/<int:client_id>/add-custom-categories', methods=['POST'])
+@require_auth(['therapist'])
+def add_custom_categories_to_existing_client(client_id):
+    """Add custom categories to an existing client"""
+    try:
+        therapist = request.current_user.therapist
+        data = request.json
+
+        # Verify client belongs to therapist
+        client = Client.query.filter_by(
+            id=client_id,
+            therapist_id=therapist.id
+        ).first()
+
+        if not client:
+            return jsonify({'error': 'Client not found'}), 404
+
+        # Count existing custom categories
+        existing_count = CustomCategory.query.filter_by(
+            client_id=client_id,
+            is_active=True
+        ).count()
+
+        if existing_count >= 4:
+            return jsonify({'error': 'Client already has maximum custom categories'}), 400
+
+        # Add new custom categories
+        custom_categories = data.get('custom_categories', [])
+        added_categories = []
+
+        for custom_cat_data in custom_categories[:4 - existing_count]:
+            if custom_cat_data.get('name'):
+                # Check for duplicate name
+                existing = CustomCategory.query.filter_by(
+                    client_id=client_id,
+                    name=custom_cat_data['name'],
+                    is_active=True
+                ).first()
+
+                if existing:
+                    continue
+
+                custom_category = CustomCategory(
+                    therapist_id=therapist.id,
+                    client_id=client_id,
+                    name=custom_cat_data['name'],
+                    description=custom_cat_data.get('description', ''),
+                    reverse_scoring=custom_cat_data.get('reverse_scoring', False)
+                )
+                db.session.add(custom_category)
+                added_categories.append(custom_category)
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'added_count': len(added_categories),
+            'categories': [{
+                'id': cat.id,
+                'name': cat.name,
+                'description': cat.description
+            } for cat in added_categories]
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+
+
+
 # ============= CLIENT ENDPOINTS =============
 
 @app.route('/api/client/dashboard', methods=['GET'])
@@ -5592,24 +5966,53 @@ def client_dashboard():
         today_checkin = client.checkins.filter_by(checkin_date=date.today()).first()
 
         # Get active tracking categories with translations
+        # Get active tracking categories with translations
         tracking_categories = []
+
+        # First, get all default categories
         for plan in client.tracking_plans.filter_by(is_active=True):
+            if plan.category_id:  # Default category
+                # Get today's response
+                today_response = CategoryResponse.query.filter_by(
+                    client_id=client.id,
+                    category_id=plan.category_id,
+                    response_date=date.today()
+                ).first()
+
+                # Translate category name and description
+                translated_name = translate_category_name(plan.category.name, lang)
+
+                tracking_categories.append({
+                    'id': plan.category_id,
+                    'name': translated_name,
+                    'original_name': plan.category.name,
+                    'description': translate_category_name(plan.category.name + '_desc', lang),
+                    'today_value': today_response.value if today_response else None,
+                    'is_custom': False
+                })
+
+        # Then, get all custom categories for this client
+        custom_categories = CustomCategory.query.filter_by(
+            client_id=client.id,
+            is_active=True
+        ).all()
+
+        for custom_cat in custom_categories:
             # Get today's response
             today_response = CategoryResponse.query.filter_by(
                 client_id=client.id,
-                category_id=plan.category_id,
+                custom_category_id=custom_cat.id,
                 response_date=date.today()
             ).first()
 
-            # Translate category name and description
-            translated_name = translate_category_name(plan.category.name, lang)
-
             tracking_categories.append({
-                'id': plan.category_id,
-                'name': translated_name,
-                'original_name': plan.category.name,  # Always the English name from DB
-                'description': translate_category_name(plan.category.name + '_desc', lang),  # Translate description too
-                'today_value': today_response.value if today_response else None
+                'id': f'custom_{custom_cat.id}',
+                'name': custom_cat.name,
+                'original_name': custom_cat.name,
+                'description': custom_cat.description,
+                'today_value': today_response.value if today_response else None,
+                'is_custom': True,
+                'reverse_scoring': custom_cat.reverse_scoring
             })
 
         # Get this week's goals
@@ -5889,26 +6292,55 @@ def submit_checkin():
         responses_logged = []
 
         for cat_id, value in category_responses.items():
-            # Get category to check its name
-            category = TrackingCategory.query.get(int(cat_id))
-            if not category:
-                continue
+            # Check if it's a custom category
+            if isinstance(cat_id, str) and cat_id.startswith('custom_'):
+                # Custom category
+                custom_cat_id = int(cat_id.replace('custom_', ''))
+                custom_category = CustomCategory.query.get(custom_cat_id)
 
-            # Create category response
-            response = CategoryResponse(
-                client_id=client.id,
-                category_id=int(cat_id),
-                response_date=checkin_date,
-                value=value,
-                notes=category_notes.get(cat_id, '')
-            )
-            db.session.add(response)
+                if not custom_category or custom_category.client_id != client.id:
+                    continue
 
-            responses_logged.append({
-                'category': category.name,
-                'value': value,
-                'has_notes': bool(category_notes.get(cat_id, ''))
-            })
+                # Create category response for custom category
+                response = CategoryResponse(
+                    client_id=client.id,
+                    category_id=None,
+                    custom_category_id=custom_cat_id,
+                    response_date=checkin_date,
+                    value=value,
+                    notes=category_notes.get(cat_id, '')
+                )
+                db.session.add(response)
+
+                responses_logged.append({
+                    'category': custom_category.name,
+                    'value': value,
+                    'has_notes': bool(category_notes.get(cat_id, '')),
+                    'is_custom': True
+                })
+            else:
+                # Default category
+                category = TrackingCategory.query.get(int(cat_id))
+                if not category:
+                    continue
+
+                # Create category response
+                response = CategoryResponse(
+                    client_id=client.id,
+                    category_id=int(cat_id),
+                    custom_category_id=None,
+                    response_date=checkin_date,
+                    value=value,
+                    notes=category_notes.get(cat_id, '')
+                )
+                db.session.add(response)
+
+                responses_logged.append({
+                    'category': category.name,
+                    'value': value,
+                    'has_notes': bool(category_notes.get(cat_id, '')),
+                    'is_custom': False
+                })
 
             # Also update the legacy fields in daily_checkins for backward compatibility
             if 'emotion' in category.name.lower():
@@ -6516,6 +6948,54 @@ def get_translated_categories():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+
+
+@app.route('/api/therapist/client/<int:client_id>/custom-categories', methods=['GET'])
+@require_auth(['therapist'])
+def get_client_custom_categories(client_id):
+    """Get all custom categories for a specific client"""
+    try:
+        therapist = request.current_user.therapist
+
+        # Verify client belongs to therapist
+        client = Client.query.filter_by(
+            id=client_id,
+            therapist_id=therapist.id
+        ).first()
+
+        if not client:
+            return jsonify({'error': 'Client not found'}), 404
+
+        # Get custom categories
+        custom_categories = CustomCategory.query.filter_by(
+            client_id=client_id,
+            is_active=True
+        ).all()
+
+        category_data = []
+        for cat in custom_categories:
+            category_data.append({
+                'id': cat.id,
+                'name': cat.name,
+                'description': cat.description,
+                'reverse_scoring': cat.reverse_scoring,
+                'scale_min': cat.scale_min,
+                'scale_max': cat.scale_max,
+                'created_at': cat.created_at.isoformat()
+            })
+
+        return jsonify({
+            'success': True,
+            'custom_categories': category_data
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
 
 
 @app.route('/api/therapist/update-tracking-plan', methods=['POST'])
