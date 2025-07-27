@@ -1692,8 +1692,8 @@ credentials: 'include'
 
             return `
                 <div class="form-section" data-category-id="${cat.id}" data-category-name="${originalName}">
-                    <h3><span class="rating-emoji">${emoji}</span> <span data-i18n="category.medication">${catTranslatedName}</span></h3>
-                    <p style="color: #666; font-size: 0.9rem;" data-i18n="checkin.medication">${medicationQuestion}</p>
+                    <h3><span class="rating-emoji">${emoji}</span> ${isCustom ? catTranslatedName : `<span data-i18n="category.medication">${catTranslatedName}</span>`}</h3>
+                    <p style="color: #666; font-size: 0.9rem;">${isCustom ? catTranslatedDesc : `<span data-i18n="checkin.medication">${medicationQuestion}</span>`}</p>
                     <div class="rating-scale">
                         <button type="button" class="rating-button" data-category="${cat.id}" data-value="0" onclick="selectRating(this)">
                             <span data-i18n="checkin.med_na">${window.i18n ? window.i18n.t('checkin.med_na') : 'N/A'}</span>
@@ -1722,8 +1722,8 @@ credentials: 'include'
 
                 return `
                 <div class="form-section" data-category-id="${cat.id}" data-category-name="${originalName}">
-                    <h3><span class="rating-emoji">${emoji}</span> <span data-i18n="category.${categoryKey}">${catTranslatedName}</span></h3>
-                    <p style="color: #666; font-size: 0.9rem;" data-i18n="category.${categoryKey}_desc">${catTranslatedDesc}</p>
+                    <h3><span class="rating-emoji">${emoji}</span> ${isCustom ? catTranslatedName : `<span data-i18n="category.${categoryKey}">${catTranslatedName}</span>`}</h3>
+                    <p style="color: #666; font-size: 0.9rem;">${isCustom ? catTranslatedDesc : `<span data-i18n="category.${categoryKey}_desc">${catTranslatedDesc}</span>`}</p>
                     <div class="rating-scale">
                         ${[1,2,3,4,5].map(val => `
                             <button type="button"
