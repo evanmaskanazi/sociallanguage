@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
      <meta name="google" content="notranslate">
     <meta name="format-detection" content="telephone=no">
     <meta http-equiv="content-language" content="mul">
@@ -325,6 +325,25 @@
             position: relative;
         }
 
+        @media (max-width: 768px) {
+            .rating-button {
+                min-width: 52px;
+                height: 52px;
+                font-size: 0.9rem;
+            }
+
+            .rating-emoji {
+                font-size: 1.25rem !important;
+            }
+
+            /* iOS touch target fix */
+            @supports (-webkit-touch-callout: none) {
+                .rating-button {
+                    -webkit-tap-highlight-color: transparent;
+                }
+            }
+        }
+
         .rating-button:hover {
             border-color: #667eea;
             transform: scale(1.05);
@@ -396,6 +415,25 @@
             border-radius: 8px;
             font-size: 1rem;
         }
+
+
+/* Mobile form improvements */
+        @media (max-width: 768px) {
+            .form-input,
+            .date-input,
+            .search-input,
+            .filter-select,
+            .notes-textarea {
+                font-size: 16px; /* Prevents zoom on iOS */
+                padding: 0.875rem;
+            }
+
+            .form-section {
+                padding: 1rem;
+            }
+        }
+
+
 
         /* Buttons */
         .btn {
@@ -558,16 +596,70 @@
 
         /* Responsive */
         @media (max-width: 768px) {
+            .header {
+                min-height: auto;
+                padding: 1rem;
+            }
+
             .header-content {
                 flex-direction: column;
-                gap: 1rem;
+                gap: 0.75rem;
                 text-align: center;
+                align-items: stretch;
+            }
+
+            .header h1 {
+                font-size: 1.4rem;
+                margin-bottom: 0.5rem;
+                line-height: 1.2;
+            }
+
+            .user-info {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 0.75rem;
+                flex-wrap: wrap;
+                width: 100%;
+                min-height: 40px;
+            }
+
+            .logout-btn {
+                min-width: fit-content;
+                white-space: nowrap;
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            #clientSerial {
+                font-size: 0.9rem;
+                max-width: 200px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            /* RTL-specific mobile fixes */
+            .rtl .header-content {
+                flex-direction: column !important;
+            }
+
+            .rtl .user-info {
+                flex-direction: row !important;
+                justify-content: center;
             }
 
             .nav-tabs {
                 overflow-x: auto;
                 gap: 1rem;
                 padding: 0 1rem;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+
+            .nav-tabs::-webkit-scrollbar {
+                display: none;
             }
 
             .dashboard-grid {
@@ -588,6 +680,23 @@
 
             .day-cell {
                 font-size: 0.875rem;
+            }
+        }
+
+        /* Extra small devices */
+        @media (max-width: 375px) {
+            .header h1 {
+                font-size: 1.2rem;
+            }
+
+            .logout-btn {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.85rem;
+            }
+
+            #clientSerial {
+                font-size: 0.85rem;
+                max-width: 150px;
             }
         }
     </style>
