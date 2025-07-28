@@ -434,22 +434,49 @@ def send_email_task(self, email_queue_id):
             print(f"[CELERY] Successfully sent email to {email.to_email}")
             return {'success': True, 'email': email.to_email}
 
+
         except Exception as e:
+
             # Update status on failure
+
             try:
+
                 with app.app_context():
+
                     email = EmailQueue.query.get(email_queue_id)
+
                     if email:
-                        email.status = 'failed'
-                        email.error_message = str(e)
+
+                        # If max retries reached, mark as failed
+
+                        if self.request.retries >= self.max_retries - 1:
+
+                            email.status = 'failed'
+
+                            email.error_message = str(e)
+
+                        else:
+
+                            # Otherwise, reset to pending for retry
+
+                            email.status = 'pending'
+
+                            email.error_message = f"Retry {self.request.retries + 1}: {str(e)}"
+
                         email.attempts = (email.attempts or 0) + 1
+
                         email.last_attempt_at = datetime.utcnow()
+
                         db.session.commit()
+
             except:
+
                 pass
 
             print(f"[CELERY] Failed to send email {email_queue_id}: {str(e)}")
+
             # Retry with exponential backoff
+
             raise self.retry(exc=e, countdown=60 * (2 ** self.request.retries))
 
 
@@ -461,9 +488,26 @@ def process_email_queue_task():
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
     from new_backend import app, db, EmailQueue
+    from datetime import datetime, timedelta
 
     with app.app_context():
         try:
+            # FIRST: Reset any stuck 'processing' emails older than 10 minutes
+            ten_minutes_ago = datetime.utcnow() - timedelta(minutes=10)
+            stuck_emails = EmailQueue.query.filter(
+                EmailQueue.status == 'processing',
+                EmailQueue.last_attempt_at < ten_minutes_ago
+            ).all()
+
+            for email in stuck_emails:
+                email.status = 'pending'
+                email.attempts = (email.attempts or 0) + 1
+                print(f"[CELERY] Reset stuck email {email.id} to pending")
+
+            if stuck_emails:
+                db.session.commit()
+                print(f"[CELERY] Reset {len(stuck_emails)} stuck emails")
+
             # Get pending emails
             pending_emails = EmailQueue.query.filter_by(
                 status='pending'
@@ -477,13 +521,15 @@ def process_email_queue_task():
                 # Send each email as a separate Celery task
                 send_email_task.delay(email.id)
 
-                # Mark as processing
+                # Mark as processing with timestamp
                 email.status = 'processing'
-                email.attempts += 1
+                email.attempts = (email.attempts or 0) + 1
+                email.last_attempt_at = datetime.utcnow()
 
             db.session.commit()
 
-            return {'processed': len(pending_emails)}
+            return {'processed': len(pending_emails),
+                    'reset_stuck': len(stuck_emails) if 'stuck_emails' in locals() else 0}
 
         except Exception as e:
             return {'error': str(e)}

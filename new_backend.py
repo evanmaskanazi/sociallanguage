@@ -1365,10 +1365,12 @@ def send_email_async(app, to_email, subject, body, html_body=None):
 
             app.logger.info(f"Email sent successfully to {to_email}")
             email_circuit_breaker.call_succeeded()
+            return True  # ADD THIS LINE - Return True on success
 
         except Exception as e:
             app.logger.error(f"Error sending email: {e}")
             email_circuit_breaker.call_failed()
+            return False  # ADD THIS LINE - Return False on failure
 
 
 def process_email_queue_batch():
