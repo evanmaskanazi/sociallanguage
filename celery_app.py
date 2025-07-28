@@ -216,11 +216,11 @@ def send_daily_reminders():
             for reminder in reminders:
                 try:
                     client = reminder.client
-                    if client and client.user and client.user.email:
-                        # Determine which email to use
+                    if client and client.user:
+                        # Determine which email to use for sending
                         email_to_use = reminder.reminder_email if reminder.reminder_email else client.user.email
 
-                        # Skip test emails
+                        # Skip ONLY if the email we're actually sending to is a test email
                         if (email_to_use.endswith('example.com') or
                                 email_to_use.endswith('test.test') or
                                 email_to_use == 'test@test.test'):
