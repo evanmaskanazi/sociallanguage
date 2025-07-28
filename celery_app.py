@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from celery.schedules import crontab
 
 # Initialize Celery
 celery = Celery(
@@ -29,7 +30,7 @@ celery.conf.update(
     beat_schedule={
         'send-daily-reminders': {
             'task': 'celery_app.send_daily_reminders',
-            'schedule': 3600.0,  # Run every hour
+            'schedule': crontab(minute=0), # Run every hour
         },
         'process-email-queue': {
             'task': 'celery_app.process_email_queue_task',
@@ -41,7 +42,7 @@ celery.conf.update(
         },
         'cleanup-old-emails': {
             'task': 'celery_app.cleanup_old_emails',
-            'schedule': 86400.0,  # Run daily
+            'schedule': crontab(hour=0, minute=0), # Run daily
         },
     }
 )
