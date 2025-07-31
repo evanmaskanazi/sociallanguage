@@ -18,7 +18,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 import re
 import random
 import string
-from flask import Flask, request, jsonify, send_file, session,render_template, jsonify, redirect, url_for, session, make_response
+from flask import Flask, request, jsonify, send_file, session,render_template, jsonify, redirect, url_for,  make_response,render_template,  redirect, url_for,  flash
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
@@ -70,7 +70,28 @@ from flask import make_response
 # Add Flask-Talisman security headers HERE
 from flask_talisman import Talisman
 
+from markupsafe import escape, Markup
+import html
+import re
 
+def safe_render(template, **kwargs):
+    """Automatically escape all template variables"""
+    # Escape all string values in kwargs
+    safe_kwargs = {}
+    for key, value in kwargs.items():
+        if isinstance(value, str):
+            safe_kwargs[key] = escape(value)
+        else:
+            safe_kwargs[key] = value
+    return render_template(template, **safe_kwargs)
+
+def sanitize_html(text):
+    """Remove all HTML tags from text"""
+    if not text:
+        return text
+    # Remove all HTML tags
+    clean = re.compile('<.*?>')
+    return re.sub(clean, '', str(text))
 
 
 
@@ -348,6 +369,50 @@ def csrf_protect():
             return jsonify({'error': 'CSRF token missing'}), 403
 
 
+# ADD THE NEW VALIDATION CODE HERE:
+# Dangerous patterns to check for
+DANGEROUS_PATTERNS = [
+    r'<script',
+    r'javascript:',
+    r'onerror=',
+    r'onclick=',
+    r'onload=',
+    r'<iframe',
+    r'<object',
+    r'<embed',
+    r'vbscript:',
+    r'data:text/html'
+]
+
+
+@app.before_request
+def validate_inputs():
+    """Check all inputs for XSS attempts"""
+    # Check all request data
+    for key, value in request.values.items():
+        if value and isinstance(value, str):
+            for pattern in DANGEROUS_PATTERNS:
+                if re.search(pattern, value, re.IGNORECASE):
+                    app.logger.warning(f"Potential XSS attempt blocked: {key}={value[:50]}...")
+                    return jsonify({'error': 'Invalid input detected'}), 400
+
+    # Check JSON data if present
+    if request.is_json and request.json:
+        def check_dict(d):
+            for key, value in d.items():
+                if isinstance(value, str):
+                    for pattern in DANGEROUS_PATTERNS:
+                        if re.search(pattern, value, re.IGNORECASE):
+                            return False
+                elif isinstance(value, dict):
+                    if not check_dict(value):
+                        return False
+            return True
+
+        if not check_dict(request.json):
+            return jsonify({'error': 'Invalid input detected'}), 400
+
+
 @app.after_request
 def set_csrf_cookie(response):
     if 'csrf_token' not in session:
@@ -370,6 +435,14 @@ def get_csrf_token():
 
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+# Secure session cookie settings
+app.config.update(
+    SESSION_COOKIE_SECURE=True,  # HTTPS only
+    SESSION_COOKIE_HTTPONLY=True,  # No JS access
+    SESSION_COOKIE_SAMESITE='Lax',  # CSRF protection
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=24),
+    SESSION_COOKIE_NAME='__Host-session'  # Secure prefix
+)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
     'DATABASE_URL',
     'postgresql://localhost/therapy_companion'
