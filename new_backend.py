@@ -293,7 +293,7 @@ csp = {
 Talisman(app,
     force_https=False if app.debug else True,  # Disable HTTPS in debug mode
     strict_transport_security={'max_age': 31536000, 'include_subdomains': True},
-    content_security_policy=csp
+    content_security_policy=False
 )
 
 # Add additional security headers
