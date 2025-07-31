@@ -279,7 +279,34 @@ app.template_folder = BASE_DIR
 
 
 
+# Security headers including CSP
+csp = {
+    'default-src': "'self'",
+    'script-src': "'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+    'style-src': "'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
+    'font-src': "'self' https://fonts.gstatic.com",
+    'img-src': "'self' data: https:",
+    'connect-src': "'self'"
+}
 
+# Initialize Talisman with security settings
+Talisman(app,
+    force_https=False if app.debug else True,  # Disable HTTPS in debug mode
+    strict_transport_security={'max_age': 31536000, 'include_subdomains': True},
+    content_security_policy=csp,
+    content_security_policy_nonce_in=['script-src', 'style-src']
+)
+
+# Add additional security headers
+@app.after_request
+def set_security_headers(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'
+    return response
 
 
 
