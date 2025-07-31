@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
      <meta name="google" content="notranslate">
     <meta name="format-detection" content="telephone=no">
@@ -700,77 +699,6 @@
                 max-width: 150px;
             }
         }
-
-
-        /* Flashy message styles */
-.message.flashy {
-    background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #f9ca24, #f0932b);
-    background-size: 300% 300%;
-    animation: gradientShift 3s ease infinite, slideIn 0.5s ease-out;
-    padding: 2rem;
-    text-align: center;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-    border: none;
-}
-
-.flashy-content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-}
-
-.flashy-text {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: white;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-    margin: 0;
-    animation: pulse 1s ease-in-out infinite;
-}
-
-.flashy-icon {
-    font-size: 2rem;
-    animation: spin 2s linear infinite;
-}
-
-@keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-
-@keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-.message.fade-out {
-    animation: fadeOut 0.5s ease-out forwards;
-}
-
-@keyframes fadeOut {
-    from { opacity: 1; transform: translateY(0); }
-    to { opacity: 0; transform: translateY(-20px); }
-}
-
-@media (max-width: 768px) {
-    .flashy-text {
-        font-size: 1.2rem;
-    }
-    .flashy-icon {
-        font-size: 1.5rem;
-    }
-}
-
-
-
-
     </style>
 </head>
 <body>
@@ -1775,16 +1703,16 @@ credentials: 'include'
             // Setup ALL categories dynamically
             setupAllCategories();
             const quickStats = document.getElementById('quickStats');
-if (quickStats) {
-    const weekCheckinsCount = clientData.week_checkins_count || 0;
-    const completedGoals = weeklyGoals.filter(g => g.today_completed === true).length;
+            if (quickStats) {
+                const weekCheckins = weeklyGoals.filter(g => g.today_completed !== null).length;
+                const completedGoals = weeklyGoals.filter(g => g.today_completed === true).length;
 
-    quickStats.innerHTML = `
-    <p>${i18n.t('dashboard.this_week')}: ${weekCheckinsCount}/7 ${i18n.t('days')}</p>
-    <p>${i18n.t('goals.completed')}: ${completedGoals}/${weeklyGoals.length}</p>
-        `;
-    }
-}
+                quickStats.innerHTML = `
+                <p>${i18n.t('dashboard.this_week')}: ${weekCheckins}/7 ${i18n.t('days')}</p>
+                <p>${i18n.t('goals.completed')}: ${completedGoals}/${weeklyGoals.length}</p>
+                    `;
+                    }
+        }
 
 
 
@@ -2169,7 +2097,7 @@ if (quickStats) {
                     throw new Error('Failed to submit check-in');
                 }
 
-                showMessage(getRandomPositiveMessage(), 'success', 10000, true);
+                showMessage(i18n.t('client.checkin_success'), 'success');
                 clearCheckinForm();
 
                 // Reload dashboard to update status
@@ -2645,98 +2573,18 @@ credentials: 'include'
             return weekStart;
         }
 
-        function showMessage(text, type = 'success', duration = 5000, isFlashy = false) {
-    const container = document.getElementById('messageContainer');
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${type} ${isFlashy ? 'flashy' : ''}`;
+        function showMessage(text, type = 'success') {
+            const container = document.getElementById('messageContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = text;
 
-    if (isFlashy) {
-        messageDiv.innerHTML = `
-            <div class="flashy-content">
-                <span class="flashy-icon">🌟</span>
-                <p class="flashy-text">${text}</p>
-                <span class="flashy-icon">🌟</span>
-            </div>
-        `;
-    } else {
-        messageDiv.textContent = text;
-    }
+            container.appendChild(messageDiv);
 
-    container.appendChild(messageDiv);
-
-    setTimeout(() => {
-        messageDiv.classList.add('fade-out');
-        setTimeout(() => {
-            messageDiv.remove();
-        }, 500);
-    }, duration);
-}
-
-function getRandomPositiveMessage() {
-    const messages = {
-        'en': [
-            "Amazing work! You're building a healthier future, one day at a time! 💪",
-            "Fantastic job! You are being dedicated! ⭐",
-            "Wonderful! Every check-in is a step towards your wellness journey! 🌈",
-            "Brilliant! You're crushing your goals today! 🎯",
-            "Outstanding! Your consistency is your superpower! 🦸",
-            "Excellent! You're making incredible progress! 📈",
-            "Superb! Your commitment shines through! ✨",
-            "Marvelous! You're taking charge of your wellbeing! 🌟",
-            "Spectacular! Keep up this amazing momentum! 🚀",
-            "Phenomenal! You're writing your success story! 📖"
-        ],
-        'he': [
-          ,"עבודה מדהימה! אתה בונה עתיד בריא יותר, יום אחר יום!"
-          ,"עבודה נהדרת! אתה מסור! ⭐"
-            ,"נפלא! כל צ'ק-אין הוא צעד במסע הבריאות שלך! 🌈"
-            ,"מבריק! אתה מנצח את היעדים שלך היום! 🎯"
-            ,"יוצא מן הכלל! העקביות שלך היא כוח העל שלך! 🦸"
-            ,"מצוין! אתה עושה התקדמות מדהימה! 📈"
-            ,"נהדר! המחויבות שלך זוהרת! ✨"
-            ,"מקסים! אתה לוקח אחריות על הרווחה שלך! 🌟"
-            ,"מרהיב! המשך במומנטום המדהים הזה! 🚀"
-            "פנומנלי! אתה כותב את סיפור ההצלחה שלך! 📖"
-        ],
-        'ru': [
-            "Потрясающая работа! Вы строите более здоровое будущее день за днем! 💪",
-            "Фантастическая работа! Вы преданны своему делу! ⭐",
-            "Замечательно! Каждая отметка - это шаг на пути к благополучию! 🌈",
-            "Блестяще! Вы побеждаете свои цели сегодня! 🎯",
-            "Выдающиеся результаты! Ваша последовательность - это ваша суперсила! 🦸",
-            "Отлично! Вы делаете невероятный прогресс! 📈",
-            "Превосходно! Ваша приверженность сияет! ✨",
-            "Изумительно! Вы берете ответственность за свое благополучие! 🌟",
-            "Впечатляюще! Продолжайте этот удивительный импульс! 🚀",
-            "Феноменально! Вы пишете свою историю успеха! 📖"
-        ],
-        'ar': [
-           ,"عمل مذهل! أنت تبني مستقبلاً صحياً أكثر، يوماً بعد يوم! 💪"
-            ,"عمل رائع! أنت مُتفانٍ! ⭐"
-            ,"رائع! كل تسجيل حضور هو خطوة في رحلة عافيتك! 🌈"
-            ,"ممتاز! أنت تحقق أهدافك اليوم! 🎯"
-            ,"متميز! ثباتك هو قوتك الخارقة! 🦸"
-            ,"ممتاز! أنت تحرز تقدماً لا يصدق! 📈"
-            ,"رائع! التزامك يتألق! ✨"
-            ,"مذهل! أنت تتحمل مسؤولية رفاهيتك! 🌟"
-            ,"مبهر! استمر في هذا الزخم المذهل! 🚀"
-         "استثنائي! أنت تكتب قصة نجاحك! 📖"
-        ]
-    };
-
-    const lang = i18n.currentLang || 'en';
-    const langMessages = messages[lang] || messages['en'];
-    return langMessages[Math.floor(Math.random() * langMessages.length)];
-}
-
-
-
-
-
-
-
-
-
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
 
         function logout() {
             localStorage.removeItem('authToken');
