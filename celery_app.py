@@ -44,6 +44,10 @@ celery.conf.update(
             'task': 'celery_app.cleanup_old_emails',
             'schedule': crontab(hour=0, minute=0), # Run daily
         },
+'send-weekly-reports': {
+            'task': 'celery_app.send_weekly_reports',
+            'schedule': crontab(minute=0),  # Run every hour
+        },
     }
 )
 
@@ -376,6 +380,127 @@ def send_daily_reminders():
         except Exception as e:
             print(f"[CELERY] Error: {str(e)}")
             return {'error': str(e)}
+
+
+@celery.task
+def send_weekly_reports():
+    """Send weekly reports to therapists"""
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+    from new_backend import app, db, Therapist, Reminder, create_weekly_report_pdf
+    from datetime import datetime, date, timedelta
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.base import MIMEBase
+    from email import encoders
+
+    with app.app_context():
+        try:
+            # Get current day and hour
+            now = datetime.utcnow()
+            current_day = now.weekday()  # Monday is 0, Sunday is 6
+            current_hour = now.hour
+
+            # Convert to 0=Sunday format to match our storage
+            current_day_sunday_format = (current_day + 1) % 7
+
+            print(f"[CELERY] Checking weekly reports for day {current_day_sunday_format} hour {current_hour}")
+
+            # Find all active weekly report reminders for this day and hour
+            reminders = db.session.query(Reminder).join(Therapist, Reminder.client_id == Therapist.id).filter(
+                Reminder.is_active == True,
+                Reminder.reminder_type == 'weekly_report',
+                Reminder.day_of_week == current_day_sunday_format,
+                db.extract('hour', Reminder.reminder_time) == current_hour
+            ).all()
+
+            print(f"[CELERY] Found {len(reminders)} weekly reports to send")
+
+            sent_count = 0
+
+            for reminder in reminders:
+                try:
+                    # Get therapist
+                    therapist = Therapist.query.get(reminder.client_id)
+                    if not therapist or not therapist.user:
+                        continue
+
+                    # Get most recent active client
+                    client = therapist.clients.filter_by(is_active=True).order_by(Client.start_date.desc()).first()
+                    if not client:
+                        print(f"[CELERY] No active clients for therapist {therapist.id}")
+                        continue
+
+                    # Calculate week dates
+                    today = date.today()
+                    week_start = today - timedelta(days=today.weekday())
+                    week_end = week_start + timedelta(days=6)
+                    year = today.year
+                    week_num = today.isocalendar()[1]
+
+                    # Generate PDF
+                    pdf_buffer = create_weekly_report_pdf(
+                        client, therapist, week_start, week_end, week_num, year,
+                        reminder.reminder_language or 'en'
+                    )
+
+                    # Determine email
+                    email_to_use = reminder.reminder_email if reminder.reminder_email else therapist.user.email
+
+                    # Create email
+                    msg = MIMEMultipart()
+                    msg['From'] = os.environ.get('SYSTEM_EMAIL')
+                    msg['To'] = email_to_use
+                    msg['Subject'] = f"Weekly Therapy Report - Week {week_num}, {year}"
+
+                    # Body
+                    body = "PDF Report"
+                    msg.attach(MIMEText(body, 'plain'))
+
+                    # Attach PDF
+                    pdf_attachment = MIMEBase('application', 'pdf')
+                    pdf_attachment.set_payload(pdf_buffer.read())
+                    encoders.encode_base64(pdf_attachment)
+                    pdf_attachment.add_header(
+                        'Content-Disposition',
+                        f'attachment; filename=weekly_report_week_{week_num}_{year}.pdf'
+                    )
+                    msg.attach(pdf_attachment)
+
+                    # Send email
+                    smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
+                    smtp_port = int(os.environ.get('SMTP_PORT', 587))
+                    smtp_username = os.environ.get('SYSTEM_EMAIL')
+                    smtp_password = os.environ.get('SYSTEM_EMAIL_PASSWORD')
+
+                    server = smtplib.SMTP(smtp_server, smtp_port)
+                    server.starttls()
+                    server.login(smtp_username, smtp_password)
+                    server.send_message(msg)
+                    server.quit()
+
+                    # Update last sent
+                    reminder.last_sent = now
+                    sent_count += 1
+                    print(f"[CELERY] Sent weekly report to {email_to_use}")
+
+                except Exception as e:
+                    print(f"[CELERY] Failed to send weekly report to therapist {therapist.id}: {e}")
+
+            db.session.commit()
+
+            return {'message': f'Sent {sent_count} weekly reports'}
+
+        except Exception as e:
+            print(f"[CELERY] Error in send_weekly_reports: {str(e)}")
+            return {'error': str(e)}
+
+
+
+
 
 
 @celery.task(bind=True, max_retries=3)

@@ -15,9 +15,10 @@ from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
+import re
 import random
 import string
-from flask import Flask, request, jsonify, send_file, session
+from flask import Flask, request, jsonify, send_file, session,render_template, jsonify, redirect, url_for, session, make_response
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
@@ -54,7 +55,8 @@ import traceback
 from flask import g
 import uuid
 import time
-
+from markupsafe import escape
+from functools import lru_cache
 
 import bleach
 import html
@@ -71,6 +73,61 @@ if not os.environ.get('FIELD_ENCRYPTION_KEY'):
         logger.warning("Using generated encryption key - DO NOT use in production!")
 else:
     ENCRYPTION_KEY = os.environ.get('FIELD_ENCRYPTION_KEY')
+
+
+def cache_response(timeout=300):
+    """Cache response for specified timeout (default 5 minutes)"""
+
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # Only cache GET requests
+            if request.method != 'GET':
+                return f(*args, **kwargs)
+
+            # Create cache key
+            cache_key = f"{request.path}?{request.query_string.decode()}"
+
+            # Get response
+            response = f(*args, **kwargs)
+
+            # Add cache headers
+            if isinstance(response, tuple):
+                resp, status = response[0], response[1]
+            else:
+                resp = response
+
+            if hasattr(resp, 'headers'):
+                resp.headers['Cache-Control'] = f'private, max-age={timeout}'
+
+            return response
+
+        return decorated_function
+
+    return decorator
+
+
+
+def safe_render(template, **kwargs):
+    """Automatically escape all template variables"""
+    # Escape all string values in kwargs
+    safe_kwargs = {}
+    for key, value in kwargs.items():
+        if isinstance(value, str):
+            safe_kwargs[key] = escape(value)
+        else:
+            safe_kwargs[key] = value
+    return render_template(template, **safe_kwargs)
+
+def sanitize_html(text):
+    """Remove all HTML tags from text"""
+    if not text:
+        return text
+    # Remove all HTML tags
+    clean = re.compile('<.*?>')
+    return re.sub(clean, '', str(text))
+
+
 
 
 def sanitize_input(text, allow_html=False):
@@ -221,6 +278,56 @@ BASE_DIR = Path(__file__).resolve().parent
 app.static_folder = BASE_DIR
 app.template_folder = BASE_DIR
 
+
+
+# Session configuration - OUTSIDE the function
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
+app.config['SESSION_COOKIE_SECURE'] = not app.debug  # HTTPS only in production
+app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JS access
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF protection
+
+
+
+
+
+# Add Flask-Talisman security headers HERE
+from flask_talisman import Talisman
+
+# Security headers including CSP
+csp = {
+    'default-src': "'self'",
+    'script-src': "'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+    'style-src': "'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
+    'font-src': "'self' https://fonts.gstatic.com",
+    'img-src': "'self' data: https:",
+    'connect-src': "'self'"
+}
+
+# Initialize Talisman with security settings
+Talisman(app,
+    force_https=False if app.debug else True,  # Disable HTTPS in debug mode
+    strict_transport_security={'max_age': 31536000, 'include_subdomains': True},
+    content_security_policy=csp,
+    content_security_policy_nonce_in=['script-src', 'style-src']
+)
+
+# Add additional security headers
+@app.after_request
+def set_security_headers(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'
+    return response
+
+
+
+
+
+
+
 # CSRF Protection
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from functools import wraps
@@ -257,6 +364,54 @@ def csrf_protect():
             return jsonify({'error': 'CSRF token missing'}), 403
 
 
+# ADD THE NEW VALIDATION CODE HERE:
+# Dangerous patterns to check for
+DANGEROUS_PATTERNS = [
+    r'<script',
+    r'javascript:',
+    r'onerror=',
+    r'onclick=',
+    r'onload=',
+    r'<iframe',
+    r'<object',
+    r'<embed',
+    r'vbscript:',
+    r'data:text/html'
+]
+
+
+@app.before_request
+def validate_inputs():
+    """Check all inputs for XSS attempts"""
+    # Check all request data
+    for key, value in request.values.items():
+        if value and isinstance(value, str):
+            for pattern in DANGEROUS_PATTERNS:
+                if re.search(pattern, value, re.IGNORECASE):
+                    app.logger.warning(f"Potential XSS attempt blocked: {key}={value[:50]}...")
+                    return jsonify({'error': 'Invalid input detected'}), 400
+
+    # Check JSON data if present
+    if request.is_json and request.json:
+        def check_dict(d):
+            for key, value in d.items():
+                if isinstance(value, str):
+                    for pattern in DANGEROUS_PATTERNS:
+                        if re.search(pattern, value, re.IGNORECASE):
+                            return False
+                elif isinstance(value, dict):
+                    if not check_dict(value):
+                        return False
+            return True
+
+        if not check_dict(request.json):
+            return jsonify({'error': 'Invalid input detected'}), 400
+
+
+
+
+
+
 @app.after_request
 def set_csrf_cookie(response):
     if 'csrf_token' not in session:
@@ -264,7 +419,8 @@ def set_csrf_cookie(response):
     response.set_cookie('csrf_token', session['csrf_token'],
                         secure=app.config['SESSION_COOKIE_SECURE'],
                         httponly=False,  # JavaScript needs to read it
-                        samesite='Lax')
+                        samesite='Strict',  # Changed from 'Lax' to 'Strict'
+                        max_age=86400)  # 24 hours
     return response
 
 
@@ -298,11 +454,11 @@ app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SYSTEM_EMAIL')
 
 # Database connection pooling - optimized for production
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_size': 20,  # Increased for production load
-    'pool_recycle': 300,
+    'pool_size': 20,  # Increased pool size
+    'pool_recycle': 3600,  # Recycle connections every hour
     'pool_pre_ping': True,
     'max_overflow': 40,  # Allow more overflow connections
-    'pool_timeout': 30,  # Wait up to 30 seconds for a connection
+    'pool_timeout': 30,  # Wait up to 30 seconds for connection
     'connect_args': {
         'connect_timeout': 10,
         'options': '-c statement_timeout=30000'
@@ -369,6 +525,32 @@ def after_request(response):
     # Add request ID to response headers
     if hasattr(g, 'request_id'):
         response.headers['X-Request-ID'] = g.request_id
+
+    # ADD THE SECURITY HEADERS HERE (before return response)
+    # Content Security Policy
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'"
+       )
+    response.headers['Content-Security-Policy'] = csp
+
+    # Other security headers
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+
+    # HSTS (only in production with HTTPS)
+    if app.config['SESSION_COOKIE_SECURE']:
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+
 
     return response
 
@@ -850,6 +1032,7 @@ class Reminder(db.Model):
     reminder_language = db.Column(db.String(2), default='en')
     is_active = db.Column(db.Boolean, default=True)
     last_sent = db.Column(db.DateTime)
+    day_of_week = db.Column(db.Integer, default=1)
 
 class EmailQueue(db.Model):
     """Queue for email sending with retry logic"""
@@ -1492,17 +1675,17 @@ def check_client_inactivity():
 
                         # Translated subjects
                         subjects = {
-                            'en': f"Client Inactivity Alert - {client.client_serial}",
-                            'he': f"התראת חוסר פעילות - מטופל {client.client_serial}",
-                            'ru': f"Предупреждение о неактивности клиента - {client.client_serial}",
-                            'ar': f"تنبيه عدم نشاط العميل - {client.client_serial}"
+                            'en': f"Client Inactivity Alert - {sanitize_input(client.client_serial)}",
+                            'he': f"התראת חוסר פעילות - מטופל {sanitize_input(client.client_serial)}",
+                            'ru': f"Предупреждение о неактивности клиента - {sanitize_input(client.client_serial)}",
+                            'ar': f"تنبيه عدم نشاط العميل - {sanitize_input(client.client_serial)}"
                         }
 
                         # Translated bodies
                         if lang == 'he':
                             body = f"""שלום {client.therapist.name},
 
-המטופל שלך {client.client_serial} לא השלים צ'ק-אין במשך יותר מ-7 ימים.
+המטופל שלך {sanitize_input(client.client_serial)} לא השלים צ'ק-אין במשך יותר מ-7 ימים.
 
 צ'ק-אין אחרון: {last_checkin.checkin_date.strftime('%d/%m/%Y') if last_checkin else 'אף פעם'}
 תאריך התחלת טיפול: {client.start_date.strftime('%d/%m/%Y')}
@@ -1514,7 +1697,7 @@ def check_client_inactivity():
                         elif lang == 'ru':
                             body = f"""Уважаемый {client.therapist.name},
 
-Ваш клиент {client.client_serial} не выполнял отметку более 7 дней.
+Ваш клиент {sanitize_input(client.client_serial)} не выполнял отметку более 7 дней.
 
 Последняя отметка: {last_checkin.checkin_date.strftime('%d.%m.%Y') if last_checkin else 'Никогда'}
 Дата начала терапии: {client.start_date.strftime('%d.%m.%Y')}
@@ -1526,7 +1709,7 @@ def check_client_inactivity():
                         elif lang == 'ar':
                             body = f"""عزيزي {client.therapist.name}،
 
-لم يكمل عميلك {client.client_serial} تسجيل الحضور لأكثر من 7 أيام.
+لم يكمل عميلك {sanitize_input(client.client_serial)} تسجيل الحضور لأكثر من 7 أيام.
 
 آخر تسجيل حضور: {last_checkin.checkin_date.strftime('%d/%m/%Y') if last_checkin else 'أبداً'}
 تاريخ بدء العلاج: {client.start_date.strftime('%d/%m/%Y')}
@@ -1538,7 +1721,7 @@ def check_client_inactivity():
                         else:  # English
                             body = f"""Dear {client.therapist.name},
 
-Your client {client.client_serial} has not completed a check-in for over 7 days.
+Your client {sanitize_input(client.client_serial)} has not completed a check-in for over 7 days.
 
 Last check-in: {last_checkin.checkin_date.strftime('%Y-%m-%d') if last_checkin else 'Never'}
 Client start date: {client.start_date.strftime('%Y-%m-%d')}
@@ -1694,7 +1877,7 @@ def fix_existing_clients():
                     )
                     db.session.add(plan)
                     fixed_count += 1
-                    print(f"Added {category.name} to client {client.client_serial}")
+                    print(f"Added {category.name} to client {sanitize_input(client.client_serial)}")
 
         if fixed_count > 0:
             db.session.commit()
@@ -2120,12 +2303,12 @@ def login():
         # Set secure cookie instead of returning token
         resp = jsonify(response_data)
         resp.set_cookie(
-            'session_token',
+             'session_token',
             session_id,
             secure=True,  # HTTPS only
             httponly=True,  # Not accessible via JavaScript
-            samesite='Lax',
-            max_age=86400  # 24 hours
+            samesite='Strict',  # Changed from 'Lax' to 'Strict'
+            max_age=86400
         )
 
         return resp
@@ -3096,7 +3279,7 @@ def client_generate_report(week):
         output.seek(0)
 
         # Generate filename
-        filename = f"my_therapy_report_{client.client_serial}_week_{week_num}_{year}.xlsx"
+        filename = f"my_therapy_report_{sanitize_input(client.client_serial)}_week_{week_num}_{year}.xlsx"
 
         return send_file(
             output,
@@ -4755,7 +4938,7 @@ def generate_report(client_id, week):
         week_end = week_start + timedelta(days=6)
 
         # Generate filename
-        filename = f"therapy_report_{client.client_serial}_week_{week_num}_{year}.xlsx"
+        filename = f"therapy_report_{sanitize_input(client.client_serial)}_week_{week_num}_{year}.xlsx"
 
         # Log report generation start
         generation_start = time.time()
@@ -4863,7 +5046,7 @@ def generate_pdf_report(client_id, week):
         pdf_buffer = create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, year, lang)
 
         # Generate filename
-        filename = f"therapy_report_{client.client_serial}_week_{week_num}_{year}.pdf"
+        filename = f"therapy_report_{sanitize_input(client.client_serial)}_week_{week_num}_{year}.pdf"
 
         return send_file(
             pdf_buffer,
@@ -4914,7 +5097,7 @@ def client_generate_pdf(week):
         pdf_buffer = create_weekly_report_pdf(client, None, week_start, week_end, week_num, year, lang)
 
         # Generate filename
-        filename = f"my_therapy_report_{client.client_serial}_week_{week_num}_{year}.pdf"
+        filename = f"my_therapy_report_{sanitize_input(client.client_serial)}_week_{week_num}_{year}.pdf"
 
         return send_file(
             pdf_buffer,
@@ -4925,6 +5108,192 @@ def client_generate_pdf(week):
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/therapist/weekly-report-settings', methods=['GET'])
+@require_auth(['therapist'])
+def get_weekly_report_settings():
+    """Get therapist's weekly report settings"""
+    try:
+        therapist = request.current_user.therapist
+
+        # Check if settings exist
+        existing = db.session.execute(
+            text("""
+                SELECT reminder_time, reminder_email, day_of_week, local_reminder_time, reminder_language
+                FROM reminders
+                WHERE client_id = :therapist_id
+                AND reminder_type = 'weekly_report'
+                AND is_active = true
+            """),
+            {'therapist_id': therapist.id}
+        ).first()
+
+        if existing:
+            return jsonify({
+                'success': True,
+                'settings': {
+                    'time': existing[0].strftime('%H:%M') if existing[0] else '09:00',
+                    'email': existing[1] or '',
+                    'day_of_week': existing[2] or 1,
+                    'local_time': existing[3] or '09:00',
+                    'language': existing[4] or 'en'
+                }
+            })
+
+        return jsonify({
+            'success': True,
+            'settings': None
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/therapist/weekly-report-settings', methods=['POST'])
+@require_auth(['therapist'])
+def save_weekly_report_settings():
+    """Save therapist's weekly report settings"""
+    try:
+        therapist = request.current_user.therapist
+        data = request.json
+
+        time_str = data.get('time', '09:00')
+        day_of_week = data.get('day_of_week', 1)
+        email = data.get('email', '').strip()
+        timezone_offset = data.get('timezone_offset', 0)
+        language = data.get('language', 'en')
+
+        # Parse time
+        hour, minute = map(int, time_str.split(':'))
+
+        # Convert to UTC
+        local_total_minutes = hour * 60 + minute
+        utc_total_minutes = local_total_minutes - timezone_offset
+
+        while utc_total_minutes < 0:
+            utc_total_minutes += 24 * 60
+        while utc_total_minutes >= 24 * 60:
+            utc_total_minutes -= 24 * 60
+
+        utc_hour = utc_total_minutes // 60
+        utc_minute = utc_total_minutes % 60
+
+        import datetime
+        time_obj = datetime.time(utc_hour, utc_minute)
+
+        # Check if settings exist
+        existing = Reminder.query.filter_by(
+            client_id=therapist.id,  # Using therapist.id as client_id for storage
+            reminder_type='weekly_report'
+        ).first()
+
+        if existing:
+            existing.reminder_time = time_obj
+            existing.local_reminder_time = time_str
+            existing.reminder_email = email if email else None
+            existing.day_of_week = day_of_week
+            existing.reminder_language = language
+            existing.is_active = True
+        else:
+            reminder = Reminder(
+                client_id=therapist.id,  # Using therapist.id as client_id for storage
+                reminder_type='weekly_report',
+                reminder_time=time_obj,
+                local_reminder_time=time_str,
+                reminder_email=email if email else None,
+                day_of_week=day_of_week,
+                reminder_language=language,
+                is_active=True
+            )
+            db.session.add(reminder)
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Weekly report settings saved successfully'
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/therapist/test-weekly-report', methods=['POST'])
+@require_auth(['therapist'])
+def test_weekly_report():
+    """Send a test weekly report email"""
+    try:
+        therapist = request.current_user.therapist
+
+        # Get settings
+        settings = Reminder.query.filter_by(
+            client_id=therapist.id,
+            reminder_type='weekly_report'
+        ).first()
+
+        email = therapist.user.email
+        if settings and settings.reminder_email:
+            email = settings.reminder_email
+
+        # Get most recent client with data
+        client = therapist.clients.filter_by(is_active=True).first()
+        if not client:
+            return jsonify({'error': 'No active clients found'}), 400
+
+        # Get current week
+        import datetime
+        today = datetime.date.today()
+        week_start = today - datetime.timedelta(days=today.weekday())
+        week_end = week_start + datetime.timedelta(days=6)
+        year = today.year
+        week_num = today.isocalendar()[1]
+
+        # Generate PDF report
+        from io import BytesIO
+        pdf_buffer = create_weekly_report_pdf(
+            client, therapist, week_start, week_end, week_num, year,
+            settings.reminder_language if settings else 'en'
+        )
+
+        # Send email with attachment
+        msg = MIMEMultipart()
+        msg['From'] = app.config['MAIL_USERNAME']
+        msg['To'] = email
+        msg['Subject'] = f"Weekly Therapy Report - Week {week_num}, {year}"
+
+        # Email body
+        body = "PDF Report"
+        msg.attach(MIMEText(body, 'plain'))
+
+        # Attach PDF
+        pdf_attachment = MIMEBase('application', 'pdf')
+        pdf_attachment.set_payload(pdf_buffer.read())
+        encoders.encode_base64(pdf_attachment)
+        pdf_attachment.add_header(
+            'Content-Disposition',
+            f'attachment; filename=weekly_report_week_{week_num}_{year}.pdf'
+        )
+        msg.attach(pdf_attachment)
+
+        # Send email
+        server = smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT'])
+        server.starttls()
+        server.login(app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
+        server.send_message(msg)
+        server.quit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Test report sent successfully'
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
 
 
 # UPDATED EMAIL REPORT FUNCTION
@@ -5026,7 +5395,7 @@ def email_therapy_report():
             email_content = f"""
 שלום,
 
-מצורף דוח הטיפול השבועי עבור מטופל {client.client_serial}.
+מצורף דוח הטיפול השבועי עבור מטופל {sanitize_input(client.client_serial)}.
 
 תקופת הדוח: {week_start.day} {get_translated_month(week_start, lang)} - {week_end.day} {get_translated_month(week_end, lang)}, {year} (שבוע {week_num})
 
@@ -5050,7 +5419,7 @@ def email_therapy_report():
             email_content = f"""
 Здравствуйте,
 
-Прилагается еженедельный терапевтический отчет для клиента {client.client_serial}.
+Прилагается еженедельный терапевтический отчет для клиента {sanitize_input(client.client_serial)}.
 
 Период отчета: {week_start.day} {get_translated_month(week_start, lang)} - {week_end.day} {get_translated_month(week_end, lang)} {year} (Неделя {week_num})
 
@@ -5074,7 +5443,7 @@ def email_therapy_report():
             email_content = f"""
 مرحباً،
 
-يرجى الاطلاع على التقرير العلاجي الأسبوعي المرفق للعميل {client.client_serial}.
+يرجى الاطلاع على التقرير العلاجي الأسبوعي المرفق للعميل {sanitize_input(client.client_serial)}.
 
 :فترة التقرير: {week_start.day} {get_translated_month(week_start, lang)} - {week_end.day} {get_translated_month(week_end, lang)} {year} (الأسبوع {week_num})
 
@@ -5098,7 +5467,7 @@ def email_therapy_report():
             email_content = f"""
 Dear Colleague,
 
-Please find attached the weekly therapy report for client {client.client_serial}.
+Please find attached the weekly therapy report for client {sanitize_input(client.client_serial)}.
 
 Report Period: {week_start.strftime('%B %d')} - {week_end.strftime('%B %d, %Y')} (Week {week_num}, {year})
 
@@ -5125,7 +5494,7 @@ Best regards,
                 'success': True,
                 'email_content': email_content.strip(),
                 'recipient': recipient_email or therapist.user.email or 'Your email',
-                'subject': f"Weekly Therapy Report - Client {client.client_serial} - Week {week_num}, {year}",
+                'subject': f"Weekly Therapy Report - Client {sanitize_input(client.client_serial)} - Week {week_num}, {year}",
                 'note': 'Email configuration not set up. Please copy this content and attach the downloaded Excel file to send manually.'
             })
 
@@ -5142,7 +5511,7 @@ Best regards,
             msg = MIMEMultipart()
             msg['From'] = app.config['MAIL_USERNAME']
             msg['To'] = recipient_email or therapist.user.email
-            msg['Subject'] = f"Weekly Therapy Report - Client {client.client_serial} - Week {week_num}, {year}"
+            msg['Subject'] = f"Weekly Therapy Report - Client {sanitize_input(client.client_serial)} - Week {week_num}, {year}"
 
             # Email body
             msg.attach(MIMEText(email_content, 'plain'))
@@ -5153,7 +5522,7 @@ Best regards,
             encoders.encode_base64(excel_attachment)
             excel_attachment.add_header(
                 'Content-Disposition',
-                f'attachment; filename=therapy_report_{client.client_serial}_week_{week_num}_{year}.xlsx'
+                f'attachment; filename=therapy_report_{sanitize_input(client.client_serial)}_week_{week_num}_{year}.xlsx'
             )
             msg.attach(excel_attachment)
 
@@ -5164,7 +5533,7 @@ Best regards,
             encoders.encode_base64(pdf_attachment)
             pdf_attachment.add_header(
                 'Content-Disposition',
-                f'attachment; filename=therapy_report_{client.client_serial}_week_{week_num}_{year}.pdf'
+                f'attachment; filename=therapy_report_{sanitize_input(client.client_serial)}_week_{week_num}_{year}.pdf'
             )
             msg.attach(pdf_attachment)
 
@@ -5186,7 +5555,7 @@ Best regards,
                 'success': True,
                 'email_content': email_content.strip(),
                 'recipient': recipient_email or therapist.user.email or 'Your email',
-                'subject': f"Weekly Therapy Report - Client {client.client_serial} - Week {week_num}, {year}",
+                'subject': f"Weekly Therapy Report - Client {sanitize_input(client.client_serial)} - Week {week_num}, {year}",
                 'error': f'Failed to send email: {str(e)}',
                 'note': 'Email could not be sent automatically. Please copy this content and send it manually.'
             })
@@ -5303,12 +5672,12 @@ def ensure_client_names():
             if user:
                 client.client_name = user.email
                 updated_count += 1
-                print(f"Updated client {client.client_serial} with name: {user.email}")
+                print(f"Updated client {sanitize_input(client.client_serial)} with name: {user.email}")
             else:
                 # Fallback to serial if user not found
                 client.client_name = client.client_serial
                 updated_count += 1
-                print(f"Updated client {client.client_serial} with name: {client.client_serial}")
+                print(f"Updated client {sanitize_input(client.client_serial)} with name: {sanitize_input(client.client_serial)}")
 
         if updated_count > 0:
             db.session.commit()
@@ -5793,6 +6162,111 @@ def add_weekly_goal():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/therapist/delete-client/<int:client_id>', methods=['DELETE'])
+@require_auth(['therapist'])
+def delete_client(client_id):
+    """Delete a client and all associated data"""
+    try:
+        therapist = request.current_user.therapist
+
+        # Verify client belongs to therapist
+        client = Client.query.filter_by(
+            id=client_id,
+            therapist_id=therapist.id
+        ).first()
+
+        if not client:
+            return jsonify({'error': 'Client not found'}), 404
+
+        # Get user to delete
+        user = client.user
+
+        # Log the deletion for audit
+        logger.info('client_deletion', extra={
+            'extra_data': {
+                'therapist_id': therapist.id,
+                'client_id': client.id,
+                'client_serial': client.client_serial,
+                'client_email': user.email if user else 'unknown',
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
+
+        # Audit log for compliance
+        log_audit(
+            action='DELETE_CLIENT',
+            resource_type='client',
+            resource_id=client_id,
+            details={
+                'client_serial': client.client_serial,
+                'therapist_id': therapist.id
+            },
+            phi_accessed=True
+        )
+
+        # Delete all related data (cascade should handle most)
+        # But explicitly delete some for safety
+
+        # Delete category responses
+        CategoryResponse.query.filter_by(client_id=client_id).delete()
+
+        # Delete goal completions through goals
+        for goal in client.goals:
+            GoalCompletion.query.filter_by(goal_id=goal.id).delete()
+
+        # Delete custom categories
+        CustomCategory.query.filter_by(client_id=client_id).delete()
+
+        # Delete therapist notes
+        TherapistNote.query.filter_by(client_id=client_id).delete()
+
+        # Delete consent records
+        ConsentRecord.query.filter_by(client_id=client_id).delete()
+
+        # Delete the client (cascade will handle checkins, goals, reminders, tracking plans)
+        db.session.delete(client)
+
+        # Delete the user account if it exists
+        if user:
+            # Delete password resets
+            PasswordReset.query.filter_by(user_id=user.id).delete()
+
+            # Delete session tokens
+            SessionToken.query.filter_by(user_id=user.id).delete()
+
+            # Delete audit logs (optional - you might want to keep these)
+            # AuditLog.query.filter_by(user_id=user.id).delete()
+
+            # Delete the user
+            db.session.delete(user)
+
+        # Commit all deletions
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Client and all associated data deleted successfully'
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error('delete_client_error', extra={
+            'extra_data': {
+                'error': str(e),
+                'client_id': client_id,
+                'therapist_id': therapist.id,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        }, exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+
+
 @app.route('/api/therapist/add-note', methods=['POST'])
 @require_auth(['therapist'])
 def add_therapist_note():
@@ -6083,8 +6557,15 @@ def client_dashboard():
                 logger.error(f"Error loading custom category {custom_cat.id}: {e}")
                 continue
 
-        # Get this week's goals
+
+        # Get this week's check-ins count
         week_start = date.today() - timedelta(days=date.today().weekday())
+        week_end = week_start + timedelta(days=6)
+        week_checkins = client.checkins.filter(
+            DailyCheckin.checkin_date.between(week_start, week_end)
+        ).count()
+        # Get this week's goals
+
         weekly_goals = []
         for goal in client.goals.filter_by(
                 week_start=week_start,
@@ -6112,15 +6593,16 @@ def client_dashboard():
         return jsonify({
             'success': True,
             'client': {
-                 'serial': client.client_serial,  # Use client_serial, not serial
+                'serial': client.client_serial,  # Use client_serial, not serial
                 'client_serial': client.client_serial,  # Also provide as client_serial for compatibility
                 'client_name': client.client_name if client.client_name else client.client_serial,
-                 'start_date': client.start_date.isoformat()
+                'start_date': client.start_date.isoformat()
             },
             'today': {
                 'has_checkin': today_checkin is not None,
                 'date': date.today().isoformat()
             },
+            'week_checkins_count': week_checkins,
             'tracking_categories': tracking_categories,
             'weekly_goals': weekly_goals,
             'reminders': reminders
@@ -6954,6 +7436,7 @@ def get_brief_goals():
 
 @app.route('/api/categories', methods=['GET'])
 @require_auth(['therapist', 'client'])
+@cache_response(timeout=3600)
 def get_tracking_categories():
     """Get all tracking categories with translations"""
     try:
@@ -7948,48 +8431,48 @@ def client_email_report():
 
         # Build translated email content
         if lang == 'he':
-            subject = f"דוח טיפולי שבועי - {client.client_serial} - שבוע {week_num}, {year}"
+            subject = f"דוח טיפולי שבועי - {sanitize_input(client.client_serial)} - שבוע {week_num}, {year}"
             content = f"""מטפל יקר,
 
 הנה דוח ההתקדמות השבועי שלי עבור {week_start.strftime('%d/%m/%Y')} - {week_end.strftime('%d/%m/%Y')}.
 
-מטופל: {client.client_serial}
+מטופל: {sanitize_input(client.client_serial)}
 שבוע: {week_num}, {year}
 צ׳ק-אינים שהושלמו: {len(checkins)}/7
 
 סיכום צ׳ק-אין יומי:
 """
         elif lang == 'ru':
-            subject = f"Еженедельный терапевтический отчет - {client.client_serial} - Неделя {week_num}, {year}"
+            subject = f"Еженедельный терапевтический отчет - {sanitize_input(client.client_serial)} - Неделя {week_num}, {year}"
             content = f"""Уважаемый терапевт,
 
 Вот мой еженедельный отчет о прогрессе за {week_start.strftime('%d.%m.%Y')} - {week_end.strftime('%d.%m.%Y')}.
 
-КЛИЕНТ: {client.client_serial}
+КЛИЕНТ: {sanitize_input(client.client_serial)}
 НЕДЕЛЯ: {week_num}, {year}
 ВЫПОЛНЕНО ОТМЕТОК: {len(checkins)}/7
 
 ЕЖЕДНЕВНАЯ СВОДКА ОТМЕТОК:
 """
         elif lang == 'ar':
-            subject = f"التقرير العلاجي الأسبوعي - {client.client_serial} - الأسبوع {week_num}, {year}"
+            subject = f"التقرير العلاجي الأسبوعي - {sanitize_input(client.client_serial)} - الأسبوع {week_num}, {year}"
             content = f"""المعالج العزيز،
 
 هذا هو تقرير التقدم الأسبوعي الخاص بي لـ {week_start.strftime('%d/%m/%Y')} - {week_end.strftime('%d/%m/%Y')}.
 
-العميل: {client.client_serial}
+العميل: {sanitize_input(client.client_serial)}
 الأسبوع: {week_num}, {year}
 تسجيلات الحضور المكتملة: {len(checkins)}/7
 
 ملخص تسجيل الحضور اليومي:
 """
         else:  # English
-            subject = f"Weekly Therapy Report - {client.client_serial} - Week {week_num}, {year}"
+            subject = f"Weekly Therapy Report - {sanitize_input(client.client_serial)} - Week {week_num}, {year}"
             content = f"""Dear {therapist_name},
 
 Here is my weekly progress report for {get_translated_month(week_start, lang)} {week_start.day} - {get_translated_month(week_end, lang)} {week_end.day}, {year}.
 
-CLIENT: {client.client_serial}
+CLIENT: {sanitize_input(client.client_serial)}
 WEEK: {week_num}, {year}
 CHECK-INS COMPLETED: {len(checkins)}/7
 
@@ -8059,13 +8542,13 @@ DAILY CHECK-IN SUMMARY:
 
         # Add footer with proper translation
         if lang == 'he':
-            content += f"\nהדוח נוצר בתאריך: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n\nבברכה,\nמטופל {client.client_serial}"
+            content += f"\nהדוח נוצר בתאריך: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n\nבברכה,\nמטופל {sanitize_input(client.client_serial)}"
         elif lang == 'ru':
-            content += f"\nОтчет создан: {datetime.now().strftime('%d.%m.%Y %H:%M')}\n\nС уважением,\nКлиент {client.client_serial}"
+            content += f"\nОтчет создан: {datetime.now().strftime('%d.%m.%Y %H:%M')}\n\nС уважением,\nКлиент {sanitize_input(client.client_serial)}"
         elif lang == 'ar':
-            content += f"\nتم إنشاء التقرير في: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n\nمع أطيب التحيات،\nالعميل {client.client_serial}"
+            content += f"\nتم إنشاء التقرير في: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n\nمع أطيب التحيات،\nالعميل {sanitize_input(client.client_serial)}"
         else:
-            content += f"\nReport generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n\nBest regards,\nClient {client.client_serial}"
+            content += f"\nReport generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n\nBest regards,\nClient {sanitize_input(client.client_serial)}"
 
         return jsonify({
             'success': True,
@@ -8385,8 +8868,8 @@ def unsubscribe(token):
         <body>
             <div class="container">
                 <h2>Unsubscribe from Emails</h2>
-                <p>Are you sure you want to unsubscribe from {email_type} emails?</p>
-                <p>Email: {user.email}</p>
+                <p>Are you sure you want to unsubscribe from {escape(email_type)} emails?</p>
+                <p>Email:  {escape(user.email)}</p>
                 <form method="POST">
                     <button type="submit" class="btn">Confirm Unsubscribe</button>
                 </form>
@@ -8481,7 +8964,7 @@ def send_single_reminder_email_sync(client):
         if reminder and reminder.reminder_email and reminder.reminder_email.strip():
             email_to_use = reminder.reminder_email.strip()
 
-        app.logger.info(f"Sending reminder to {email_to_use} for client {client.client_serial}")
+        app.logger.info(f"Sending reminder to {email_to_use} for client {sanitize_input(client.client_serial)}")
 
         subject = "Daily Check-in Reminder - Therapeutic Companion"
 
@@ -8494,7 +8977,7 @@ Your therapist is tracking your progress, and your daily input is valuable for y
 Click here to log in and complete today's check-in:
 {base_url}/login.html
 
-Client ID: {client.client_serial}
+Client ID: {sanitize_input(client.client_serial)}
 
 If you've already completed today's check-in, please disregard this message.
 
@@ -8517,7 +9000,7 @@ Your Therapy Team"""
                         Complete Today's Check-in
                     </a>
                 </div>
-                <p style="color: #666; font-size: 14px;">Client ID: {client.client_serial}</p>
+                <p style="color: #666; font-size: 14px;">Client ID: {sanitize_input(client.client_serial)}</p>
                 <p style="color: #666; font-size: 14px;">
                     If you've already completed today's check-in, please disregard this message.
                 </p>
