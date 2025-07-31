@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-      <!-- DOMPurify for XSS protection -->
+    <!-- DOMPurify for XSS protection -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
 
     <!-- Global XSS protection -->
@@ -1738,19 +1738,8 @@ credentials: 'include'
                 const completedGoals = weeklyGoals.filter(g => g.today_completed === true).length;
 
                 quickStats.innerHTML = `
-
-
-                // Clear first
-quickStats.innerHTML = '';
-
-// Create elements safely
-const weekP = document.createElement('p');
-weekP.textContent = `${i18n.t('dashboard.this_week')}: ${weekCheckins}/7 ${i18n.t('days')}`;
-quickStats.appendChild(weekP);
-
-const goalsP = document.createElement('p');
-goalsP.textContent = `${i18n.t('goals.completed')}: ${completedGoals}/${weeklyGoals.length}`;
-quickStats.appendChild(goalsP);
+                <p>${i18n.t('dashboard.this_week')}: ${weekCheckins}/7 ${i18n.t('days')}</p>
+                <p>${i18n.t('goals.completed')}: ${completedGoals}/${weeklyGoals.length}</p>
                     `;
                     }
         }
@@ -1954,23 +1943,10 @@ quickStats.appendChild(goalsP);
     const isPast = date < new Date() && !isToday;
 
     // Use the actual day of week from the date object
-    // Clear and create elements safely
-dayCell.innerHTML = '';
-
-const dayNameDiv = document.createElement('div');
-dayNameDiv.className = 'day-name';
-dayNameDiv.textContent = i18n.getDayName(date.getDay(), true);
-dayCell.appendChild(dayNameDiv);
-
-const dayDateDiv = document.createElement('div');
-dayDateDiv.className = 'day-date';
-dayDateDiv.textContent = date.getDate();
-dayCell.appendChild(dayDateDiv);
-
-const statusIconDiv = document.createElement('div');
-statusIconDiv.className = 'status-icon';
-statusIconDiv.textContent = isToday ? '📍' : '';
-dayCell.appendChild(statusIconDiv);
+    dayCell.innerHTML = `
+        <div class="day-name">${i18n.getDayName(date.getDay(), true)}</div>
+        <div class="day-date">${date.getDate()}</div>
+        <div class="status-icon">${isToday ? '📍' : ''}</div>
     `;
 
     if (isToday) {
