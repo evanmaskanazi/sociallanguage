@@ -67,6 +67,17 @@ import redis
 from functools import lru_cache
 from flask import make_response
 
+# Add Flask-Talisman security headers HERE
+from flask_talisman import Talisman
+
+
+
+
+
+
+
+
+
 
 def cache_response(timeout=300):
     """Cache response for specified timeout (default 5 minutes)"""
@@ -264,6 +275,50 @@ app = Flask(__name__)
 BASE_DIR = Path(__file__).resolve().parent
 app.static_folder = BASE_DIR
 app.template_folder = BASE_DIR
+
+
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
+app.config['SESSION_COOKIE_SECURE'] = not app.debug  # HTTPS only in production
+app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JS access
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF protection
+
+
+
+# Security headers including CSP
+csp = {
+    'default-src': "'self'",
+    'script-src': "'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+    'style-src': "'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
+    'font-src': "'self' https://fonts.gstatic.com",
+    'img-src': "'self' data: https:",
+    'connect-src': "'self'"
+}
+
+# Initialize Talisman with security settings
+Talisman(app,
+    force_https=False if app.debug else True,  # Disable HTTPS in debug mode
+    strict_transport_security={'max_age': 31536000, 'include_subdomains': True},
+    content_security_policy=csp,
+    content_security_policy_nonce_in=['script-src', 'style-src']
+)
+
+# Add additional security headers
+@app.after_request
+def set_security_headers(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'
+    return response
+
+
+
+
+
+
+
 
 # CSRF Protection
 from flask_wtf.csrf import CSRFProtect, generate_csrf
@@ -8432,8 +8487,8 @@ def unsubscribe(token):
         <body>
             <div class="container">
                 <h2>Unsubscribe from Emails</h2>
-                <p>Are you sure you want to unsubscribe from {email_type} emails?</p>
-                <p>Email: {user.email}</p>
+                <p>Are you sure you want to unsubscribe from {escape(email_type)} emails?</p>
+                <p>Email: {escape(user.email)}</p>
                 <form method="POST">
                     <button type="submit" class="btn">Confirm Unsubscribe</button>
                 </form>
