@@ -15,9 +15,10 @@ from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
+import re
 import random
 import string
-from flask import Flask, request, jsonify, send_file, session
+from flask import Flask, request, jsonify, send_file, session,render_template, jsonify, redirect, url_for, session, make_response
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
@@ -54,11 +55,54 @@ import traceback
 from flask import g
 import uuid
 import time
+from markupsafe import escape
+from functools import lru_cache
+
 
 
 import bleach
 import html
 import redis
+
+from functools import lru_cache
+from flask import make_response
+
+
+def cache_response(timeout=300):
+    """Cache response for specified timeout (default 5 minutes)"""
+
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # Only cache GET requests
+            if request.method != 'GET':
+                return f(*args, **kwargs)
+
+            # Create cache key
+            cache_key = f"{request.path}?{request.query_string.decode()}"
+
+            # Get response
+            response = f(*args, **kwargs)
+
+            # Add cache headers
+            if isinstance(response, tuple):
+                resp, status = response[0], response[1]
+            else:
+                resp = response
+
+            if hasattr(resp, 'headers'):
+                resp.headers['Cache-Control'] = f'private, max-age={timeout}'
+
+            return response
+
+        return decorated_function
+
+    return decorator
+
+
+
+
+
 redis_client = redis.from_url(os.environ.get('REDIS_URL', 'redis://localhost:6379'))
 
 if not os.environ.get('FIELD_ENCRYPTION_KEY'):
@@ -298,11 +342,11 @@ app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SYSTEM_EMAIL')
 
 # Database connection pooling - optimized for production
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_size': 20,  # Increased for production load
-    'pool_recycle': 300,
+     'pool_size': 20,  # Increased pool size
+    'pool_recycle': 3600,  # Recycle connections every hour
     'pool_pre_ping': True,
     'max_overflow': 40,  # Allow more overflow connections
-    'pool_timeout': 30,  # Wait up to 30 seconds for a connection
+    'pool_timeout': 30,  # Wait up to 30 seconds for connection
     'connect_args': {
         'connect_timeout': 10,
         'options': '-c statement_timeout=30000'
@@ -5198,6 +5242,7 @@ Best regards,
 # ============= HEALTH CHECK =============
 
 @app.route('/api/health', methods=['GET'])
+@cache_response(timeout=60)
 def health_check():
     """Health check endpoint"""
     return jsonify({
@@ -6954,6 +6999,7 @@ def get_brief_goals():
 
 @app.route('/api/categories', methods=['GET'])
 @require_auth(['therapist', 'client'])
+@cache_response(timeout=3600)
 def get_tracking_categories():
     """Get all tracking categories with translations"""
     try:
@@ -6985,6 +7031,7 @@ def get_tracking_categories():
 # NEW ENDPOINT - Added after /api/categories
 @app.route('/api/categories/translated', methods=['GET'])
 @require_auth(['therapist', 'client'])
+@cache_response(timeout=3600)
 def get_translated_categories():
     """Get all tracking categories with translations for current language"""
     try:
