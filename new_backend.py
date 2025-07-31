@@ -291,15 +291,16 @@ csp = {
 
 # Initialize Talisman with security settings
 Talisman(app,
-    force_https=False if app.debug else True,  # Disable HTTPS in debug mode
-    strict_transport_security={'max_age': 31536000, 'include_subdomains': True},
-    content_security_policy=False
+         force_https=False if app.debug else True,
+         strict_transport_security={'max_age': 31536000, 'include_subdomains': True},
+         content_security_policy=False,  # No CSP
+         frame_options='SAMEORIGIN',
+         content_security_policy_nonce_in=[]
 )
 
 # Add additional security headers
 @app.after_request
 def set_security_headers(response):
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['X-XSS-Protection'] = '1; mode=block'
