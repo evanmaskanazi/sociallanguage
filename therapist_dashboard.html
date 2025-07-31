@@ -2,6 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+<!-- DOMPurify for XSS protection -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
+
+    <!-- Global XSS protection -->
+    <script>
+    // Override innerHTML to always sanitize
+    (function() {
+        const originalInnerHTML = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+        Object.defineProperty(Element.prototype, 'innerHTML', {
+            set: function(value) {
+                const sanitized = DOMPurify.sanitize(value, {
+                    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'br', 'p', 'div', 'span', 'ul', 'li', 'h1', 'h2', 'h3'],
+                    ALLOWED_ATTR: ['href', 'class', 'id']
+                });
+                originalInnerHTML.set.call(this, sanitized);
+            },
+            get: originalInnerHTML.get
+        });
+
+        // Safe text insertion helper
+        window.safeText = function(element, text) {
+            if (typeof element === 'string') {
+                element = document.querySelector(element);
+            }
+            if (element) {
+                element.textContent = text;
+            }
+        };
+    })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
      <meta name="google" content="notranslate">
     <meta name="format-detection" content="telephone=no">
@@ -1127,6 +1157,57 @@
         </div>
     </div>
 
+    <!-- Weekly Report Email Settings -->
+            <div class="form-section" style="margin-top: 2rem;">
+                <h3 data-i18n="therapist.weekly_report_email_settings">Weekly Report Email Settings</h3>
+                <p style="color: #666; margin-bottom: 1rem;" data-i18n="therapist.weekly_report_email_desc">Configure automatic weekly report emails</p>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="weeklyReportTime" data-i18n="therapist.report_time">Report Time</label>
+                        <input type="time" id="weeklyReportTime" class="form-input" value="09:00">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="weeklyReportDay" data-i18n="therapist.report_day">Day of Week</label>
+                        <select id="weeklyReportDay" class="form-input">
+                            <option value="1" data-i18n="days.monday">Monday</option>
+                            <option value="2" data-i18n="days.tuesday">Tuesday</option>
+                            <option value="3" data-i18n="days.wednesday">Wednesday</option>
+                            <option value="4" data-i18n="days.thursday">Thursday</option>
+                            <option value="5" data-i18n="days.friday">Friday</option>
+                            <option value="6" data-i18n="days.saturday">Saturday</option>
+                            <option value="0" data-i18n="days.sunday">Sunday</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="weeklyReportEmail" data-i18n="therapist.report_email">Email Address (optional)</label>
+                    <input type="email" id="weeklyReportEmail" class="form-input" data-i18n-placeholder="therapist.leave_blank_for_default">
+                    <small style="color: #666;" data-i18n="therapist.default_email_note">Leave blank to use your account email</small>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <button class="btn btn-primary" onclick="saveWeeklyReportSettings()">
+                        <span data-i18n="therapist.save_report_settings">Save Report Settings</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="testWeeklyReport()">
+                        <span data-i18n="therapist.test_report_email">Test Report Email</span>
+                    </button>
+                </div>
+
+                <div id="weeklyReportStatus" style="margin-top: 1rem;"></div>
+            </div>
+
+
+
+
+
+
+
+
+
    <!-- Client Detail Modal -->
     <div id="clientModal" class="modal">
         <div class="modal-content">
@@ -1191,7 +1272,7 @@
                 'therapist.recent_activity': 'Recent Activity',
                 'therapist.loading_activity': 'Loading recent activity...',
                 'therapist.client_management': 'Client Management',
-                'therapist.search_placeholder': 'Search by serial or date...',
+                'therapist.search_placeholder': 'Search by name or date...',
                 'therapist.all_clients': 'All Clients',
                 'therapist.active_only': 'Active Only',
                 'therapist.inactive_only': 'Inactive Only',
@@ -1291,6 +1372,31 @@
                 'therapist.select_client': 'Select Client',
                 'therapist.select_client_for_insights': 'Select a client to view AI-powered insights',
                 'therapist.error_loading_insights': 'Error loading insights',
+                'therapist.weekly_report_email_settings': 'Weekly Report Email Settings',
+                'therapist.weekly_report_email_desc': 'Configure automatic weekly report emails',
+                'therapist.report_time': 'Report Time',
+                'therapist.report_day': 'Day of Week',
+                'therapist.report_email': 'Email Address (optional)',
+                'therapist.leave_blank_for_default': 'Leave blank to use your account email',
+                'therapist.default_email_note': 'Leave blank to use your account email',
+                'therapist.save_report_settings': 'Save Report Settings',
+                'therapist.test_report_email': 'Test Report Email',
+                'therapist.report_settings_saved': 'Report settings saved successfully',
+                'therapist.sending_test_report': 'Sending test report...',
+                'therapist.test_report_sent': 'Test report sent successfully',
+                'therapist.delete_client': 'Delete',
+                'therapist.confirm_delete_client': 'Are you sure you want to delete client {name}? This action cannot be undone.',
+                'therapist.confirm_delete_permanent': 'This will permanently delete all client data including check-ins, goals, and notes. Are you absolutely sure?',
+                'therapist.deleting_client': 'Deleting client...',
+                'therapist.client_deleted': 'Client deleted successfully',
+                'therapist.error_deleting_client': 'Error deleting client:',
+                'days.monday': 'Monday',
+                'days.tuesday': 'Tuesday',
+                'days.wednesday': 'Wednesday',
+                'days.thursday': 'Thursday',
+                'days.friday': 'Friday',
+                'days.saturday': 'Saturday',
+                'days.sunday': 'Sunday',
                 'therapist.ai_insights': 'AI-Powered Client Insights',
 'therapist.analyzing_patterns': 'Analyzing client patterns...',
 'therapist.no_insights': 'No significant patterns detected at this time.',
@@ -1350,7 +1456,7 @@
                 'therapist.recent_activity': 'פעילות אחרונה',
                 'therapist.loading_activity': 'טוען פעילות אחרונה...',
                 'therapist.client_management': 'ניהול מטופלים',
-                'therapist.search_placeholder': 'חיפוש לפי מספר סידורי או תאריך...',
+                'therapist.search_placeholder': 'חיפוש לפי שם או תאריך...',
                 'therapist.all_clients': 'כל המטופלים',
                 'therapist.active_only': 'פעילים בלבד',
                 'therapist.inactive_only': 'לא פעילים בלבד',
@@ -1416,6 +1522,12 @@
                 'therapist.save_credentials': 'אנא שמור את הפרטים האלה עבור המטופל. הודעה זו תישאר גלויה עד שתעזוב את הלשונית הזו.',
                 'therapist.temp_password_label': 'סיסמה זמנית',
                 'therapist.custom_categories_management': 'ניהול קטגוריות מותאמות אישית',
+                'therapist.delete_client': 'מחק',
+'therapist.confirm_delete_client': 'האם אתה בטוח שברצונך למחוק את המטופל {name}? פעולה זו אינה ניתנת לביטול.',
+'therapist.confirm_delete_permanent': 'פעולה זו תמחק לצמיתות את כל נתוני המטופל כולל צ\'ק-אינים, יעדים והערות. האם אתה בטוח לחלוטין?',
+'therapist.deleting_client': 'מוחק מטופל...',
+'therapist.client_deleted': 'המטופל נמחק בהצלחה',
+'therapist.error_deleting_client': 'שגיאה במחיקת מטופל:',
     'therapist.current_custom_categories': 'קטגוריות מותאמות נוכחיות',
     'therapist.no_custom_categories': 'לא נוספו קטגוריות מותאמות',
     'therapist.add_custom_category_existing': 'הוסף קטגוריות מותאמות',
@@ -1426,6 +1538,25 @@
     'therapist.max_custom_reached': 'מותרות מקסימום 4 קטגוריות מותאמות',
     'therapist.no_categories_to_add': 'אנא הוסף לפחות קטגוריה אחת',
     'therapist.categories_added_success': 'הקטגוריות נוספו בהצלחה!',
+    'therapist.weekly_report_email_settings': 'הגדרות דוא"ל לדוח שבועי',
+'therapist.weekly_report_email_desc': 'הגדר שליחת דוחות שבועיים אוטומטית',
+'therapist.report_time': 'שעת הדוח',
+'therapist.report_day': 'יום בשבוע',
+'therapist.report_email': 'כתובת דוא"ל (אופציונלי)',
+'therapist.leave_blank_for_default': 'השאר ריק כדי להשתמש בדוא"ל החשבון שלך',
+'therapist.default_email_note': 'השאר ריק כדי להשתמש בדוא"ל החשבון שלך',
+'therapist.save_report_settings': 'שמור הגדרות דוח',
+'therapist.test_report_email': 'בדיקת דוא"ל דוח',
+'therapist.report_settings_saved': 'הגדרות הדוח נשמרו בהצלחה',
+'therapist.sending_test_report': 'שולח דוח בדיקה...',
+'therapist.test_report_sent': 'דוח הבדיקה נשלח בהצלחה',
+'days.monday': 'יום שני',
+'days.tuesday': 'יום שלישי',
+'days.wednesday': 'יום רביעי',
+'days.thursday': 'יום חמישי',
+'days.friday': 'יום שישי',
+'days.saturday': 'שבת',
+'days.sunday': 'יום ראשון',
     'common.error_occurred': 'אירעה שגיאה',
     'common.cancel': 'ביטול',
                 'therapist.goal_added': 'היעד נוסף בהצלחה!',
@@ -1522,7 +1653,7 @@
                 'therapist.recent_activity': 'Недавняя активность',
                 'therapist.loading_activity': 'Загрузка недавней активности...',
                 'therapist.client_management': 'Управление клиентами',
-                'therapist.search_placeholder': 'Поиск по серийному номеру или дате...',
+                'therapist.search_placeholder': 'Поиск по имени или дате...',
                 'therapist.all_clients': 'Все клиенты',
                 'therapist.active_only': 'Только активные',
                 'therapist.inactive_only': 'Только неактивные',
@@ -1620,6 +1751,31 @@
                 'therapist.reverse_scoring_desc': 'Отметьте, если более низкие значения указывают на улучшение',
                 'therapist.remove_category': 'Удалить',
                 'therapist.max_custom_categories': 'Максимум можно добавить 4 пользовательские категории',
+                'therapist.weekly_report_email_settings': 'Настройки еженедельных отчетов по email',
+                'therapist.delete_client': 'Удалить',
+'therapist.confirm_delete_client': 'Вы уверены, что хотите удалить клиента {name}? Это действие нельзя отменить.',
+'therapist.confirm_delete_permanent': 'Это навсегда удалит все данные клиента, включая отметки, цели и заметки. Вы абсолютно уверены?',
+'therapist.deleting_client': 'Удаление клиента...',
+'therapist.client_deleted': 'Клиент успешно удален',
+'therapist.error_deleting_client': 'Ошибка при удалении клиента:',
+'therapist.weekly_report_email_desc': 'Настройте автоматическую отправку еженедельных отчетов',
+'therapist.report_time': 'Время отчета',
+'therapist.report_day': 'День недели',
+'therapist.report_email': 'Адрес электронной почты (необязательно)',
+'therapist.leave_blank_for_default': 'Оставьте пустым для использования email вашего аккаунта',
+'therapist.default_email_note': 'Оставьте пустым для использования email вашего аккаунта',
+'therapist.save_report_settings': 'Сохранить настройки отчета',
+'therapist.test_report_email': 'Тестовый отчет по email',
+'therapist.report_settings_saved': 'Настройки отчета успешно сохранены',
+'therapist.sending_test_report': 'Отправка тестового отчета...',
+'therapist.test_report_sent': 'Тестовый отчет успешно отправлен',
+'days.monday': 'Понедельник',
+'days.tuesday': 'Вторник',
+'days.wednesday': 'Среда',
+'days.thursday': 'Четверг',
+'days.friday': 'Пятница',
+'days.saturday': 'Суббота',
+'days.sunday': 'Воскресенье',
                 'therapist.ai_insights': 'Аналитика клиентов на основе ИИ',
 'therapist.analyzing_patterns': 'Анализ паттернов клиентов...',
 'therapist.no_insights': 'Значительные паттерны не обнаружены.',
@@ -1669,7 +1825,7 @@
                 'therapist.recent_activity': 'النشاط الأخير',
                 'therapist.loading_activity': 'جاري تحميل النشاط الأخير...',
                 'therapist.client_management': 'إدارة العملاء',
-                'therapist.search_placeholder': 'البحث حسب الرقم التسلسلي أو التاريخ...',
+                'therapist.search_placeholder': 'البحث حسب الاسم أو التاريخ...',
                 'therapist.all_clients': 'جميع العملاء',
                 'therapist.active_only': 'النشطون فقط',
                 'therapist.inactive_only': 'غير النشطين فقط',
@@ -1734,6 +1890,12 @@
     'therapist.max_custom_reached': 'الحد الأقصى 4 فئات مخصصة',
     'therapist.no_categories_to_add': 'يرجى إضافة فئة واحدة على الأقل',
     'therapist.categories_added_success': 'تمت إضافة الفئات بنجاح!',
+    'therapist.delete_client': 'حذف',
+'therapist.confirm_delete_client': 'هل أنت متأكد من أنك تريد حذف العميل {name}؟ لا يمكن التراجع عن هذا الإجراء.',
+'therapist.confirm_delete_permanent': 'سيؤدي هذا إلى حذف جميع بيانات العميل نهائياً بما في ذلك تسجيلات الحضور والأهداف والملاحظات. هل أنت متأكد تماماً؟',
+'therapist.deleting_client': 'جاري حذف العميل...',
+'therapist.client_deleted': 'تم حذف العميل بنجاح',
+'therapist.error_deleting_client': 'خطأ في حذف العميل:',
     'common.error_occurred': 'حدث خطأ',
     'common.cancel': 'إلغاء',
                 'therapist.positive_progress': 'تقدم إيجابي',
@@ -1780,6 +1942,25 @@
                 'therapist.reverse_scoring_desc': 'حدد هذا إذا كانت القيم الأقل تشير إلى تحسن',
                 'therapist.remove_category': 'إزالة',
                 'therapist.max_custom_categories': 'يمكن إضافة 4 فئات مخصصة كحد أقصى',
+                'therapist.weekly_report_email_settings': 'إعدادات البريد الإلكتروني للتقرير الأسبوعي',
+'therapist.weekly_report_email_desc': 'قم بتكوين رسائل التقارير الأسبوعية التلقائية',
+'therapist.report_time': 'وقت التقرير',
+'therapist.report_day': 'يوم الأسبوع',
+'therapist.report_email': 'عنوان البريد الإلكتروني (اختياري)',
+'therapist.leave_blank_for_default': 'اتركه فارغاً لاستخدام البريد الإلكتروني لحسابك',
+'therapist.default_email_note': 'اتركه فارغاً لاستخدام البريد الإلكتروني لحسابك',
+'therapist.save_report_settings': 'حفظ إعدادات التقرير',
+'therapist.test_report_email': 'تقرير تجريبي بالبريد الإلكتروني',
+'therapist.report_settings_saved': 'تم حفظ إعدادات التقرير بنجاح',
+'therapist.sending_test_report': 'جاري إرسال التقرير التجريبي...',
+'therapist.test_report_sent': 'تم إرسال التقرير التجريبي بنجاح',
+'days.monday': 'الإثنين',
+'days.tuesday': 'الثلاثاء',
+'days.wednesday': 'الأربعاء',
+'days.thursday': 'الخميس',
+'days.friday': 'الجمعة',
+'days.saturday': 'السبت',
+'days.sunday': 'الأحد',
                 'therapist.select_client_for_insights': 'اختر عميلاً لعرض الرؤى المدعومة بالذكاء الاصطناعي',
 'therapist.error_loading_insights': 'خطأ في تحميل الرؤى',
 'therapist.ai_insights': 'رؤى العملاء المدعومة بالذكاء الاصطناعي',
@@ -1912,6 +2093,7 @@
             await loadTrackingCategories();
             setCurrentWeek();
             updatePlaceholders();
+            loadWeeklyReportSettings();
         } else {
             console.log('i18n not ready, waiting 100ms...');
             // Wait a bit for i18n to initialize
@@ -1921,6 +2103,7 @@
                 await loadTrackingCategories();
                 setCurrentWeek();
                 updatePlaceholders();
+                loadWeeklyReportSettings();
             }, 100);
         }
     } catch (error) {
@@ -2261,6 +2444,7 @@ function updatePaginationControls(pagination) {
                             <div class="action-buttons">
                                 <button class="btn btn-primary btn-small" onclick="viewClientDetails(${client.id})">${i18n.t('therapist.view_client')}</button>
                                 <button class="btn btn-secondary btn-small" onclick="addGoal(${client.id})">${i18n.t('therapist.add_goal')}</button>
+                                <button class="btn btn-small" style="background: #e74c3c; color: white;" onclick="deleteClient(${client.id}, '${client.client_name}')">${i18n.t('therapist.delete_client')}</button>
                             </div>
                         </td>
                     </tr>
@@ -2449,9 +2633,83 @@ ${(() => {
 
         // Filter clients
         function filterClients() {
-            // TODO: Implement client filtering
-            console.log('Filter clients');
+            const searchInput = document.querySelector('.search-input').value.toLowerCase();
+            const filterSelect = document.querySelector('.filter-select').value;
+
+            let filteredClients = clientsList;
+
+            // Filter by search term (name or date)
+            if (searchInput) {
+                filteredClients = filteredClients.filter(client => {
+                    const nameMatch = client.client_name.toLowerCase().includes(searchInput);
+                    const dateMatch = new Date(client.start_date).toLocaleDateString().includes(searchInput);
+                    return nameMatch || dateMatch;
+                });
+            }
+
+            // Filter by status
+            if (filterSelect === 'active') {
+                filteredClients = filteredClients.filter(client => client.is_active);
+            } else if (filterSelect === 'inactive') {
+                filteredClients = filteredClients.filter(client => !client.is_active);
+            }
+
+            // Update the table with filtered results
+            const tbody = document.getElementById('clientTableBody');
+
+            if (filteredClients.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: #999;">
+                            ${i18n.t('therapist.no_clients_found', 'No clients found matching your search')}
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // Use the same rendering logic as updateClientsTable
+            tbody.innerHTML = filteredClients.map(client => {
+                const completionRate = client.week_completion.split('/');
+                const percentage = (parseInt(completionRate[0]) / parseInt(completionRate[1])) * 100;
+                const trackingDisplay = client.tracking_categories.join(', ');
+
+                return `
+                    <tr>
+                        <td class="client-serial">${client.client_name}</td>
+                        <td>${new Date(client.start_date).toLocaleDateString()}</td>
+                        <td>
+                            <span class="status-badge ${client.is_active ? 'active' : 'inactive'}">
+                                ${client.is_active ? i18n.t('client.active') : i18n.t('client.inactive')}
+                            </span>
+                        </td>
+                        <td>${client.last_checkin ? new Date(client.last_checkin).toLocaleDateString() : i18n.t('msg.never')}</td>
+                        <td>
+                            <div class="completion-rate">
+                                <div class="completion-bar">
+                                    <div class="completion-fill" style="width: ${percentage}%"></div>
+                                </div>
+                                <span>${client.week_completion}</span>
+                            </div>
+                        </td>
+                        <td>${trackingDisplay}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-primary btn-small" onclick="viewClientDetails(${client.id})">${i18n.t('therapist.view_client')}</button>
+                                <button class="btn btn-secondary btn-small" onclick="addGoal(${client.id})">${i18n.t('therapist.add_goal')}</button>
+                                <button class="btn btn-small" style="background: #e74c3c; color: white;" onclick="deleteClient(${client.id}, '${client.client_name}')">${i18n.t('therapist.delete_client')}</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
+
+
+
+
+
+
 
         // Add goal input
         function addGoalInput() {
@@ -2626,6 +2884,49 @@ credentials: 'include',
                 showMessage(i18n.t('therapist.error_creating') + ' ' + error.message, 'error');
             }
         }
+
+
+// Delete client
+        async function deleteClient(clientId, clientName) {
+            const confirmMessage = i18n.t('therapist.confirm_delete_client')
+                .replace('{name}', clientName);
+
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            // Double confirmation for safety
+            const secondConfirm = confirm(i18n.t('therapist.confirm_delete_permanent'));
+            if (!secondConfirm) {
+                return;
+            }
+
+            try {
+                showMessage(i18n.t('therapist.deleting_client'), 'info');
+
+                const response = await fetch(`/api/therapist/delete-client/${clientId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept-Language': i18n.currentLang
+                    },
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    showMessage(i18n.t('therapist.client_deleted'), 'success');
+                    loadClients(currentPage);
+                } else {
+                    const error = await response.json();
+                    showMessage(error.error || i18n.t('msg.error'), 'error');
+                }
+            } catch (error) {
+                showMessage(i18n.t('therapist.error_deleting_client') + ' ' + error.message, 'error');
+            }
+        }
+
+
+
+
 
         // Add goal
         async function addGoal(clientId) {
@@ -3199,6 +3500,104 @@ credentials: 'include'
             localStorage.removeItem('userRole');
             window.location.href = '/login.html';
         }
+
+
+ // Weekly Report Email Settings Functions
+        async function saveWeeklyReportSettings() {
+            try {
+                const time = document.getElementById('weeklyReportTime').value;
+                const dayOfWeek = document.getElementById('weeklyReportDay').value;
+                const email = document.getElementById('weeklyReportEmail').value;
+
+                const timezoneOffset = new Date().getTimezoneOffset();
+
+                const response = await fetch('/api/therapist/weekly-report-settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept-Language': i18n.currentLang
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        time: time,
+                        day_of_week: parseInt(dayOfWeek),
+                        email: email,
+                        timezone_offset: timezoneOffset,
+                        language: i18n.currentLang
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showWeeklyReportStatus(i18n.t('therapist.report_settings_saved'), 'success');
+                } else {
+                    showWeeklyReportStatus(result.error || i18n.t('msg.error'), 'error');
+                }
+            } catch (error) {
+                showWeeklyReportStatus(i18n.t('msg.error') + ': ' + error.message, 'error');
+            }
+        }
+
+        async function testWeeklyReport() {
+            try {
+                showWeeklyReportStatus(i18n.t('therapist.sending_test_report'), 'info');
+
+                const response = await fetch('/api/therapist/test-weekly-report', {
+                    method: 'POST',
+                    headers: {
+                        'Accept-Language': i18n.currentLang
+                    },
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showWeeklyReportStatus(i18n.t('therapist.test_report_sent'), 'success');
+                } else {
+                    showWeeklyReportStatus(result.error || i18n.t('msg.error'), 'error');
+                }
+            } catch (error) {
+                showWeeklyReportStatus(i18n.t('msg.error') + ': ' + error.message, 'error');
+            }
+        }
+
+        function showWeeklyReportStatus(message, type) {
+            const statusDiv = document.getElementById('weeklyReportStatus');
+            statusDiv.className = `message ${type}`;
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        async function loadWeeklyReportSettings() {
+            try {
+                const response = await fetch('/api/therapist/weekly-report-settings', {
+                    headers: {
+                        'Accept-Language': i18n.currentLang
+                    },
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.settings) {
+                        document.getElementById('weeklyReportTime').value = data.settings.local_time || '09:00';
+                        document.getElementById('weeklyReportDay').value = data.settings.day_of_week || '1';
+                        document.getElementById('weeklyReportEmail').value = data.settings.email || '';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading weekly report settings:', error);
+            }
+        }
+
+
+
 
           // Custom Categories for Existing Clients Functions
         function showAddCustomCategoryModal() {
