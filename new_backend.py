@@ -282,9 +282,9 @@ app.template_folder = BASE_DIR
 # Security headers including CSP
 csp = {
     'default-src': "'self'",
-    'script-src': "'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
-    'style-src': "'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
-    'font-src': "'self' https://fonts.gstatic.com",
+    'script-src': "'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://code.jquery.com https://stackpath.bootstrapcdn.com",
+    'style-src': "'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://stackpath.bootstrapcdn.com",
+    'font-src': "'self' https://fonts.gstatic.com data:",
     'img-src': "'self' data: https:",
     'connect-src': "'self'"
 }
@@ -293,8 +293,7 @@ csp = {
 Talisman(app,
     force_https=False if app.debug else True,  # Disable HTTPS in debug mode
     strict_transport_security={'max_age': 31536000, 'include_subdomains': True},
-    content_security_policy=csp,
-    content_security_policy_nonce_in=['script-src', 'style-src']
+    content_security_policy=csp
 )
 
 # Add additional security headers
