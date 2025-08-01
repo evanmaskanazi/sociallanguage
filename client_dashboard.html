@@ -2247,7 +2247,7 @@ dayCell.appendChild(statusIconDiv);
                     throw new Error('Failed to submit check-in');
                 }
 
-                showMessage(getRandomPositiveMessage(), 'success', 10000, true);
+                showMessage(i18n.t('client.checkin_success'), 'success');
 
 // Update the streak display immediately
 setTimeout(() => {
