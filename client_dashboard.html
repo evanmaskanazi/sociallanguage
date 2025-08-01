@@ -1668,6 +1668,10 @@ credentials: 'include'
 
         // Update UI with data
         function updateUI() {
+        if (!clientData) {
+        console.error('clientData is not loaded yet');
+        return;
+    }
             // Update client info
             console.log('=== updateUI called ===');
     console.log('clientData:', clientData);
@@ -2016,6 +2020,10 @@ function setupAllCategories() {
 
         // Calendar Week View Functions
         function loadWeekView() {
+        if (!clientData) {
+        console.warn('loadWeekView called before clientData is loaded');
+        return;
+    }
             console.log('Current language:', i18n.currentLang);
             console.log('Previous week:', i18n.t('client.previous_week'));
             console.log('Next week:', i18n.t('client.next_week'));
@@ -2099,28 +2107,16 @@ dayCell.appendChild(statusIconDiv);
         weekEnd.setDate(weekEnd.getDate() + 6);
 
         const dayCells = document.querySelectorAll('.day-cell');
-
-        // For each day in the week, check if there's a checkin
-        for (let i = 0; i < 7; i++) {
+        dayCells.forEach((cell, index) => {
             const cellDate = new Date(weekStart);
-            cellDate.setDate(cellDate.getDate() + i);
-            const cell = dayCells[i];
+            cellDate.setDate(cellDate.getDate() + index);
 
-            if (!cell) continue;
-
-            // Check if this is today and has a checkin
-            if (cellDate.toDateString() === new Date().toDateString() &&
-                clientData && clientData.today && clientData.today.has_checkin) {
+            // Mark completed days (would come from API)
+            if (cellDate.toDateString() === new Date().toDateString() && clientData && clientData.today && clientData.today.has_checkin) {
                 cell.classList.add('completed');
                 cell.querySelector('.status-icon').textContent = '✅';
             }
-
-            // Also check the week checkins data if available
-            if (weekCheckinsCount > 0) {
-                // This is a simple check - you might need to fetch actual checkin dates
-                // For now, we'll rely on the today check above
-            }
-        }
+        });
     } catch (error) {
         console.error('Error loading week check-in status:', error);
     }
