@@ -1015,6 +1015,7 @@ class Reminder(db.Model):
     reminder_language = db.Column(db.String(2), default='en')
     is_active = db.Column(db.Boolean, default=True)
     last_sent = db.Column(db.DateTime)
+    day_of_week = db.Column(db.Integer, default=1)
 
 class EmailQueue(db.Model):
     """Queue for email sending with retry logic"""
@@ -5092,6 +5093,192 @@ def client_generate_pdf(week):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/therapist/weekly-report-settings', methods=['GET'])
+@require_auth(['therapist'])
+def get_weekly_report_settings():
+    """Get therapist's weekly report settings"""
+    try:
+        therapist = request.current_user.therapist
+
+        # Check if settings exist
+        existing = db.session.execute(
+            text("""
+                SELECT reminder_time, reminder_email, day_of_week, local_reminder_time, reminder_language
+                FROM reminders
+                WHERE client_id = :therapist_id
+                AND reminder_type = 'weekly_report'
+                AND is_active = true
+            """),
+            {'therapist_id': therapist.id}
+        ).first()
+
+        if existing:
+            return jsonify({
+                'success': True,
+                'settings': {
+                    'time': existing[0].strftime('%H:%M') if existing[0] else '09:00',
+                    'email': existing[1] or '',
+                    'day_of_week': existing[2] or 1,
+                    'local_time': existing[3] or '09:00',
+                    'language': existing[4] or 'en'
+                }
+            })
+
+        return jsonify({
+            'success': True,
+            'settings': None
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/therapist/weekly-report-settings', methods=['POST'])
+@require_auth(['therapist'])
+def save_weekly_report_settings():
+    """Save therapist's weekly report settings"""
+    try:
+        therapist = request.current_user.therapist
+        data = request.json
+
+        time_str = data.get('time', '09:00')
+        day_of_week = data.get('day_of_week', 1)
+        email = data.get('email', '').strip()
+        timezone_offset = data.get('timezone_offset', 0)
+        language = data.get('language', 'en')
+
+        # Parse time
+        hour, minute = map(int, time_str.split(':'))
+
+        # Convert to UTC
+        local_total_minutes = hour * 60 + minute
+        utc_total_minutes = local_total_minutes - timezone_offset
+
+        while utc_total_minutes < 0:
+            utc_total_minutes += 24 * 60
+        while utc_total_minutes >= 24 * 60:
+            utc_total_minutes -= 24 * 60
+
+        utc_hour = utc_total_minutes // 60
+        utc_minute = utc_total_minutes % 60
+
+        import datetime
+        time_obj = datetime.time(utc_hour, utc_minute)
+
+        # Check if settings exist
+        existing = Reminder.query.filter_by(
+            client_id=therapist.id,  # Using therapist.id as client_id for storage
+            reminder_type='weekly_report'
+        ).first()
+
+        if existing:
+            existing.reminder_time = time_obj
+            existing.local_reminder_time = time_str
+            existing.reminder_email = email if email else None
+            existing.day_of_week = day_of_week
+            existing.reminder_language = language
+            existing.is_active = True
+        else:
+            reminder = Reminder(
+                client_id=therapist.id,  # Using therapist.id as client_id for storage
+                reminder_type='weekly_report',
+                reminder_time=time_obj,
+                local_reminder_time=time_str,
+                reminder_email=email if email else None,
+                day_of_week=day_of_week,
+                reminder_language=language,
+                is_active=True
+            )
+            db.session.add(reminder)
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Weekly report settings saved successfully'
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/therapist/test-weekly-report', methods=['POST'])
+@require_auth(['therapist'])
+def test_weekly_report():
+    """Send a test weekly report email"""
+    try:
+        therapist = request.current_user.therapist
+
+        # Get settings
+        settings = Reminder.query.filter_by(
+            client_id=therapist.id,
+            reminder_type='weekly_report'
+        ).first()
+
+        email = therapist.user.email
+        if settings and settings.reminder_email:
+            email = settings.reminder_email
+
+        # Get most recent client with data
+        client = therapist.clients.filter_by(is_active=True).first()
+        if not client:
+            return jsonify({'error': 'No active clients found'}), 400
+
+        # Get current week
+        import datetime
+        today = datetime.date.today()
+        week_start = today - datetime.timedelta(days=today.weekday())
+        week_end = week_start + datetime.timedelta(days=6)
+        year = today.year
+        week_num = today.isocalendar()[1]
+
+        # Generate PDF report
+        from io import BytesIO
+        pdf_buffer = create_weekly_report_pdf(
+            client, therapist, week_start, week_end, week_num, year,
+            settings.reminder_language if settings else 'en'
+        )
+
+        # Send email with attachment
+        msg = MIMEMultipart()
+        msg['From'] = app.config['MAIL_USERNAME']
+        msg['To'] = email
+        msg['Subject'] = f"Weekly Therapy Report - Week {week_num}, {year}"
+
+        # Email body
+        body = "PDF Report"
+        msg.attach(MIMEText(body, 'plain'))
+
+        # Attach PDF
+        pdf_attachment = MIMEBase('application', 'pdf')
+        pdf_attachment.set_payload(pdf_buffer.read())
+        encoders.encode_base64(pdf_attachment)
+        pdf_attachment.add_header(
+            'Content-Disposition',
+            f'attachment; filename=weekly_report_week_{week_num}_{year}.pdf'
+        )
+        msg.attach(pdf_attachment)
+
+        # Send email
+        server = smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT'])
+        server.starttls()
+        server.login(app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
+        server.send_message(msg)
+        server.quit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Test report sent successfully'
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
+
+
 # UPDATED EMAIL REPORT FUNCTION
 @app.route('/api/therapist/email-report', methods=['POST'])
 @require_auth(['therapist'])
@@ -5959,6 +6146,115 @@ def add_weekly_goal():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/therapist/delete-client/<int:client_id>', methods=['DELETE'])
+@require_auth(['therapist'])
+def delete_client(client_id):
+    """Delete a client and all associated data"""
+    try:
+        therapist = request.current_user.therapist
+
+        # Verify client belongs to therapist
+        client = Client.query.filter_by(
+            id=client_id,
+            therapist_id=therapist.id
+        ).first()
+
+        if not client:
+            return jsonify({'error': 'Client not found'}), 404
+
+        # Get user to delete
+        user = client.user
+
+        # Log the deletion for audit
+        logger.info('client_deletion', extra={
+            'extra_data': {
+                'therapist_id': therapist.id,
+                'client_id': client.id,
+                'client_serial': client.client_serial,
+                'client_email': user.email if user else 'unknown',
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        })
+
+        # Audit log for compliance
+        log_audit(
+            action='DELETE_CLIENT',
+            resource_type='client',
+            resource_id=client_id,
+            details={
+                'client_serial': client.client_serial,
+                'therapist_id': therapist.id
+            },
+            phi_accessed=True
+        )
+
+        # Delete all related data (cascade should handle most)
+        # But explicitly delete some for safety
+
+        # Delete category responses
+        CategoryResponse.query.filter_by(client_id=client_id).delete()
+
+        # Delete goal completions through goals
+        for goal in client.goals:
+            GoalCompletion.query.filter_by(goal_id=goal.id).delete()
+
+        # Delete custom categories
+        CustomCategory.query.filter_by(client_id=client_id).delete()
+
+        # Delete therapist notes
+        TherapistNote.query.filter_by(client_id=client_id).delete()
+
+        # Delete consent records
+        ConsentRecord.query.filter_by(client_id=client_id).delete()
+
+        # Delete the client (cascade will handle checkins, goals, reminders, tracking plans)
+        db.session.delete(client)
+
+        # Delete the user account if it exists
+        if user:
+            # Delete password resets
+            PasswordReset.query.filter_by(user_id=user.id).delete()
+
+            # Delete session tokens
+            SessionToken.query.filter_by(user_id=user.id).delete()
+
+            # Delete audit logs (optional - you might want to keep these)
+            # AuditLog.query.filter_by(user_id=user.id).delete()
+
+            # Delete the user
+            db.session.delete(user)
+
+        # Commit all deletions
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Client and all associated data deleted successfully'
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error('delete_client_error', extra={
+            'extra_data': {
+                'error': str(e),
+                'client_id': client_id,
+                'therapist_id': therapist.id,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        }, exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+
+
+
+
+
+
 @app.route('/api/therapist/add-note', methods=['POST'])
 @require_auth(['therapist'])
 def add_therapist_note():
@@ -6249,6 +6545,17 @@ def client_dashboard():
                 logger.error(f"Error loading custom category {custom_cat.id}: {e}")
                 continue
 
+        # Get this week's check-ins count
+        week_start = date.today() - timedelta(days=date.today().weekday())
+        week_end = week_start + timedelta(days=6)
+        week_checkins = client.checkins.filter(
+            DailyCheckin.checkin_date.between(week_start, week_end)
+        ).count()
+
+
+
+
+
         # Get this week's goals
         week_start = date.today() - timedelta(days=date.today().weekday())
         weekly_goals = []
@@ -6278,19 +6585,23 @@ def client_dashboard():
         return jsonify({
             'success': True,
             'client': {
-                 'serial': client.client_serial,  # Use client_serial, not serial
+                'serial': client.client_serial,  # Use client_serial, not serial
                 'client_serial': client.client_serial,  # Also provide as client_serial for compatibility
                 'client_name': client.client_name if client.client_name else client.client_serial,
-                 'start_date': client.start_date.isoformat()
+                'start_date': client.start_date.isoformat()
             },
             'today': {
                 'has_checkin': today_checkin is not None,
                 'date': date.today().isoformat()
             },
+            'week_checkins_count': week_checkins,
             'tracking_categories': tracking_categories,
             'weekly_goals': weekly_goals,
             'reminders': reminders
         })
+
+
+
 
     except Exception as e:
         # Log the actual error
