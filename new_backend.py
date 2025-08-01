@@ -4289,7 +4289,15 @@ def test_pdf_libraries():
 
 def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, year, lang='en'):
     """Create PDF report with proper Unicode support via WeasyPrint"""
-
+    # DEBUG: Check what types we're receiving
+    if hasattr(week_start, 'date'):
+        week_start = week_start.date()
+    if hasattr(week_end, 'date'):
+        week_end = week_end.date()
+    print(f"DEBUG PDF Generation:")
+    print(f"  week_start type: {type(week_start)}, value: {week_start}")
+    print(f"  week_end type: {type(week_end)}, value: {week_end}")
+    print(f"  client.id: {client.id}")
     # Log the attempt
     print(f"Creating PDF for client {client.id}, week {week_num}, year {year}, lang {lang}")
 
@@ -5264,6 +5272,12 @@ def generate_pdf_report(client_id, week):
         first_monday = jan1 + timedelta(days=days_to_monday - 7)
         week_start = first_monday + timedelta(weeks=week_num - 1)
         week_end = week_start + timedelta(days=6)
+
+        # DEBUG: Add these lines
+        print(f"DEBUG generate_pdf_report:")
+        print(f"  week_start: {week_start} (type: {type(week_start)})")
+        print(f"  week_end: {week_end} (type: {type(week_end)})")
+        print(f"  These are datetime objects: {isinstance(week_start, datetime)}")
 
         # Create PDF
         pdf_buffer = create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, year, lang)
