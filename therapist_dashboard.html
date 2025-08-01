@@ -2024,14 +2024,23 @@ async function loadDashboard() {
         document.getElementById('pendingMissions').textContent = data.statistics.pending_missions;
 
         // Update recent activity to show it's not implemented
-        document.getElementById('recentActivity').innerHTML = `
-    <div style="padding: 2rem; background: #f8f9fa; border-radius: 8px; text-align: center;">
-        <p style="color: #666;">${i18n.t('therapist.activity_coming_soon')}</p>
-        <p style="color: #999; font-size: 0.875rem; margin-top: 0.5rem;">
-            ${i18n.t('therapist.check_clients_tab')}
-        </p>
-    </div>
-`;
+        const recentActivity = document.getElementById('recentActivity');
+recentActivity.innerHTML = '';
+
+const containerDiv = document.createElement('div');
+containerDiv.style.cssText = 'padding: 2rem; background: #f8f9fa; border-radius: 8px; text-align: center;';
+
+const p1 = document.createElement('p');
+p1.style.color = '#666';
+p1.textContent = i18n.t('therapist.activity_coming_soon');
+containerDiv.appendChild(p1);
+
+const p2 = document.createElement('p');
+p2.style.cssText = 'color: #999; font-size: 0.875rem; margin-top: 0.5rem;';
+p2.textContent = i18n.t('therapist.check_clients_tab');
+containerDiv.appendChild(p2);
+
+recentActivity.appendChild(containerDiv);
 
 
 
