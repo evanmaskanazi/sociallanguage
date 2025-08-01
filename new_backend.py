@@ -3550,7 +3550,7 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
 
     # Get weekly goals
     weekly_goals = client.goals.filter_by(
-        week_start=week_start.date(),
+        week_start=week_start,
         is_active=True
     ).all()
 
@@ -3560,12 +3560,12 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
 
         # Get completions for each day
         completions = goal.completions.filter(
-            GoalCompletion.completion_date.between(week_start.date(), week_end.date())
+            GoalCompletion.completion_date.between(week_start, week_end)
         ).all()
 
         completed_days = 0
         for day_idx in range(7):
-            current_date = week_start.date() + timedelta(days=day_idx)
+            current_date = week_start + timedelta(days=day_idx)
             completion = next((c for c in completions if c.completion_date == current_date), None)
 
             cell = ws_goals.cell(row=row, column=day_idx + 2)
@@ -3623,8 +3623,8 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
             cell.border = cell_border
 
         # Get therapist notes for the week
-        week_start_datetime = datetime.combine(week_start.date(), datetime.min.time())
-        week_end_datetime = datetime.combine(week_end.date(), datetime.max.time())
+        week_start_datetime = datetime.combine(week_start, datetime.min.time())
+        week_end_datetime = datetime.combine(week_end, datetime.max.time())
 
         notes = TherapistNote.query.filter(
             TherapistNote.client_id == client.id,
