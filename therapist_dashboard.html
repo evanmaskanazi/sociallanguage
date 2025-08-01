@@ -2609,15 +2609,44 @@ credentials: 'include',
                 const result = await response.json();
 
                 // Show persistent success message with credentials
-                showMessage(`
-    <strong>${i18n.t('therapist.client_created')}</strong><br>
-    <strong>${i18n.t('therapist.serial')}:</strong> ${result.client.serial}<br>
-    <strong>${i18n.t('therapist.email')}:</strong> ${result.client.email}<br>
-    <strong>${i18n.t('therapist.temp_password_label')}:</strong> ${result.client.temporary_password}<br>
-    <strong>${i18n.t('therapist.client_name_label')}:</strong> ${result.client.client_name}<br>
-    <br>
-    <em>${i18n.t('therapist.save_credentials')}</em>
-`, 'important', true);
+                // Create message content safely
+const messageContent = document.createElement('div');
+
+const strong1 = document.createElement('strong');
+strong1.textContent = i18n.t('therapist.client_created');
+messageContent.appendChild(strong1);
+messageContent.appendChild(document.createElement('br'));
+
+const strong2 = document.createElement('strong');
+strong2.textContent = i18n.t('therapist.serial') + ':';
+messageContent.appendChild(strong2);
+messageContent.appendChild(document.createTextNode(' ' + result.client.serial));
+messageContent.appendChild(document.createElement('br'));
+
+const strong3 = document.createElement('strong');
+strong3.textContent = i18n.t('therapist.email') + ':';
+messageContent.appendChild(strong3);
+messageContent.appendChild(document.createTextNode(' ' + result.client.email));
+messageContent.appendChild(document.createElement('br'));
+
+const strong4 = document.createElement('strong');
+strong4.textContent = i18n.t('therapist.temp_password_label') + ':';
+messageContent.appendChild(strong4);
+messageContent.appendChild(document.createTextNode(' ' + result.client.temporary_password));
+messageContent.appendChild(document.createElement('br'));
+
+const strong5 = document.createElement('strong');
+strong5.textContent = i18n.t('therapist.client_name_label') + ':';
+messageContent.appendChild(strong5);
+messageContent.appendChild(document.createTextNode(' ' + result.client.client_name));
+messageContent.appendChild(document.createElement('br'));
+messageContent.appendChild(document.createElement('br'));
+
+const em = document.createElement('em');
+em.textContent = i18n.t('therapist.save_credentials');
+messageContent.appendChild(em);
+
+showMessage(messageContent.innerHTML, 'important', true);
 
 
 
