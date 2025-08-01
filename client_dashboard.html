@@ -1752,32 +1752,36 @@ if (quickStats) {
 
 
     // Calculate current streak
+// Calculate current streak
 let currentStreak = 0;
-if (clientData && clientData.current_streak !== undefined) {
-    currentStreak = clientData.current_streak;
-} else {
-    // Simple approach: if today has a checkin, streak is at least 1
-    // For now, just check if there's a checkin this week
-    const todayHasCheckin = document.querySelector('.day-cell.selected.completed') !== null;
-    if (todayHasCheckin) {
-        currentStreak = 1;
 
-        // Count consecutive days backward from today
-        const dayCells = document.querySelectorAll('.day-cell');
-        const todayIndex = Array.from(dayCells).findIndex(cell => cell.classList.contains('selected'));
+// Check if today has a checkin by looking at the data
+const today = new Date().toISOString().split('T')[0];
+const todayCell = document.querySelector('.day-cell.selected');
+const todayHasCheckin = todayCell && todayCell.querySelector('.status-icon')?.textContent === '✅';
 
-        // Check previous days
+if (todayHasCheckin || (clientData && clientData.today && clientData.today.has_checkin)) {
+    // Today has a checkin, so streak is at least 1
+    currentStreak = 1;
+
+    // Look at previous days in the week view
+    const allDayCells = Array.from(document.querySelectorAll('.day-cell'));
+    const todayIndex = allDayCells.findIndex(cell => cell.classList.contains('selected'));
+
+    // Count backwards from yesterday
+    if (todayIndex > 0) {
         for (let i = todayIndex - 1; i >= 0; i--) {
-            if (dayCells[i] && dayCells[i].classList.contains('completed')) {
+            const cell = allDayCells[i];
+            if (cell && cell.querySelector('.status-icon')?.textContent === '✅') {
                 currentStreak++;
             } else {
                 break;
             }
         }
-    } else if (weekCheckinsCount > 0) {
-        // If not today but has checkins this week, streak is broken, show 0
-        currentStreak = 0;
     }
+} else {
+    // No checkin today, streak is 0
+    currentStreak = 0;
 }
 
 
@@ -2090,25 +2094,40 @@ dayCell.appendChild(statusIconDiv);
         }
 
         async function loadWeekCheckinStatus(weekStart) {
-            try {
-                const weekEnd = new Date(weekStart);
-                weekEnd.setDate(weekEnd.getDate() + 6);
+    try {
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
 
-                const dayCells = document.querySelectorAll('.day-cell');
-                dayCells.forEach((cell, index) => {
-                    const cellDate = new Date(weekStart);
-                    cellDate.setDate(cellDate.getDate() + index);
+        const dayCells = document.querySelectorAll('.day-cell');
 
-                    // Mark completed days (would come from API)
-                    if (cellDate.toDateString() === new Date().toDateString() && clientData && clientData.today && clientData.today.has_checkin) {
-                        cell.classList.add('completed');
-                        cell.querySelector('.status-icon').textContent = '✅';
-                    }
-                });
-            } catch (error) {
-                console.error('Error loading week check-in status:', error);
+        // For each day in the week, check if there's a checkin
+        for (let i = 0; i < 7; i++) {
+            const cellDate = new Date(weekStart);
+            cellDate.setDate(cellDate.getDate() + i);
+            const cell = dayCells[i];
+
+            if (!cell) continue;
+
+            // Check if this is today and has a checkin
+            if (cellDate.toDateString() === new Date().toDateString() &&
+                clientData && clientData.today && clientData.today.has_checkin) {
+                cell.classList.add('completed');
+                cell.querySelector('.status-icon').textContent = '✅';
+            }
+
+            // Also check the week checkins data if available
+            if (weekCheckinsCount > 0) {
+                // This is a simple check - you might need to fetch actual checkin dates
+                // For now, we'll rely on the today check above
             }
         }
+    } catch (error) {
+        console.error('Error loading week check-in status:', error);
+    }
+}
+
+
+
 
         function getStartOfWeek(weekOffset = 0) {
             const date = new Date();
@@ -2251,6 +2270,7 @@ dayCell.appendChild(statusIconDiv);
 
 // Update the streak display immediately
 setTimeout(() => {
+loadDashboard();
     const quickStats = document.getElementById('quickStats');
     if (quickStats) {
         const streakP = quickStats.querySelector('p:last-child');
