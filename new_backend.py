@@ -6626,8 +6626,17 @@ def client_dashboard():
             DailyCheckin.checkin_date.between(week_start, week_end)
         ).count()
 
+        # Calculate current streak
+        current_streak = 0
+        check_date = date.today()
 
-
+        while True:
+            checkin = client.checkins.filter_by(checkin_date=check_date).first()
+            if checkin:
+                current_streak += 1
+                check_date -= timedelta(days=1)
+            else:
+                break
 
 
         # Get this week's goals
