@@ -1746,24 +1746,42 @@ if (quickStats) {
     }
 
     // Calculate current streak
-    let currentStreak = 0;
-    if (clientData && clientData.current_streak !== undefined) {
-        currentStreak = clientData.current_streak;
-    } else {
-        // Frontend calculation as fallback
-        // Count backward from today to find consecutive checkins
-        const today = new Date();
-        for (let i = 0; i < 30; i++) { // Check last 30 days
-            const checkDate = new Date(today);
-            checkDate.setDate(today.getDate() - i);
-            const dayCell = document.querySelector(`.day-cell[data-date="${checkDate.toISOString().split('T')[0]}"]`);
-            if (dayCell && dayCell.classList.contains('completed')) {
+
+
+
+
+
+    // Calculate current streak
+let currentStreak = 0;
+if (clientData && clientData.current_streak !== undefined) {
+    currentStreak = clientData.current_streak;
+} else {
+    // Simple approach: if today has a checkin, streak is at least 1
+    // For now, just check if there's a checkin this week
+    const todayHasCheckin = document.querySelector('.day-cell.selected.completed') !== null;
+    if (todayHasCheckin) {
+        currentStreak = 1;
+
+        // Count consecutive days backward from today
+        const dayCells = document.querySelectorAll('.day-cell');
+        const todayIndex = Array.from(dayCells).findIndex(cell => cell.classList.contains('selected'));
+
+        // Check previous days
+        for (let i = todayIndex - 1; i >= 0; i--) {
+            if (dayCells[i] && dayCells[i].classList.contains('completed')) {
                 currentStreak++;
-            } else if (i > 0) { // Don't break on today if not completed yet
+            } else {
                 break;
             }
         }
+    } else if (weekCheckinsCount > 0) {
+        // If not today but has checkins this week, streak is broken, show 0
+        currentStreak = 0;
     }
+}
+
+
+
 
     // Clear first
     quickStats.innerHTML = '';
@@ -2229,7 +2247,23 @@ dayCell.appendChild(statusIconDiv);
                     throw new Error('Failed to submit check-in');
                 }
 
-                showMessage(i18n.t('client.checkin_success'), 'success');
+                showMessage(getRandomPositiveMessage(), 'success', 10000, true);
+
+// Update the streak display immediately
+setTimeout(() => {
+    const quickStats = document.getElementById('quickStats');
+    if (quickStats) {
+        const streakP = quickStats.querySelector('p:last-child');
+        if (streakP && streakP.textContent.includes(i18n.t('dashboard.streak'))) {
+            // Simple update: if we just submitted today's checkin, streak is at least 1
+            streakP.textContent = `${i18n.t('dashboard.streak')}: 1 ${i18n.t('days')}`;
+        }
+    }
+}, 100);
+
+
+
+
                 clearCheckinForm();
 
                 // Reload dashboard to update status
