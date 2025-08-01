@@ -2,6 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+      <!-- DOMPurify for XSS protection -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
+
+    <!-- Global XSS protection -->
+    <script>
+    // Override innerHTML to always sanitize
+    (function() {
+        const originalInnerHTML = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+        Object.defineProperty(Element.prototype, 'innerHTML', {
+            set: function(value) {
+                const sanitized = DOMPurify.sanitize(value, {
+                    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'br', 'p', 'div', 'span', 'ul', 'li', 'h1', 'h2', 'h3'],
+                    ALLOWED_ATTR: ['href', 'class', 'id']
+                });
+                originalInnerHTML.set.call(this, sanitized);
+            },
+            get: originalInnerHTML.get
+        });
+
+        // Safe text insertion helper
+        window.safeText = function(element, text) {
+            if (typeof element === 'string') {
+                element = document.querySelector(element);
+            }
+            if (element) {
+                element.textContent = text;
+            }
+        };
+    })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
      <meta name="google" content="notranslate">
     <meta name="format-detection" content="telephone=no">
@@ -2022,14 +2052,23 @@ async function loadDashboard() {
         document.getElementById('pendingMissions').textContent = data.statistics.pending_missions;
 
         // Update recent activity to show it's not implemented
-        document.getElementById('recentActivity').innerHTML = `
-            <div style="padding: 2rem; background: #f8f9fa; border-radius: 8px; text-align: center;">
-                <p style="color: #666;">${i18n.t('therapist.activity_coming_soon')}</p>
-                <p style="color: #999; font-size: 0.875rem; margin-top: 0.5rem;">
-                    ${i18n.t('therapist.check_clients_tab')}
-                </p>
-            </div>
-        `;
+        const recentActivity = document.getElementById('recentActivity');
+recentActivity.innerHTML = '';
+
+const containerDiv = document.createElement('div');
+containerDiv.style.cssText = 'padding: 2rem; background: #f8f9fa; border-radius: 8px; text-align: center;';
+
+const p1 = document.createElement('p');
+p1.style.color = '#666';
+p1.textContent = i18n.t('therapist.activity_coming_soon');
+containerDiv.appendChild(p1);
+
+const p2 = document.createElement('p');
+p2.style.cssText = 'color: #999; font-size: 0.875rem; margin-top: 0.5rem;';
+p2.textContent = i18n.t('therapist.check_clients_tab');
+containerDiv.appendChild(p2);
+
+recentActivity.appendChild(containerDiv);
 
         // Load clients list
         loadClients();
@@ -2595,15 +2634,49 @@ credentials: 'include',
                 const result = await response.json();
 
                 // Show persistent success message with credentials
-                showMessage(`
-                    <strong>${i18n.t('therapist.client_created')}</strong><br>
-                    <strong>${i18n.t('therapist.serial')}:</strong> ${result.client.serial}<br>
-                    <strong>${i18n.t('therapist.email')}:</strong> ${result.client.email}<br>
-                    <strong>${i18n.t('therapist.temp_password_label')}:</strong> ${result.client.temporary_password}<br>
-                    <strong>${i18n.t('therapist.client_name_label')}:</strong> ${result.client.client_name}<br>
-                    <br>
-                    <em>${i18n.t('therapist.save_credentials')}</em>
-                `, 'important', true);
+                const messageContent = document.createElement('div');
+
+const strong1 = document.createElement('strong');
+strong1.textContent = i18n.t('therapist.client_created');
+messageContent.appendChild(strong1);
+messageContent.appendChild(document.createElement('br'));
+
+const strong2 = document.createElement('strong');
+strong2.textContent = i18n.t('therapist.serial') + ':';
+messageContent.appendChild(strong2);
+messageContent.appendChild(document.createTextNode(' ' + result.client.serial));
+messageContent.appendChild(document.createElement('br'));
+
+const strong3 = document.createElement('strong');
+strong3.textContent = i18n.t('therapist.email') + ':';
+messageContent.appendChild(strong3);
+messageContent.appendChild(document.createTextNode(' ' + result.client.email));
+messageContent.appendChild(document.createElement('br'));
+
+const strong4 = document.createElement('strong');
+strong4.textContent = i18n.t('therapist.temp_password_label') + ':';
+messageContent.appendChild(strong4);
+messageContent.appendChild(document.createTextNode(' ' + result.client.temporary_password));
+messageContent.appendChild(document.createElement('br'));
+
+const strong5 = document.createElement('strong');
+strong5.textContent = i18n.t('therapist.client_name_label') + ':';
+messageContent.appendChild(strong5);
+messageContent.appendChild(document.createTextNode(' ' + result.client.client_name));
+messageContent.appendChild(document.createElement('br'));
+messageContent.appendChild(document.createElement('br'));
+
+const em = document.createElement('em');
+em.textContent = i18n.t('therapist.save_credentials');
+messageContent.appendChild(em);
+
+showMessage(messageContent.innerHTML, 'important', true);
+
+
+
+
+
+
 
                   // Clear form
                 document.getElementById('clientEmail').value = '';

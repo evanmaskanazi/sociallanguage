@@ -1735,36 +1735,43 @@ quickStats.appendChild(goalsP);
 
 
         // Setup all categories dynamically
-        function setupAllCategories() {
+function setupAllCategories() {
     const categoriesDiv = document.getElementById('dynamicCategories');
 
     if (!trackingCategories || trackingCategories.length === 0) {
         categoriesDiv.innerHTML = '<p>No tracking categories available.</p>';
         return;
     }
-                console.log('i18n available?', window.i18n ? 'Yes' : 'No');
+    console.log('i18n available?', window.i18n ? 'Yes' : 'No');
     console.log('Current language:', window.i18n ? window.i18n.currentLang : 'N/A');
     // Debug: Check if i18n is available
     console.log('i18n available?', window.i18n ? 'Yes' : 'No');
     console.log('Current language:', window.i18n ? window.i18n.currentLang : 'N/A');
 
-    // Create HTML for all categories
-        categoriesDiv.innerHTML = trackingCategories.map(cat => {
-            // Check if this is a custom category
-            const isCustom = cat.is_custom || false;
+    // Clear container first
+    categoriesDiv.innerHTML = '';
 
-            const originalName = isCustom ? cat.name : (cat.original_name || cat.name);
-            let catTranslatedName, catTranslatedDesc;
+    // Create each category section safely
+    trackingCategories.forEach(cat => {
+        const section = document.createElement('div');
+        section.className = 'form-section';
+        section.dataset.categoryId = cat.id;
+        section.dataset.categoryName = cat.original_name || cat.name;
 
-            if (isCustom) {
-                // Custom categories use their own names/descriptions
-                catTranslatedName = cat.name;
-                catTranslatedDesc = cat.description;
-            } else {
-                // Standard categories get translated
-                catTranslatedName = translateCategoryName(originalName);
-                catTranslatedDesc = translateCategoryDescription(originalName, cat.description);
-            }
+        // Check if this is a custom category
+        const isCustom = cat.is_custom || false;
+        const originalName = isCustom ? cat.name : (cat.original_name || cat.name);
+        let catTranslatedName, catTranslatedDesc;
+
+        if (isCustom) {
+            // Custom categories use their own names/descriptions
+            catTranslatedName = cat.name;
+            catTranslatedDesc = cat.description;
+        } else {
+            // Standard categories get translated
+            catTranslatedName = translateCategoryName(originalName);
+            catTranslatedDesc = translateCategoryDescription(originalName, cat.description);
+        }
 
         // Debug: Log medication category details
         if (originalName.toLowerCase().includes('medication')) {
@@ -1776,97 +1783,143 @@ quickStats.appendChild(goalsP);
             });
         }
 
+        // Create header
+        const h3 = document.createElement('h3');
+        const emojiSpan = document.createElement('span');
+        emojiSpan.className = 'rating-emoji';
+
         // Choose emoji based on original category name
-          let emoji = '📊';
-            const catName = (isCustom ? cat.name : originalName).toLowerCase();
+        let emoji = '📊';
+        const catName = (isCustom ? cat.name : originalName).toLowerCase();
+        if (catName.includes('emotion')) emoji = '😊';
+        else if (catName.includes('medication')) emoji = '💊';
+        else if (catName.includes('social')) emoji = '😊';
+        else if (catName.includes('activity') || catName.includes('physical')) emoji = '🏃';
+        else if (catName.includes('energy')) emoji = '⚡';
+        else if (catName.includes('sleep')) emoji = '😴';
+        else if (catName.includes('anxiety')) emoji = '😰';
+        else if (catName.includes('motivation')) emoji = '🎯';
+        else if (catName.includes('mindful')) emoji = '🧘';
+        else if (catName.includes('diet') || catName.includes('food')) emoji = '🥗';
+        else if (catName.includes('water') || catName.includes('hydration')) emoji = '💧';
+        else if (isCustom) emoji = '⭐'; // Default for custom categories
 
-            if (catName.includes('emotion')) emoji = '😊';
-            else if (catName.includes('medication')) emoji = '💊';
-            else if (catName.includes('social')) emoji = '😊';
-            else if (catName.includes('activity') || catName.includes('physical')) emoji = '🏃';
-            else if (catName.includes('energy')) emoji = '⚡';
-            else if (catName.includes('sleep')) emoji = '😴';
-            else if (catName.includes('anxiety')) emoji = '😰';
-            else if (catName.includes('motivation')) emoji = '🎯';
-            else if (catName.includes('mindful')) emoji = '🧘';
-            else if (catName.includes('diet') || catName.includes('food')) emoji = '🥗';
-            else if (catName.includes('water') || catName.includes('hydration')) emoji = '💧';
-            else if (isCustom) emoji = '⭐'; // Default for custom categories
+        emojiSpan.textContent = emoji;
+        h3.appendChild(emojiSpan);
+        h3.appendChild(document.createTextNode(' '));
 
-        // Get placeholder text
-        const placeholderText = i18n.t('client.notes_placeholder', { category: catTranslatedName });
+        if (isCustom) {
+            h3.appendChild(document.createTextNode(catTranslatedName));
+        } else {
+            const nameSpan = document.createElement('span');
+            nameSpan.dataset.i18n = 'category.' + originalName.toLowerCase().replace(/\s+/g, '_');
+            nameSpan.textContent = catTranslatedName;
+            h3.appendChild(nameSpan);
+        }
+        section.appendChild(h3);
 
-        // Special handling for medication category
-        // Check if category has reverse scoring
-            const hasReverseScoring = cat.reverse_scoring || false;
+        // Add description
+        const descP = document.createElement('p');
+        descP.style.cssText = 'color: #666; font-size: 0.9rem;';
 
-            // Special handling for medication category
-            if (!isCustom && originalName.toLowerCase().includes('medication')) {
-            // Get the medication question directly
+        if (!isCustom && originalName.toLowerCase().includes('medication')) {
             const medicationQuestion = window.i18n && window.i18n.t ?
                 window.i18n.t('checkin.medication') :
                 'Did you take your medication as prescribed?';
-
-            return `
-                <div class="form-section" data-category-id="${cat.id}" data-category-name="${originalName}">
-                    <h3><span class="rating-emoji">${emoji}</span> ${isCustom ? catTranslatedName : `<span data-i18n="category.medication">${catTranslatedName}</span>`}</h3>
-                    <p style="color: #666; font-size: 0.9rem;">${isCustom ? catTranslatedDesc : `<span data-i18n="checkin.medication">${medicationQuestion}</span>`}</p>
-                    <div class="rating-scale">
-                        <button type="button" class="rating-button" data-category="${cat.id}" data-value="0" onclick="selectRating(this)">
-                            <span data-i18n="checkin.med_na">${window.i18n ? window.i18n.t('checkin.med_na') : 'N/A'}</span>
-                        </button>
-                        <button type="button" class="rating-button" data-category="${cat.id}" data-value="1" onclick="selectRating(this)">
-                            <span data-i18n="checkin.med_no">${window.i18n ? window.i18n.t('checkin.med_no') : 'No'}</span>
-                        </button>
-                        <button type="button" class="rating-button" data-category="${cat.id}" data-value="3" onclick="selectRating(this)">
-                            <span data-i18n="checkin.med_partial">${window.i18n ? window.i18n.t('checkin.med_partial') : 'Partial'}</span>
-                        </button>
-                        <button type="button" class="rating-button" data-category="${cat.id}" data-value="5" onclick="selectRating(this)">
-                            <span data-i18n="checkin.med_yes">${window.i18n ? window.i18n.t('checkin.med_yes') : 'Yes'}</span>
-                        </button>
-                    </div>
-                    <textarea class="notes-textarea"
-                              id="category-${cat.id}-notes"
-                              placeholder="${placeholderText}"></textarea>
-                </div>
-            `;
-         } else {
-                // Regular 1-5 scale for other categories
-                const categoryKey = originalName.toLowerCase().replace(/\s+/g, '_');
-                const scaleLabel = hasReverseScoring ?
-                    `<small style="color: #666;">${i18n.t('client.lower_better')}</small>` :
-                    `<small style="color: #666;">${i18n.t('client.higher_better')}</small>`;
-
-                return `
-                <div class="form-section" data-category-id="${cat.id}" data-category-name="${originalName}">
-                    <h3><span class="rating-emoji">${emoji}</span> ${isCustom ? catTranslatedName : `<span data-i18n="category.${categoryKey}">${catTranslatedName}</span>`}</h3>
-                    <p style="color: #666; font-size: 0.9rem;">${isCustom ? catTranslatedDesc : `<span data-i18n="category.${categoryKey}_desc">${catTranslatedDesc}</span>`}</p>
-                    <div class="rating-scale">
-                        ${[1,2,3,4,5].map(val => `
-                            <button type="button"
-                                    class="rating-button"
-                                    data-category="${cat.id}"
-                                    data-value="${val}"
-                                    onclick="selectRating(this)">
-                                <span class="rating-emoji">${getEmojiForValue(originalName, val)}</span>
-                                <span>${val}</span>
-                            </button>
-                        `).join('')}
-                    </div>
-                    <textarea class="notes-textarea"
-                              id="category-${cat.id}-notes"
-                              placeholder="${placeholderText}"
-                              data-i18n-placeholder="client.notes_placeholder"></textarea>
-                </div>
-            `;
+            const medSpan = document.createElement('span');
+            medSpan.dataset.i18n = 'checkin.medication';
+            medSpan.textContent = medicationQuestion;
+            descP.appendChild(medSpan);
+        } else if (isCustom) {
+            descP.textContent = catTranslatedDesc;
+        } else {
+            const descSpan = document.createElement('span');
+            descSpan.dataset.i18n = 'category.' + originalName.toLowerCase().replace(/\s+/g, '_') + '_desc';
+            descSpan.textContent = catTranslatedDesc;
+            descP.appendChild(descSpan);
         }
-    }).join('');
+        section.appendChild(descP);
+
+        // Check if category has reverse scoring
+        const hasReverseScoring = cat.reverse_scoring || false;
+
+        // Add rating scale
+        const ratingDiv = document.createElement('div');
+        ratingDiv.className = 'rating-scale';
+
+        // For medication, use special scale
+        if (!isCustom && originalName.toLowerCase().includes('medication')) {
+            const values = [
+                { value: 0, label: 'checkin.med_na', text: 'N/A' },
+                { value: 1, label: 'checkin.med_no', text: 'No' },
+                { value: 3, label: 'checkin.med_partial', text: 'Partial' },
+                { value: 5, label: 'checkin.med_yes', text: 'Yes' }
+            ];
+
+            values.forEach(item => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'rating-button';
+                btn.dataset.category = cat.id;
+                btn.dataset.value = item.value;
+                btn.onclick = function() { selectRating(this); };
+
+                const span = document.createElement('span');
+                span.dataset.i18n = item.label;
+                span.textContent = window.i18n ? window.i18n.t(item.label) : item.text;
+                btn.appendChild(span);
+
+                ratingDiv.appendChild(btn);
+            });
+        } else {
+            // Regular 1-5 scale
+            [1,2,3,4,5].forEach(val => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'rating-button';
+                btn.dataset.category = cat.id;
+                btn.dataset.value = val;
+                btn.onclick = function() { selectRating(this); };
+
+                const emojiSpan = document.createElement('span');
+                emojiSpan.className = 'rating-emoji';
+                emojiSpan.textContent = getEmojiForValue(originalName, val);
+                btn.appendChild(emojiSpan);
+
+                const valSpan = document.createElement('span');
+                valSpan.textContent = val;
+                btn.appendChild(valSpan);
+
+                ratingDiv.appendChild(btn);
+            });
+        }
+
+        section.appendChild(ratingDiv);
+
+        // Add textarea
+        const textarea = document.createElement('textarea');
+        textarea.className = 'notes-textarea';
+        textarea.id = `category-${cat.id}-notes`;
+        const placeholderText = i18n.t('client.notes_placeholder', { category: catTranslatedName });
+        textarea.placeholder = placeholderText;
+        textarea.dataset.i18nPlaceholder = 'client.notes_placeholder';
+        section.appendChild(textarea);
+
+        categoriesDiv.appendChild(section);
+    });
 
     // Re-apply translations for dynamically created content
     if (window.i18n) {
         i18n.translatePage();
     }
 }
+
+
+
+
+
+
+
 
         // Helper function to get emoji for rating values
         function getEmojiForValue(categoryName, value) {
@@ -1920,12 +1973,26 @@ quickStats.appendChild(goalsP);
     const isToday = date.toDateString() === new Date().toDateString();
     const isPast = date < new Date() && !isToday;
 
-    // Use the actual day of week from the date object
-    dayCell.innerHTML = `
-        <div class="day-name">${i18n.getDayName(date.getDay(), true)}</div>
-        <div class="day-date">${date.getDate()}</div>
-        <div class="status-icon">${isToday ? '📍' : ''}</div>
-    `;
+    // Clear and create elements safely
+dayCell.innerHTML = '';
+
+const dayNameDiv = document.createElement('div');
+dayNameDiv.className = 'day-name';
+dayNameDiv.textContent = i18n.getDayName(date.getDay(), true);
+dayCell.appendChild(dayNameDiv);
+
+const dayDateDiv = document.createElement('div');
+dayDateDiv.className = 'day-date';
+dayDateDiv.textContent = date.getDate();
+dayCell.appendChild(dayDateDiv);
+
+const statusIconDiv = document.createElement('div');
+statusIconDiv.className = 'status-icon';
+statusIconDiv.textContent = isToday ? '📍' : '';
+dayCell.appendChild(statusIconDiv);
+
+
+
 
     if (isToday) {
         dayCell.classList.add('selected');
@@ -3212,7 +3279,15 @@ async function loadConsentStatus() {
                 document.getElementById('goalsCharCount').style.display = 'none';
 
                 // Update display
-                document.getElementById('goalsDisplay').innerHTML = goalsText.replace(/\n/g, '<br>');
+                const goalsDisplay = document.getElementById('goalsDisplay');
+goalsDisplay.innerHTML = '';
+const lines = goalsText.split('\n');
+lines.forEach((line, index) => {
+    if (index > 0) {
+        goalsDisplay.appendChild(document.createElement('br'));
+    }
+    goalsDisplay.appendChild(document.createTextNode(line));
+});
 
                 // Reload if on overview tab
                 if (document.querySelector('.tab-content.active')?.id === 'overview') {
