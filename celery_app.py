@@ -482,9 +482,12 @@ def send_weekly_reports():
                             pdf_attachment = MIMEBase('application', 'pdf')
                             pdf_attachment.set_payload(pdf_buffer.read())
                             encoders.encode_base64(pdf_attachment)
+                            # Sanitize client name for filename (remove spaces and special characters)
+                            safe_name = client.client_name.replace(' ', '_').replace('/', '_').replace('\\',
+                                                                                                       '_') if client.client_name else client.client_serial
                             pdf_attachment.add_header(
                                 'Content-Disposition',
-                                f'attachment; filename=report_{client.client_serial}_week_{week_num}_{year}.pdf'
+                                f'attachment; filename=report_{safe_name}_week_{week_num}_{year}.pdf'
                             )
                             msg.attach(pdf_attachment)
                             attachment_count += 1
