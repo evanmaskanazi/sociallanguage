@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-   
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
      <meta name="google" content="notranslate">
     <meta name="format-detection" content="telephone=no">
@@ -1708,10 +1708,17 @@ credentials: 'include'
                 const weekCheckins = weeklyGoals.filter(g => g.today_completed !== null).length;
                 const completedGoals = weeklyGoals.filter(g => g.today_completed === true).length;
 
-                quickStats.innerHTML = `
-                <p>${i18n.t('dashboard.this_week')}: ${weekCheckins}/7 ${i18n.t('days')}</p>
-                <p>${i18n.t('goals.completed')}: ${completedGoals}/${weeklyGoals.length}</p>
-                    `;
+               // Clear first
+quickStats.innerHTML = '';
+
+// Create elements safely
+const weekP = document.createElement('p');
+weekP.textContent = `${i18n.t('dashboard.this_week')}: ${weekCheckins}/7 ${i18n.t('days')}`;
+quickStats.appendChild(weekP);
+
+const goalsP = document.createElement('p');
+goalsP.textContent = `${i18n.t('goals.completed')}: ${completedGoals}/${weeklyGoals.length}`;
+quickStats.appendChild(goalsP);
                     }
         }
 
