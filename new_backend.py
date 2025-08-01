@@ -3277,6 +3277,10 @@ def client_generate_report(week):
 
 def create_weekly_report_excel(client, therapist, week_start, week_end, week_num, year, lang='en'):
     """Create Excel workbook for weekly report with language support"""
+    if hasattr(week_start, 'date'):
+        week_start = week_start.date()
+    if hasattr(week_end, 'date'):
+        week_end = week_end.date()
     # Create Excel workbook
     wb = openpyxl.Workbook()
 
