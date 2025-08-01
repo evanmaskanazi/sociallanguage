@@ -3368,7 +3368,7 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
 
     for i in range(7):
         current_date = week_start + timedelta(days=i)
-        checkin = next((c for c in checkins if c.checkin_date == current_date.date()), None)
+        checkin = next((c for c in checkins if c.checkin_date == current_date), None)
 
         ws_checkins.cell(row=row, column=1).value = current_date.strftime('%Y-%m-%d')
         ws_checkins.cell(row=row, column=2).value = days[i]
@@ -3383,7 +3383,7 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
                 response = CategoryResponse.query.filter_by(
                     client_id=client.id,
                     category_id=category.id,
-                    response_date=current_date.date()
+                    response_date=current_date
                 ).first()
 
                 if response:
@@ -3774,7 +3774,7 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
 
         for i in range(7):
             current_date = week_start + timedelta(days=i)
-            checkin = client.checkins.filter_by(checkin_date=current_date.date()).first()
+            checkin = client.checkins.filter_by(checkin_date=current_date).first()
 
             ws_checkins.cell(row=row, column=1).value = current_date.strftime('%Y-%m-%d')
             ws_checkins.cell(row=row, column=2).value = days[i]
@@ -3789,7 +3789,7 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
                     response = CategoryResponse.query.filter_by(
                         client_id=client.id,
                         category_id=category.id,
-                        response_date=current_date.date()
+                        response_date=current_date
                     ).first()
 
                     if response:
@@ -3824,7 +3824,7 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
                     response = CategoryResponse.query.filter_by(
                         client_id=client.id,
                         custom_category_id=custom_cat.id,  # Note: using custom_category_id field
-                        response_date=current_date.date()
+                        response_date=current_date
                     ).first()
 
                     if response:
@@ -4210,7 +4210,7 @@ def generate_report_html_content(client, therapist, week_start, week_end, week_n
     for i in range(7):
         current_date = week_start + timedelta(days=i)
         day_name = days[i]
-        checkin = next((c for c in checkins if c.checkin_date == current_date.date()), None)
+        checkin = next((c for c in checkins if c.checkin_date == current_date), None)
 
         html_content += f"""
             <tr>
@@ -4224,7 +4224,7 @@ def generate_report_html_content(client, therapist, week_start, week_end, week_n
                 response = CategoryResponse.query.filter_by(
                     client_id=client.id,
                     category_id=category.id,
-                    response_date=current_date.date()
+                    response_date=current_date
                 ).first()
 
                 if response:
@@ -4238,7 +4238,7 @@ def generate_report_html_content(client, therapist, week_start, week_end, week_n
                 response = CategoryResponse.query.filter_by(
                     client_id=client.id,
                     custom_category_id=custom_cat.id,
-                    response_date=current_date.date()
+                    response_date=current_date
                 ).first()
 
                 if response:
@@ -4493,7 +4493,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
                     <td>{day_name}</td>
             """
 
-            checkin = next((c for c in checkins if c.checkin_date == current_date.date()), None)
+            checkin = next((c for c in checkins if c.checkin_date == current_date), None)
 
             if checkin:
                 checkin_count += 1
@@ -4503,7 +4503,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
                     response = CategoryResponse.query.filter_by(
                         client_id=client.id,
                         category_id=category.id,
-                        response_date=current_date.date()
+                        response_date=current_date
                     ).first()
 
                     if response:
@@ -4536,7 +4536,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
                     response = CategoryResponse.query.filter_by(
                         client_id=client.id,
                         custom_category_id=custom_cat.id,
-                        response_date=current_date.date()
+                        response_date=current_date
                     ).first()
 
                     if response:
@@ -4877,7 +4877,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
                     <td>{day_name}</td>
             """
 
-            checkin = next((c for c in checkins if c.checkin_date == current_date.date()), None)
+            checkin = next((c for c in checkins if c.checkin_date == current_date), None)
 
             if checkin:
                 checkin_count += 1
@@ -4887,7 +4887,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
                     response = CategoryResponse.query.filter_by(
                         client_id=client.id,
                         category_id=category.id,
-                        response_date=current_date.date()
+                        response_date=current_date
                     ).first()
 
                     if response:
@@ -4920,7 +4920,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
                     response = CategoryResponse.query.filter_by(
                         client_id=client.id,
                         custom_category_id=custom_cat.id,  # Note: using custom_category_id field
-                        response_date=current_date.date()
+                        response_date=current_date
                     ).first()
 
                     if response:
@@ -8838,7 +8838,7 @@ DAILY CHECK-IN SUMMARY:
         # Add daily details with proper translations
         for i in range(7):
             current_date = week_start + timedelta(days=i)
-            checkin = next((c for c in checkins if c.checkin_date == current_date.date()), None)
+            checkin = next((c for c in checkins if c.checkin_date == current_date), None)
 
             content += f"\n{days[i]} ({current_date.strftime('%m/%d')}):\n"
 
@@ -8848,7 +8848,7 @@ DAILY CHECK-IN SUMMARY:
                 # Get translated category responses
                 category_responses = CategoryResponse.query.filter_by(
                     client_id=client.id,
-                    response_date=current_date.date()
+                    response_date=current_date
                 ).all()
 
                 for response in category_responses:
