@@ -4287,11 +4287,11 @@ def test_pdf_libraries():
     return results
 
 
-
-
-
 def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, year, lang='en'):
     """Create PDF report with proper Unicode support via WeasyPrint"""
+
+    # Log the attempt
+    print(f"Creating PDF for client {client.id}, week {week_num}, year {year}, lang {lang}")
 
     try:
         from weasyprint import HTML
@@ -4421,14 +4421,15 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
         """
 
         # Get all categories
-        # Get all categories (default + custom for this client)
         all_categories = list(TrackingCategory.query.all())
+        print(f"Found {len(all_categories)} tracking categories")
 
         # Add custom categories for this client
         custom_categories = CustomCategory.query.filter_by(
             client_id=client.id,
             is_active=True
         ).all()
+        print(f"Found {len(custom_categories)} custom categories for client {client.id}")
 
         # Combine all categories
         all_category_data = []
@@ -4447,6 +4448,8 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
                 'is_custom': True,
                 'reverse_scoring': custom_cat.reverse_scoring
             })
+
+        print(f"Total categories to display: {len(all_category_data)}")
 
         # Calculate column width for categories
         remaining_width = 76  # 100% - 24% (date + day columns)
@@ -4467,10 +4470,14 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
         checkins = client.checkins.filter(
             DailyCheckin.checkin_date.between(week_start.date(), week_end.date())
         ).order_by(DailyCheckin.checkin_date).all()
+        print(f"Found {len(checkins)} checkins for the week")
 
         # Track statistics
         checkin_count = 0
         category_totals = {cat.id: [] for cat in all_categories}
+        # FIXED: Also initialize totals for custom categories
+        for custom_cat in custom_categories:
+            category_totals[f'custom_{custom_cat.id}'] = []
 
         # Add daily data rows
         for i in range(7):
@@ -4528,12 +4535,14 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
                 for custom_cat in custom_categories:
                     response = CategoryResponse.query.filter_by(
                         client_id=client.id,
-                        custom_category_id=custom_cat.id,  # Note: using custom_category_id field
+                        custom_category_id=custom_cat.id,
                         response_date=current_date.date()
                     ).first()
 
                     if response:
                         value = response.value
+                        # Track custom category values
+                        category_totals[f'custom_{custom_cat.id}'].append(value)
 
                         # Determine CSS class based on reverse scoring
                         if custom_cat.reverse_scoring:
@@ -4556,13 +4565,8 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
                         html_content += f'<td class="{css_class}">{value}</td>'
                     else:
                         html_content += '<td>-</td>'
-
-
-
-
-
             else:
-                # No check-in this day
+                # FIXED: No check-in this day - use correct colspan
                 html_content += f'<td colspan="{len(all_category_data)}" class="no-checkin">{trans("no_checkin")}</td>'
 
             html_content += "</tr>"
@@ -4582,7 +4586,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
 
         # Add category averages
         for category in all_categories:
-            if category_totals[category.id]:
+            if category_totals.get(category.id) and len(category_totals[category.id]) > 0:
                 values = category_totals[category.id]
                 avg_value = sum(values) / len(values)
                 cat_name = translate_category_name(category.name, lang)
@@ -4617,6 +4621,42 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
                     </div>
                 """
 
+        # Add custom category averages
+        for custom_cat in custom_categories:
+            key = f'custom_{custom_cat.id}'
+            if category_totals.get(key) and len(category_totals[key]) > 0:
+                values = category_totals[key]
+                avg_value = sum(values) / len(values)
+                cat_name = custom_cat.name
+
+                # Determine rating based on reverse scoring
+                if custom_cat.reverse_scoring:
+                    if avg_value <= 2:
+                        rating = trans('excellent')
+                        rating_class = 'excellent-text'
+                    elif avg_value <= 3:
+                        rating = trans('good')
+                        rating_class = 'good-text'
+                    else:
+                        rating = trans('needs_support')
+                        rating_class = 'poor-text'
+                else:
+                    if avg_value >= 4:
+                        rating = trans('excellent')
+                        rating_class = 'excellent-text'
+                    elif avg_value >= 3:
+                        rating = trans('good')
+                        rating_class = 'good-text'
+                    else:
+                        rating = trans('needs_support')
+                        rating_class = 'poor-text'
+
+                html_content += f"""
+                    <div class="summary-item">
+                        <strong>{cat_name}:</strong> {avg_value:.1f}/5 - <span class="{rating_class}">{rating}</span>
+                    </div>
+                """
+
         html_content += """
             </div>
         </body>
@@ -4624,22 +4664,23 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
         """
 
         # Generate PDF with WeasyPrint
+        print("Attempting to generate PDF with WeasyPrint...")
         pdf_buffer = BytesIO()
         HTML(string=html_content).write_pdf(pdf_buffer)
         pdf_buffer.seek(0)
 
+        print("Successfully generated PDF with WeasyPrint")
         return pdf_buffer
 
-    except ImportError:
-        print("WeasyPrint not available, falling back to xhtml2pdf")
-        # Fall back to original xhtml2pdf implementation
-        pass
+    except ImportError as e:
+        print(f"WeasyPrint not available: {e}")
     except Exception as e:
-        print(f"Error generating PDF with WeasyPrint: {e}")
-        # Fall back to original implementation
-        pass
+        print(f"Error generating PDF with WeasyPrint: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
 
     # FALLBACK: xhtml2pdf implementation
+    print("Falling back to xhtml2pdf...")
     try:
         from xhtml2pdf import pisa
         from io import BytesIO
@@ -4764,14 +4805,15 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
         """
 
         # Get all categories
-        # Get all categories (default + custom for this client)
         all_categories = list(TrackingCategory.query.all())
+        print(f"xhtml2pdf: Found {len(all_categories)} tracking categories")
 
         # Add custom categories for this client
         custom_categories = CustomCategory.query.filter_by(
             client_id=client.id,
             is_active=True
         ).all()
+        print(f"xhtml2pdf: Found {len(custom_categories)} custom categories for client {client.id}")
 
         # Combine all categories
         all_category_data = []
@@ -4790,6 +4832,8 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
                 'is_custom': True,
                 'reverse_scoring': custom_cat.reverse_scoring
             })
+
+        print(f"xhtml2pdf: Total categories to display: {len(all_category_data)}")
 
         # Calculate column width for categories
         remaining_width = 76  # 100% - 24% (date + day columns)
@@ -4810,10 +4854,14 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
         checkins = client.checkins.filter(
             DailyCheckin.checkin_date.between(week_start.date(), week_end.date())
         ).order_by(DailyCheckin.checkin_date).all()
+        print(f"xhtml2pdf: Found {len(checkins)} checkins for the week")
 
         # Track statistics
         checkin_count = 0
         category_totals = {cat.id: [] for cat in all_categories}
+        # FIXED: Also initialize totals for custom categories
+        for custom_cat in custom_categories:
+            category_totals[f'custom_{custom_cat.id}'] = []
 
         # Add daily data rows
         for i in range(7):
@@ -4877,6 +4925,8 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
 
                     if response:
                         value = response.value
+                        # Track custom category values
+                        category_totals[f'custom_{custom_cat.id}'].append(value)
 
                         # Determine CSS class based on reverse scoring
                         if custom_cat.reverse_scoring:
@@ -4899,12 +4949,8 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
                         html_content += f'<td class="{css_class}">{value}</td>'
                     else:
                         html_content += '<td>-</td>'
-
-
-
-
             else:
-                # No check-in this day
+                # FIXED: No check-in this day - use correct colspan
                 html_content += f'<td colspan="{len(all_category_data)}" class="no-checkin">{trans("no_checkin")}</td>'
 
             html_content += "</tr>"
@@ -4926,7 +4972,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
 
         # Add category averages
         for category in all_categories:
-            if category_totals[category.id]:
+            if category_totals.get(category.id) and len(category_totals[category.id]) > 0:
                 values = category_totals[category.id]
                 avg_value = sum(values) / len(values)
                 cat_name = translate_category_name(category.name, lang)
@@ -4962,6 +5008,43 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
                     </div>
                 """
 
+        # Add custom category averages
+        for custom_cat in custom_categories:
+            key = f'custom_{custom_cat.id}'
+            if category_totals.get(key) and len(category_totals[key]) > 0:
+                values = category_totals[key]
+                avg_value = sum(values) / len(values)
+                cat_name = custom_cat.name
+
+                # Determine rating based on reverse scoring
+                if custom_cat.reverse_scoring:
+                    if avg_value <= 2:
+                        rating = trans('excellent')
+                        rating_class = 'excellent-text'
+                    elif avg_value <= 3:
+                        rating = trans('good')
+                        rating_class = 'good-text'
+                    else:
+                        rating = trans('needs_support')
+                        rating_class = 'poor-text'
+                else:
+                    if avg_value >= 4:
+                        rating = trans('excellent')
+                        rating_class = 'excellent-text'
+                    elif avg_value >= 3:
+                        rating = trans('good')
+                        rating_class = 'good-text'
+                    else:
+                        rating = trans('needs_support')
+                        rating_class = 'poor-text'
+
+                html_content += f"""
+                    <div class="stat-row">
+                        <div class="stat-label">{cat_name}:</div>
+                        <div class="stat-value">{avg_value:.1f}/5 - <span class="{rating_class}">{rating}</span></div>
+                    </div>
+                """
+
         html_content += """
                 </div>
             </div>
@@ -4970,6 +5053,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
         """
 
         # Convert HTML to PDF
+        print("Attempting to generate PDF with xhtml2pdf...")
         pdf_buffer = BytesIO()
         pisa_status = pisa.CreatePDF(
             html_content.encode('utf-8'),
@@ -4982,34 +5066,41 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
             # Still return the buffer even if there was an error
 
         pdf_buffer.seek(0)
+        print("Successfully generated PDF with xhtml2pdf")
         return pdf_buffer
 
+    except ImportError as e:
+        print(f"xhtml2pdf not available: {e}")
     except Exception as e:
-        print(f"xhtml2pdf also failed: {e}")
-        # Return a simple error message PDF
-        from reportlab.lib.pagesizes import landscape, A4
-        from reportlab.platypus import SimpleDocTemplate, Paragraph
-        from reportlab.lib.styles import getSampleStyleSheet
+        print(f"xhtml2pdf also failed: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
 
-        pdf_buffer = BytesIO()
-        doc = SimpleDocTemplate(pdf_buffer, pagesize=landscape(A4))
-        styles = getSampleStyleSheet()
+    # Final fallback - return a simple error message PDF
+    print("Both PDF libraries failed, creating fallback PDF")
+    from reportlab.lib.pagesizes import landscape, A4
+    from reportlab.platypus import SimpleDocTemplate, Paragraph
+    from reportlab.lib.styles import getSampleStyleSheet
 
-        elements = []
-        if lang != 'en':
-            elements.append(Paragraph(
-                "PDF generation with Unicode support requires xhtml2pdf. Please install it or use Excel format for non-English reports.",
-                styles['Normal']
-            ))
-        else:
-            elements.append(Paragraph(
-                "PDF generation failed. Please use Excel format instead.",
-                styles['Normal']
-            ))
+    pdf_buffer = BytesIO()
+    doc = SimpleDocTemplate(pdf_buffer, pagesize=landscape(A4))
+    styles = getSampleStyleSheet()
 
-        doc.build(elements)
-        pdf_buffer.seek(0)
-        return pdf_buffer
+    elements = []
+    if lang != 'en':
+        elements.append(Paragraph(
+            "PDF generation with Unicode support requires xhtml2pdf. Please install it or use Excel format for non-English reports.",
+            styles['Normal']
+        ))
+    else:
+        elements.append(Paragraph(
+            "PDF generation failed. Please use Excel format instead.",
+            styles['Normal']
+        ))
+
+    doc.build(elements)
+    pdf_buffer.seek(0)
+    return pdf_buffer
 
 
 # ============= REPORT GENERATION =============
