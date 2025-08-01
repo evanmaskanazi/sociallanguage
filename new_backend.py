@@ -5098,6 +5098,21 @@ def client_generate_pdf(week):
 def get_weekly_report_settings():
     """Get therapist's weekly report settings"""
     try:
+
+        try:
+            db.session.execute(text("""
+                        ALTER TABLE reminders
+                        ADD COLUMN IF NOT EXISTS day_of_week INTEGER DEFAULT 1
+                    """))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        therapist = request.current_user.therapist
+
+
+
+
         therapist = request.current_user.therapist
 
         # Check if settings exist
@@ -6172,6 +6187,20 @@ def add_weekly_goal():
 def delete_client(client_id):
     """Delete a client and all associated data"""
     try:
+
+        try:
+            db.session.execute(text("""
+                        ALTER TABLE reminders
+                        ADD COLUMN IF NOT EXISTS day_of_week INTEGER DEFAULT 1
+                    """))
+            db.session.commit()
+        except Exception:
+            # Column might already exist, which is fine
+            db.session.rollback()
+
+
+
+
         therapist = request.current_user.therapist
 
         # Verify client belongs to therapist
@@ -6231,6 +6260,30 @@ def delete_client(client_id):
         ConsentRecord.query.filter_by(client_id=client_id).delete()
 
         # Delete the client (cascade will handle checkins, goals, reminders, tracking plans)
+
+        # Fix for day_of_week column - ensure it exists before any reminder operations
+        try:
+            db.session.execute(text("""
+                        ALTER TABLE reminders
+                        ADD COLUMN IF NOT EXISTS day_of_week INTEGER DEFAULT 1
+                    """))
+            db.session.commit()
+        except Exception:
+            # Column might already exist or syntax might not support IF NOT EXISTS
+            try:
+                db.session.execute(text("""
+                            ALTER TABLE reminders
+                            ADD COLUMN day_of_week INTEGER DEFAULT 1
+                        """))
+                db.session.commit()
+            except Exception:
+                # Column already exists, which is fine
+                db.session.rollback()
+
+        # Now safe to delete reminders
+        Reminder.query.filter_by(client_id=client_id).delete()
+
+
         db.session.delete(client)
 
         # Delete the user account if it exists
