@@ -5700,6 +5700,27 @@ def initialize_database():
             # Create tables if they don't exist
             db.create_all()
 
+            try:
+                # Check if column exists
+                result = db.session.execute("""
+                                SELECT column_name
+                                FROM information_schema.columns
+                                WHERE table_name='reminders' AND column_name='day_of_week'
+                            """).fetchone()
+
+                if not result:
+                    # Add the column
+                    db.session.execute("""
+                                    ALTER TABLE reminders
+                                    ADD COLUMN day_of_week INTEGER DEFAULT 1
+                                """)
+                    db.session.commit()
+                    print("Added day_of_week column to reminders table")
+            except Exception as e:
+                print(f"Note: Could not check/add day_of_week column: {e}")
+                # This is okay - it might already exist
+
+
             # Check if already initialized
             from sqlalchemy import text
             existing_lock = db.session.execute(
