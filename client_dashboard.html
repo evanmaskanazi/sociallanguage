@@ -1635,6 +1635,9 @@ credentials: 'include'
                 }
 
                 const data = await response.json();
+                console.log('=== Dashboard API Response ===');
+        console.log('Full response data:', data);
+        console.log('week_checkins_count in response:', data.week_checkins_count);
                 clientData = data.client;
 
                 // Process tracking categories
@@ -1658,8 +1661,10 @@ credentials: 'include'
         // Update UI with data
         function updateUI() {
             // Update client info
-            console.log('clientData:', clientData);
-            console.log('clientData.client_name:', clientData.client_name);
+            console.log('=== updateUI called ===');
+    console.log('clientData:', clientData);
+    console.log('clientData.week_checkins_count:', clientData ? clientData.week_checkins_count : 'clientData is null');
+    console.log('weeklyGoals:', weeklyGoals);
 
             // Display client name instead of serial
             if (clientData && clientData.client_name) {
