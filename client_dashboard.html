@@ -1757,36 +1757,7 @@ if (quickStats) {
 
     // Calculate current streak
 // Calculate current streak
-let currentStreak = 0;
-
-// Check if today has a checkin by looking at the data
-const today = new Date().toISOString().split('T')[0];
-const todayCell = document.querySelector('.day-cell.selected');
-const todayHasCheckin = todayCell && todayCell.querySelector('.status-icon')?.textContent === '✅';
-
-if (todayHasCheckin || (clientData && clientData.today && clientData.today.has_checkin)) {
-    // Today has a checkin, so streak is at least 1
-    currentStreak = 1;
-
-    // Look at previous days in the week view
-    const allDayCells = Array.from(document.querySelectorAll('.day-cell'));
-    const todayIndex = allDayCells.findIndex(cell => cell.classList.contains('selected'));
-
-    // Count backwards from yesterday
-    if (todayIndex > 0) {
-        for (let i = todayIndex - 1; i >= 0; i--) {
-            const cell = allDayCells[i];
-            if (cell && cell.querySelector('.status-icon')?.textContent === '✅') {
-                currentStreak++;
-            } else {
-                break;
-            }
-        }
-    }
-} else {
-    // No checkin today, streak is 0
-    currentStreak = 0;
-}
+let currentStreak = clientData.current_streak || 0;
 
 
 
