@@ -3353,7 +3353,7 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
 
     # Get check-ins for the week
     checkins = client.checkins.filter(
-        DailyCheckin.checkin_date.between(week_start.date(), week_end.date())
+        DailyCheckin.checkin_date.between(week_start, week_end)
     ).order_by(DailyCheckin.checkin_date).all()
 
     # Color fills for ratings
@@ -4204,7 +4204,7 @@ def generate_report_html_content(client, therapist, week_start, week_end, week_n
 
     # Add daily data
     checkins = client.checkins.filter(
-        DailyCheckin.checkin_date.between(week_start.date(), week_end.date())
+        DailyCheckin.checkin_date.between(week_start, week_end)
     ).order_by(DailyCheckin.checkin_date).all()
 
     for i in range(7):
@@ -4468,7 +4468,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
 
         # Get check-ins
         checkins = client.checkins.filter(
-            DailyCheckin.checkin_date.between(week_start.date(), week_end.date())
+            DailyCheckin.checkin_date.between(week_start, week_end)
         ).order_by(DailyCheckin.checkin_date).all()
         print(f"Found {len(checkins)} checkins for the week")
 
@@ -4852,7 +4852,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
 
         # Get check-ins
         checkins = client.checkins.filter(
-            DailyCheckin.checkin_date.between(week_start.date(), week_end.date())
+            DailyCheckin.checkin_date.between(week_start, week_end)
         ).order_by(DailyCheckin.checkin_date).all()
         print(f"xhtml2pdf: Found {len(checkins)} checkins for the week")
 
@@ -5629,7 +5629,7 @@ def email_therapy_report():
 
         # Get check-ins for summary
         checkins = client.checkins.filter(
-            DailyCheckin.checkin_date.between(week_start.date(), week_end.date())
+            DailyCheckin.checkin_date.between(week_start, week_end)
         ).order_by(DailyCheckin.checkin_date).all()
 
         checkins_completed = len(checkins)
@@ -8778,7 +8778,7 @@ def client_email_report():
 
         # Get check-ins for the week
         checkins = client.checkins.filter(
-            DailyCheckin.checkin_date.between(week_start.date(), week_end.date())
+            DailyCheckin.checkin_date.between(week_start, week_end)
         ).order_by(DailyCheckin.checkin_date).all()
 
         # Get translations
@@ -8954,7 +8954,7 @@ def get_client_week_checkins(week):
 
         # Get check-ins
         checkins = client.checkins.filter(
-            DailyCheckin.checkin_date.between(week_start.date(), week_end.date())
+            DailyCheckin.checkin_date.between(week_start, week_end)
         ).all()
 
         # Format response
