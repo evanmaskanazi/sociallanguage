@@ -1076,6 +1076,7 @@
                 'client.test_sent': 'Test reminder queued for delivery!',
                 'client.password_complexity': 'Password must have uppercase, lowercase, number and special character.',
                 'client.queue_status': 'Queue Status:',
+                'dashboard.streak': 'Current Streak',
                 'client.encouragement': 'Your journey to wellness continues. Every step counts!',
                 'client.previous_week': '← Previous Week',
                 'client.next_week': 'Next Week →',
@@ -1146,6 +1147,7 @@
                 'category.medication_desc': 'היענות לנטילת תרופות',
                 'category.physical_activity': 'פעילות גופנית',
                 'category.physical_activity_desc': 'רמת הפעילות הגופנית',
+                'dashboard.streak': 'רצף נוכחי',
                 'nav.consent': 'הסכמה',
                 'client.consent_management': 'ניהול הסכמות',
                 'client.your_consents': 'ההסכמות שלך',
@@ -1232,6 +1234,7 @@
                 'client.checkin_error': 'לא ניתן לשלוח צ׳ק-אין לתאריכים עתידיים',
                 'client.select_client_week': 'אנא בחר שבוע',
                 'client.report_generated': 'הדוח נוצר והורד בהצלחה!',
+                'client.encouragement': 'המסע שלך לבריאות ממשיך. כל צעד נחשב!',
                 'client.error_progress': 'שגיאה בטעינת נתוני התקדמות',
                 'checkin.title': 'צ׳ק-אין יומי',
                 'checkin.medication': 'האם נטלת את התרופות שלך כפי שנרשם?',
@@ -1271,6 +1274,7 @@
                 'consent.communication': 'Электронная переписка',
                 'consent.communication_desc': 'Получать напоминания по электронной почте и обновления о вашем терапевтическом прогрессе',
                 'consent.last_updated': 'Последнее обновление',
+                'dashboard.streak': 'Текущая серия',
                 'consent.never': 'Никогда',
                 'consent.update_success': 'Согласие успешно обновлено',
                 'consent.update_error': 'Ошибка обновления согласия',
@@ -1392,6 +1396,7 @@
                 'nav.settings': 'الإعدادات',
                 'client.account_settings': 'إعدادات الحساب',
                 'client.change_password': 'تغيير كلمة المرور',
+                'dashboard.streak': 'السلسلة الحالية',
                 'client.password_requirements': 'يجب أن تتكون كلمة المرور من 12 أحرف على الأقل.',
                 'client.current_password': 'كلمة المرور الحالية',
                 'client.new_password': 'كلمة المرور الجديدة',
@@ -1740,7 +1745,25 @@ if (quickStats) {
         }, 500); // Wait for week view to load
     }
 
-    const completedGoals = weeklyGoals.filter(g => g.today_completed === true).length;
+    // Calculate current streak
+    let currentStreak = 0;
+    if (clientData && clientData.current_streak !== undefined) {
+        currentStreak = clientData.current_streak;
+    } else {
+        // Frontend calculation as fallback
+        // Count backward from today to find consecutive checkins
+        const today = new Date();
+        for (let i = 0; i < 30; i++) { // Check last 30 days
+            const checkDate = new Date(today);
+            checkDate.setDate(today.getDate() - i);
+            const dayCell = document.querySelector(`.day-cell[data-date="${checkDate.toISOString().split('T')[0]}"]`);
+            if (dayCell && dayCell.classList.contains('completed')) {
+                currentStreak++;
+            } else if (i > 0) { // Don't break on today if not completed yet
+                break;
+            }
+        }
+    }
 
     // Clear first
     quickStats.innerHTML = '';
@@ -1750,10 +1773,12 @@ if (quickStats) {
     weekP.textContent = `${i18n.t('dashboard.this_week')}: ${weekCheckinsCount}/7 ${i18n.t('days')}`;
     quickStats.appendChild(weekP);
 
-    const goalsP = document.createElement('p');
-    goalsP.textContent = `${i18n.t('goals.completed')}: ${completedGoals}/${weeklyGoals.length}`;
-    quickStats.appendChild(goalsP);
+    const streakP = document.createElement('p');
+    streakP.textContent = `${i18n.t('dashboard.streak')}: ${currentStreak} ${i18n.t('days')}`;
+    quickStats.appendChild(streakP);
 }
+
+
 }
 
 
@@ -1998,6 +2023,7 @@ function setupAllCategories() {
 
     const dayCell = document.createElement('div');
     dayCell.className = 'day-cell';
+    dayCell.setAttribute('data-date', date.toISOString().split('T')[0]);
     dayCell.onclick = () => selectDate(date);
 
     // Check if this date has a check-in
