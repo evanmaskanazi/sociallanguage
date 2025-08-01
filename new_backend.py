@@ -6678,6 +6678,7 @@ def client_dashboard():
                 'date': date.today().isoformat()
             },
             'week_checkins_count': week_checkins,
+            'current_streak': current_streak,
             'tracking_categories': tracking_categories,
             'weekly_goals': weekly_goals,
             'reminders': reminders
