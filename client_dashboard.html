@@ -1651,6 +1651,9 @@ credentials: 'include'
 
                 weeklyGoals = data.weekly_goals;
 
+                clientData.week_checkins_count = data.week_checkins_count;
+
+
                 updateUI();
                 loadWeekView();
             } catch (error) {
@@ -1708,35 +1711,49 @@ credentials: 'include'
 
             // Setup ALL categories dynamically
             setupAllCategories();
-            const quickStats = document.getElementById('quickStats');
-            if (quickStats) {
 
 
+const quickStats = document.getElementById('quickStats');
+if (quickStats) {
+    // Try to get from server data first
+    let weekCheckinsCount = clientData && clientData.week_checkins_count ? clientData.week_checkins_count : 0;
 
-                 const weekStart = getStartOfWeek(0);
-    const weekCheckinsCount = clientData.week_checkins_count || 0;
+    // If not available from server, count from the dashboard data
+    if (weekCheckinsCount === 0 && clientData) {
+        // Calculate week start
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - dayOfWeek);
+        weekStart.setHours(0, 0, 0, 0);
 
+        // Count checkins for this week
+        // This will be updated after we load the week view
+        setTimeout(() => {
+            const completedCells = document.querySelectorAll('.day-cell.completed');
+            weekCheckinsCount = completedCells.length;
 
+            // Update the display
+            if (quickStats.querySelector('p')) {
+                quickStats.querySelector('p').textContent = `${i18n.t('dashboard.this_week')}: ${weekCheckinsCount}/7 ${i18n.t('days')}`;
+            }
+        }, 500); // Wait for week view to load
+    }
 
+    const completedGoals = weeklyGoals.filter(g => g.today_completed === true).length;
 
+    // Clear first
+    quickStats.innerHTML = '';
 
-                const completedGoals = weeklyGoals.filter(g => g.today_completed === true).length;
+    // Create elements safely
+    const weekP = document.createElement('p');
+    weekP.textContent = `${i18n.t('dashboard.this_week')}: ${weekCheckinsCount}/7 ${i18n.t('days')}`;
+    quickStats.appendChild(weekP);
 
-               // Clear first
-quickStats.innerHTML = '';
-
-// Create elements safely
-const weekP = document.createElement('p');
-weekP.textContent = `${i18n.t('dashboard.this_week')}: ${weekCheckinsCount}/7 ${i18n.t('days')}`;
-quickStats.appendChild(weekP);
-
-const goalsP = document.createElement('p');
-goalsP.textContent = `${i18n.t('goals.completed')}: ${completedGoals}/${weeklyGoals.length}`;
-quickStats.appendChild(goalsP);
-                    }
-        }
-
-
+    const goalsP = document.createElement('p');
+    goalsP.textContent = `${i18n.t('goals.completed')}: ${completedGoals}/${weeklyGoals.length}`;
+    quickStats.appendChild(goalsP);
+}
 
 
 
