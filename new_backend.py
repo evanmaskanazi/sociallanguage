@@ -4137,6 +4137,155 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
             os.unlink(tmp_name)
 
 
+def generate_report_html_content(client, therapist, week_start, week_end, week_num, year, lang, trans, days, is_rtl):
+    """Generate HTML content for PDF report - shared between WeasyPrint and xhtml2pdf"""
+
+    # Get all categories
+    all_categories = list(TrackingCategory.query.all())
+    custom_categories = CustomCategory.query.filter_by(
+        client_id=client.id,
+        is_active=True
+    ).all()
+
+    # Start HTML
+    html_content = f"""
+    <!DOCTYPE html>
+    <html dir="{'rtl' if is_rtl else 'ltr'}">
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            @page {{
+                size: A4 landscape;
+                margin: 1cm;
+            }}
+            body {{
+                font-family: Arial, sans-serif;
+                font-size: 10pt;
+                direction: {'rtl' if is_rtl else 'ltr'};
+            }}
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+            }}
+            th, td {{
+                border: 1px solid #ddd;
+                padding: 4px;
+                text-align: center;
+            }}
+            th {{
+                background-color: #2C3E50;
+                color: white;
+            }}
+            .good {{ background-color: #C8E6C9; }}
+            .medium {{ background-color: #FFF9C4; }}
+            .poor {{ background-color: #FFCDD2; }}
+        </style>
+    </head>
+    <body>
+        <h1>{trans('weekly_report_title')} - {trans('client')} {client.client_name}</h1>
+        <p>{trans('week')} {week_num}, {year}</p>
+
+        <h2>{trans('daily_checkins')}</h2>
+        <table>
+            <tr>
+                <th>{trans('date')}</th>
+                <th>{trans('day')}</th>
+    """
+
+    # Add category headers
+    for cat in all_categories:
+        cat_name = translate_category_name(cat.name, lang)
+        html_content += f'<th>{cat_name}</th>'
+
+    for custom_cat in custom_categories:
+        html_content += f'<th>{custom_cat.name}</th>'
+
+    html_content += '</tr>'
+
+    # Add daily data
+    checkins = client.checkins.filter(
+        DailyCheckin.checkin_date.between(week_start.date(), week_end.date())
+    ).order_by(DailyCheckin.checkin_date).all()
+
+    for i in range(7):
+        current_date = week_start + timedelta(days=i)
+        day_name = days[i]
+        checkin = next((c for c in checkins if c.checkin_date == current_date.date()), None)
+
+        html_content += f"""
+            <tr>
+                <td>{current_date.strftime('%Y-%m-%d')}</td>
+                <td>{day_name}</td>
+        """
+
+        if checkin:
+            # Add category values
+            for category in all_categories:
+                response = CategoryResponse.query.filter_by(
+                    client_id=client.id,
+                    category_id=category.id,
+                    response_date=current_date.date()
+                ).first()
+
+                if response:
+                    value = response.value
+                    css_class = 'good' if value >= 4 else 'medium' if value == 3 else 'poor'
+                    html_content += f'<td class="{css_class}">{value}</td>'
+                else:
+                    html_content += '<td>-</td>'
+
+            for custom_cat in custom_categories:
+                response = CategoryResponse.query.filter_by(
+                    client_id=client.id,
+                    custom_category_id=custom_cat.id,
+                    response_date=current_date.date()
+                ).first()
+
+                if response:
+                    value = response.value
+                    css_class = 'good' if value >= 4 else 'medium' if value == 3 else 'poor'
+                    html_content += f'<td class="{css_class}">{value}</td>'
+                else:
+                    html_content += '<td>-</td>'
+        else:
+            col_count = len(all_categories) + len(custom_categories)
+            html_content += f'<td colspan="{col_count}">{trans("no_checkin")}</td>'
+
+        html_content += '</tr>'
+
+    html_content += """
+        </table>
+    </body>
+    </html>
+    """
+
+    return html_content
+
+
+def test_pdf_libraries():
+    """Test which PDF libraries are available"""
+    results = {}
+
+    # Test WeasyPrint
+    try:
+        from weasyprint import HTML
+        results['weasyprint'] = "Available"
+    except ImportError as e:
+        results['weasyprint'] = f"Not available: {str(e)}"
+    except Exception as e:
+        results['weasyprint'] = f"Error: {str(e)}"
+
+    # Test xhtml2pdf
+    try:
+        from xhtml2pdf import pisa
+        results['xhtml2pdf'] = "Available"
+    except ImportError as e:
+        results['xhtml2pdf'] = f"Not available: {str(e)}"
+    except Exception as e:
+        results['xhtml2pdf'] = f"Error: {str(e)}"
+
+    return results
+
 
 
 
@@ -4414,7 +4563,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
 
             else:
                 # No check-in this day
-                html_content += f'<td colspan="{len(all_categories)}" class="no-checkin">{trans("no_checkin")}</td>'
+                html_content += f'<td colspan="{len(all_category_data)}" class="no-checkin">{trans("no_checkin")}</td>'
 
             html_content += "</tr>"
 
@@ -4756,7 +4905,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
 
             else:
                 # No check-in this day
-                html_content += f'<td colspan="{len(all_categories)}" class="no-checkin">{trans("no_checkin")}</td>'
+                html_content += f'<td colspan="{len(all_category_data)}" class="no-checkin">{trans("no_checkin")}</td>'
 
             html_content += "</tr>"
 
@@ -5235,9 +5384,9 @@ def test_weekly_report():
         if settings and settings.reminder_email:
             email = settings.reminder_email
 
-        # Get most recent client with data
-        client = therapist.clients.filter_by(is_active=True).first()
-        if not client:
+        # Get ALL active clients
+        active_clients = therapist.clients.filter_by(is_active=True).all()
+        if not active_clients:
             return jsonify({'error': 'No active clients found'}), 400
 
         # Get current week
@@ -5248,32 +5397,59 @@ def test_weekly_report():
         year = today.year
         week_num = today.isocalendar()[1]
 
-        # Generate PDF report
-        from io import BytesIO
-        pdf_buffer = create_weekly_report_pdf(
-            client, therapist, week_start, week_end, week_num, year,
-            settings.reminder_language if settings else 'en'
-        )
-
-        # Send email with attachment
+        # Create email
         msg = MIMEMultipart()
         msg['From'] = app.config['MAIL_USERNAME']
         msg['To'] = email
-        msg['Subject'] = f"Weekly Therapy Report - Week {week_num}, {year}"
 
-        # Email body
-        body = "PDF Report"
-        msg.attach(MIMEText(body, 'plain'))
+        # Language
+        lang = settings.reminder_language if settings else 'en'
 
-        # Attach PDF
-        pdf_attachment = MIMEBase('application', 'pdf')
-        pdf_attachment.set_payload(pdf_buffer.read())
-        encoders.encode_base64(pdf_attachment)
-        pdf_attachment.add_header(
-            'Content-Disposition',
-            f'attachment; filename=weekly_report_week_{week_num}_{year}.pdf'
-        )
-        msg.attach(pdf_attachment)
+        # Translated subjects
+        subjects = {
+            'en': f"Weekly Therapy Report - Week {week_num}, {year}",
+            'he': f"דוח טיפולי שבועי - שבוע {week_num}, {year}",
+            'ru': f"Еженедельный терапевтический отчет - Неделя {week_num}, {year}",
+            'ar': f"التقرير العلاجي الأسبوعي - الأسبوع {week_num}, {year}"
+        }
+        msg['Subject'] = subjects.get(lang, subjects['en'])
+
+        # Translated body
+        bodies = {
+            'en': "Weekly checkin time. Reminder to see how your clients are doing.",
+            'he': "זמן סיכום שבועי. תזכורת לבדוק איך מסתדרים המטופלים שלך.",
+            'ru': "Время еженедельной проверки. Напоминание проверить, как дела у ваших клиентов.",
+            'ar': "وقت الفحص الأسبوعي. تذكير لمعرفة كيف حال عملائك."
+        }
+        body = bodies.get(lang, bodies['en'])
+        msg.attach(MIMEText(body, 'plain', 'utf-8'))
+
+        # Generate and attach PDF for EACH client
+        from io import BytesIO
+        attachment_count = 0
+
+        for client in active_clients:
+            try:
+                pdf_buffer = create_weekly_report_pdf(
+                    client, therapist, week_start, week_end, week_num, year, lang
+                )
+
+                # Attach PDF
+                pdf_attachment = MIMEBase('application', 'pdf')
+                pdf_attachment.set_payload(pdf_buffer.read())
+                encoders.encode_base64(pdf_attachment)
+                pdf_attachment.add_header(
+                    'Content-Disposition',
+                    f'attachment; filename=report_{client.client_serial}_week_{week_num}_{year}.pdf'
+                )
+                msg.attach(pdf_attachment)
+                attachment_count += 1
+
+            except Exception as e:
+                print(f"Failed to generate PDF for client {client.client_serial}: {e}")
+
+        if attachment_count == 0:
+            return jsonify({'error': 'Failed to generate any PDF reports'}), 500
 
         # Send email
         server = smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT'])
@@ -5284,7 +5460,7 @@ def test_weekly_report():
 
         return jsonify({
             'success': True,
-            'message': 'Test report sent successfully'
+            'message': f'Test report sent successfully with {attachment_count} client reports'
         })
 
     except Exception as e:
@@ -5572,6 +5748,15 @@ def health_check():
         'status': 'healthy',
         'timestamp': datetime.utcnow().isoformat()
     })
+
+
+
+@app.route('/api/test-pdf-libs', methods=['GET'])
+def test_pdf_libs():
+    """Test PDF library availability"""
+    results = test_pdf_libraries()
+    return jsonify(results)
+
 
 
 # ============= ERROR HANDLERS =============

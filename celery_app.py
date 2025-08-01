@@ -389,7 +389,7 @@ def send_weekly_reports():
     import os
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-    from new_backend import app, db, Therapist, Reminder, create_weekly_report_pdf
+    from new_backend import app, db, Therapist, Reminder, Client, create_weekly_report_pdf
     from datetime import datetime, date, timedelta
     import smtplib
     from email.mime.text import MIMEText
@@ -428,9 +428,9 @@ def send_weekly_reports():
                     if not therapist or not therapist.user:
                         continue
 
-                    # Get most recent active client
-                    client = therapist.clients.filter_by(is_active=True).order_by(Client.start_date.desc()).first()
-                    if not client:
+                    # Get ALL active clients for this therapist
+                    active_clients = therapist.clients.filter_by(is_active=True).all()
+                    if not active_clients:
                         print(f"[CELERY] No active clients for therapist {therapist.id}")
                         continue
 
@@ -441,12 +441,6 @@ def send_weekly_reports():
                     year = today.year
                     week_num = today.isocalendar()[1]
 
-                    # Generate PDF
-                    pdf_buffer = create_weekly_report_pdf(
-                        client, therapist, week_start, week_end, week_num, year,
-                        reminder.reminder_language or 'en'
-                    )
-
                     # Determine email
                     email_to_use = reminder.reminder_email if reminder.reminder_email else therapist.user.email
 
@@ -454,21 +448,53 @@ def send_weekly_reports():
                     msg = MIMEMultipart()
                     msg['From'] = os.environ.get('SYSTEM_EMAIL')
                     msg['To'] = email_to_use
-                    msg['Subject'] = f"Weekly Therapy Report - Week {week_num}, {year}"
 
-                    # Body
-                    body = "PDF Report"
-                    msg.attach(MIMEText(body, 'plain'))
+                    # Translated subjects
+                    subjects = {
+                        'en': f"Weekly Therapy Report - Week {week_num}, {year}",
+                        'he': f"דוח טיפולי שבועי - שבוע {week_num}, {year}",
+                        'ru': f"Еженедельный терапевтический отчет - Неделя {week_num}, {year}",
+                        'ar': f"التقرير العلاجي الأسبوعي - الأسبوع {week_num}, {year}"
+                    }
+                    lang = reminder.reminder_language or 'en'
+                    msg['Subject'] = subjects.get(lang, subjects['en'])
 
-                    # Attach PDF
-                    pdf_attachment = MIMEBase('application', 'pdf')
-                    pdf_attachment.set_payload(pdf_buffer.read())
-                    encoders.encode_base64(pdf_attachment)
-                    pdf_attachment.add_header(
-                        'Content-Disposition',
-                        f'attachment; filename=weekly_report_week_{week_num}_{year}.pdf'
-                    )
-                    msg.attach(pdf_attachment)
+                    # Translated body
+                    bodies = {
+                        'en': "Weekly checkin time. Reminder to see how your clients are doing.",
+                        'he': "זמן סיכום שבועי. תזכורת לבדוק איך מסתדרים המטופלים שלך.",
+                        'ru': "Время еженедельной проверки. Напоминание проверить, как дела у ваших клиентов.",
+                        'ar': "وقت الفحص الأسبوعي. تذكير لمعرفة كيف حال عملائك."
+                    }
+                    body = bodies.get(lang, bodies['en'])
+                    msg.attach(MIMEText(body, 'plain', 'utf-8'))
+
+                    # Attach PDF for EACH client
+                    attachment_count = 0
+                    for client in active_clients:
+                        try:
+                            # Generate PDF for this client
+                            pdf_buffer = create_weekly_report_pdf(
+                                client, therapist, week_start, week_end, week_num, year, lang
+                            )
+
+                            # Attach PDF
+                            pdf_attachment = MIMEBase('application', 'pdf')
+                            pdf_attachment.set_payload(pdf_buffer.read())
+                            encoders.encode_base64(pdf_attachment)
+                            pdf_attachment.add_header(
+                                'Content-Disposition',
+                                f'attachment; filename=report_{client.client_serial}_week_{week_num}_{year}.pdf'
+                            )
+                            msg.attach(pdf_attachment)
+                            attachment_count += 1
+
+                        except Exception as e:
+                            print(f"[CELERY] Failed to generate PDF for client {client.client_serial}: {e}")
+
+                    if attachment_count == 0:
+                        print(f"[CELERY] No PDFs generated for therapist {therapist.id}, skipping email")
+                        continue
 
                     # Send email
                     smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
@@ -485,7 +511,7 @@ def send_weekly_reports():
                     # Update last sent
                     reminder.last_sent = now
                     sent_count += 1
-                    print(f"[CELERY] Sent weekly report to {email_to_use}")
+                    print(f"[CELERY] Sent weekly report to {email_to_use} with {attachment_count} PDFs")
 
                 except Exception as e:
                     print(f"[CELERY] Failed to send weekly report to therapist {therapist.id}: {e}")
