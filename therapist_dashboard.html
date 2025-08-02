@@ -3525,45 +3525,79 @@ credentials: 'include'
         }
 
 
+function getJerusalemOffset() {
+    // Create a date in Jerusalem timezone
+    const jerusalemTime = new Date().toLocaleString("en-US", {timeZone: "Asia/Jerusalem"});
+    const jerusalemDate = new Date(jerusalemTime);
 
+    // Create same moment in UTC
+    const utcTime = new Date().toLocaleString("en-US", {timeZone: "UTC"});
+    const utcDate = new Date(utcTime);
+
+    // Calculate offset in minutes (Jerusalem - UTC)
+    const offsetMs = jerusalemDate - utcDate;
+    const offsetMinutes = -Math.round(offsetMs / 60000); // Negative because east of UTC
+
+    return offsetMinutes;
+}
 
 
   // Weekly Report Email Settings Functions
         async function saveWeeklyReportSettings() {
-            try {
-                const time = document.getElementById('weeklyReportTime').value;
-                const dayOfWeek = document.getElementById('weeklyReportDay').value;
-                const email = document.getElementById('weeklyReportEmail').value;
+    try {
+        const time = document.getElementById('weeklyReportTime').value;
+        const dayOfWeek = document.getElementById('weeklyReportDay').value;
+        const email = document.getElementById('weeklyReportEmail').value;
 
-                const timezoneOffset = new Date().getTimezoneOffset();
+        // Get timezone offset - this is critical for correct conversion
+        let timezoneOffset = new Date().getTimezoneOffset();
 
-                const response = await fetch('/api/therapist/weekly-report-settings', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept-Language': i18n.currentLang
-                    },
-                    credentials: 'include',
-                    body: JSON.stringify({
-                        time: time,
-                        day_of_week: parseInt(dayOfWeek),
-                        email: email,
-                        timezone_offset: timezoneOffset,
-                        language: i18n.currentLang
-                    })
-                });
+        // CRITICAL FIX: Validate timezone offset for Jerusalem (same as client)
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        console.log('Detected timezone:', userTimezone);
 
-                const result = await response.json();
+        // Jerusalem should ALWAYS have negative offset (east of UTC)
+        if (userTimezone.includes('Jerusalem') || userTimezone.includes('Israel')) {
+            // Force correct offset for Jerusalem based on current date
+            const now = new Date();
+            const jan = new Date(now.getFullYear(), 0, 1);
+            const jul = new Date(now.getFullYear(), 6, 1);
+            const janOffset = jan.getTimezoneOffset();
+            const julOffset = jul.getTimezoneOffset();
+            const isDST = Math.min(janOffset, julOffset) === now.getTimezoneOffset();
 
-                if (result.success) {
-                    showWeeklyReportStatus(i18n.t('therapist.report_settings_saved'), 'success');
-                } else {
-                    showWeeklyReportStatus(result.error || i18n.t('msg.error'), 'error');
-                }
-            } catch (error) {
-                showWeeklyReportStatus(i18n.t('msg.error') + ': ' + error.message, 'error');
-            }
+            // Jerusalem is UTC+2 in winter, UTC+3 in summer (DST)
+            timezoneOffset = isDST ? -180 : -120;  // Negative because east of UTC
+            console.log('Forced Jerusalem offset:', timezoneOffset);
         }
+
+        const response = await fetch('/api/therapist/weekly-report-settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept-Language': i18n.currentLang
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                time: time,
+                day_of_week: parseInt(dayOfWeek),
+                email: email,
+                timezone_offset: timezoneOffset,
+                language: i18n.currentLang
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showWeeklyReportStatus(i18n.t('therapist.report_settings_saved'), 'success');
+        } else {
+            showWeeklyReportStatus(result.error || i18n.t('msg.error'), 'error');
+        }
+    } catch (error) {
+        showWeeklyReportStatus(i18n.t('msg.error') + ': ' + error.message, 'error');
+    }
+}
 
         async function testWeeklyReport() {
             try {
