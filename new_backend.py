@@ -5430,6 +5430,8 @@ def save_weekly_report_settings():
         local_total_minutes = hour * 60 + minute
         utc_total_minutes = local_total_minutes - timezone_offset
 
+
+
         while utc_total_minutes < 0:
             utc_total_minutes += 24 * 60
         while utc_total_minutes >= 24 * 60:
@@ -5437,6 +5439,24 @@ def save_weekly_report_settings():
 
         utc_hour = utc_total_minutes // 60
         utc_minute = utc_total_minutes % 60
+
+        import pytz
+        from datetime import datetime
+
+        # Create UTC datetime
+        utc_now = datetime.utcnow()
+        utc_dt = utc_now.replace(hour=utc_hour, minute=utc_minute, second=0, microsecond=0)
+
+        # Convert to Jerusalem timezone
+        jerusalem_tz = pytz.timezone('Asia/Jerusalem')
+        utc_tz = pytz.timezone('UTC')
+        utc_dt = utc_tz.localize(utc_dt)
+        jerusalem_dt = utc_dt.astimezone(jerusalem_tz)
+
+        # This is the actual Jerusalem time
+        jerusalem_time_str = f"{jerusalem_dt.hour:02d}:{jerusalem_dt.minute:02d}"
+
+
 
         import datetime
         time_obj = datetime.time(utc_hour, utc_minute)
@@ -5449,7 +5469,7 @@ def save_weekly_report_settings():
 
         if existing:
             existing.reminder_time = time_obj
-            existing.local_reminder_time = time_str
+            existing.local_reminder_time = jerusalem_time_str
             existing.reminder_email = email if email else None
             existing.day_of_week = day_of_week
             existing.reminder_language = language
