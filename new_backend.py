@@ -5469,7 +5469,7 @@ def save_weekly_report_settings():
 
         if existing:
             existing.reminder_time = time_obj
-            existing.local_reminder_time = jerusalem_time_str
+            existing.local_reminder_time = time_str
             existing.reminder_email = email if email else None
             existing.day_of_week = day_of_week
             existing.reminder_language = language
