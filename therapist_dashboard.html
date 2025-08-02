@@ -3556,20 +3556,24 @@ function getJerusalemOffset() {
         const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         console.log('Detected timezone:', userTimezone);
 
-        // Jerusalem should ALWAYS have negative offset (east of UTC)
-        if (userTimezone.includes('Jerusalem') || userTimezone.includes('Israel')) {
-            // Force correct offset for Jerusalem based on current date
-            const now = new Date();
-            const jan = new Date(now.getFullYear(), 0, 1);
-            const jul = new Date(now.getFullYear(), 6, 1);
-            const janOffset = jan.getTimezoneOffset();
-            const julOffset = jul.getTimezoneOffset();
-            const isDST = Math.min(janOffset, julOffset) === now.getTimezoneOffset();
 
-            // Jerusalem is UTC+2 in winter, UTC+3 in summer (DST)
-            timezoneOffset = isDST ? -180 : -120;  // Negative because east of UTC
-            console.log('Forced Jerusalem offset:', timezoneOffset);
-        }
+
+        // Jerusalem should ALWAYS have negative offset (east of UTC)
+        const now = new Date();
+const jan = new Date(now.getFullYear(), 0, 1);
+const jul = new Date(now.getFullYear(), 6, 1);
+
+// Get Jerusalem's offset for these dates
+const jerusalemJanOffset = new Date(jan.toLocaleString("en-US", {timeZone: "Asia/Jerusalem"})).getTimezoneOffset();
+const jerusalemJulOffset = new Date(jul.toLocaleString("en-US", {timeZone: "Asia/Jerusalem"})).getTimezoneOffset();
+const jerusalemNowOffset = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Jerusalem"})).getTimezoneOffset();
+
+// Check if Jerusalem is in DST
+const isDST = Math.min(jerusalemJanOffset, jerusalemJulOffset) === jerusalemNowOffset;
+
+// ALWAYS use Jerusalem offset
+timezoneOffset = isDST ? -180 : -120;  // Jerusalem is UTC+3 summer, UTC+2 winter
+console.log('Forced Jerusalem offset:', timezoneOffset, '(browser offset was:', new Date().getTimezoneOffset(), ')');
 
         const response = await fetch('/api/therapist/weekly-report-settings', {
             method: 'POST',
