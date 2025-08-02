@@ -3557,7 +3557,7 @@ const currentMonth = now.getMonth();
 const isDST = currentMonth >= 2 && currentMonth <= 9; // March (2) to October (9)
 
 // Force Jerusalem offset
-const timezoneOffset = isDST ? -180 : -120;  // UTC+3 summer, UTC+2 winter
+const timezoneOffset = isDST ? 180 : 120;  // UTC+3 summer, UTC+2 winter
 
 console.log('Using Jerusalem timezone');
 console.log('Current month:', currentMonth + 1); // +1 for human-readable month
