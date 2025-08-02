@@ -3647,7 +3647,10 @@ function getJerusalemOffset() {
                     const data = await response.json();
                     if (data.settings) {
                         document.getElementById('weeklyReportTime').value = data.settings.local_time || '09:00';
-                        document.getElementById('weeklyReportDay').value = data.settings.day_of_week || '1';
+                        document.getElementById('weeklyReportDay').value =
+                    (data.settings.day_of_week !== undefined && data.settings.day_of_week !== null)
+                    ? data.settings.day_of_week
+                    : '1';
                         document.getElementById('weeklyReportEmail').value = data.settings.email || '';
                     }
                 }
