@@ -5393,7 +5393,7 @@ def get_weekly_report_settings():
                 'settings': {
                     'time': existing[0].strftime('%H:%M') if existing[0] else '09:00',
                     'email': existing[1] or '',
-                    'day_of_week': existing[2] if existing[2] is not None else 1, 
+                    'day_of_week': existing[2] if existing[2] is not None else 1,
                     'local_time': existing[3] or '09:00',
                     'language': existing[4] or 'en'
                 }
@@ -5421,6 +5421,7 @@ def save_weekly_report_settings():
         email = data.get('email', '').strip()
         timezone_offset = data.get('timezone_offset', 0)
         language = data.get('language', 'en')
+        user_timezone = data.get('timezone', 'Asia/Jerusalem')
 
         # Parse time
         hour, minute = map(int, time_str.split(':'))
