@@ -3310,7 +3310,7 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
     # Title
     ws_checkins.merge_cells('A1:J1')
     title_cell = ws_checkins['A1']
-    title_cell.value = f"{trans('weekly_report_title')} - {trans('client')} {client.client_name if client.client_name else client.client_serial}"
+    title_cell.value = f"{trans('weekly_report_title')} - {trans('client')} {sanitize_input(client.client_name if client.client_name else client.client_serial)}"
     title_cell.font = Font(bold=True, size=16)
     title_cell.alignment = header_alignment
 
@@ -3340,8 +3340,8 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
 
         # Add custom category headers
     for custom_cat in custom_categories:
-            headers.append(f"{custom_cat.name} (1-5)")
-            headers.append(f"{custom_cat.name} {trans('notes')}")
+            headers.append(f"{sanitize_input(custom_cat.name)} (1-5)")
+            headers.append(f"{sanitize_input(custom_cat.name)} {trans('notes')}")
 
 
 
@@ -3725,7 +3725,7 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
         # Title
         ws_checkins.merge_cells('A1:J1')
         title_cell = ws_checkins['A1']
-        title_cell.value = f"{trans('weekly_report_title')} - {trans('client')} {client.client_name if client.client_name else client.client_serial}"
+        title_cell.value = f"{trans('weekly_report_title')} - {trans('client')} {sanitize_input(client.client_name if client.client_name else client.client_serial)}"
         title_cell.font = Font(bold=True, size=16)
         title_cell.alignment = header_alignment
 
@@ -4424,7 +4424,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
             </style>
         </head>
         <body>
-            <h1>{trans('weekly_report_title')} - {trans('client')} {client.client_name if client.client_name else client.client_serial}</h1>
+            <h1>{trans('weekly_report_title')} - {trans('client')} {escape(client.client_name if client.client_name else client.client_serial)}</h1>
             <p class="subtitle">{trans('week')} {week_num}, {year} ({get_translated_month(week_start, lang)} {week_start.day} - {get_translated_month(week_end, lang)} {week_end.day}, {year})</p>
 
             <h2>{trans('daily_checkins')}</h2>
@@ -4808,7 +4808,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
             </style>
         </head>
         <body>
-            <h1>{trans('weekly_report_title')} - {trans('client')} {client.client_name if client.client_name else client.client_serial}</h1>
+            <h1>{trans('weekly_report_title')} - {trans('client')} {escape(client.client_name if client.client_name else client.client_serial)}</h1>
             <p class="subtitle">{trans('week')} {week_num}, {year} ({get_translated_month(week_start, lang)} {week_start.day} - {get_translated_month(week_end, lang)} {week_end.day}, {year})</p>
 
             <h2>{trans('daily_checkins')}</h2>
@@ -4860,7 +4860,7 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
             # Shorten very long category names to fit
             if len(cat_name) > 15:
                 cat_name = cat_name[:13] + '..'
-            html_content += f'<th style="width: {col_width}%">{cat_name}</th>'
+            html_content += f'<th style="width: {col_width}%">{escape(cat_name)}</th>'
 
         html_content += "</tr>"
 
@@ -5719,8 +5719,8 @@ def email_therapy_report():
 אנא עיין/י בדוח המצורף וצור/י קשר אם יש שאלות.
 
 בברכה,
-{therapist.name}
-{therapist.organization or ''}
+{escape(therapist.name)}
+{escape(therapist.organization or '')}
         """
         elif lang == 'ru':
             email_content = f"""
@@ -5743,8 +5743,8 @@ def email_therapy_report():
 Пожалуйста, просмотрите прилагаемый отчет и свяжитесь со мной, если у вас есть вопросы.
 
 С наилучшими пожеланиями,
-{therapist.name}
-{therapist.organization or ''}
+{escape(therapist.name)}
+{escape(therapist.organization or '')}
         """
         elif lang == 'ar':
             email_content = f"""
@@ -6356,7 +6356,7 @@ def create_client():
                 goal = WeeklyGoal(
                     client_id=client.id,
                     therapist_id=therapist.id,
-                    goal_text=goal_text,
+                    goal_text=sanitize_input(goal_text),
                     week_start=week_start
                 )
                 db.session.add(goal)
@@ -6481,7 +6481,7 @@ def add_weekly_goal():
         goal = WeeklyGoal(
             client_id=client_id,
             therapist_id=therapist.id,
-            goal_text=goal_text,
+            goal_text=sanitize_input(goal_text),
             week_start=week_start
         )
         db.session.add(goal)
@@ -6674,7 +6674,7 @@ def add_therapist_note():
         note = TherapistNote(
             client_id=client_id,
             therapist_id=therapist.id,
-            content=content,
+            content=sanitize_input(content),
             is_mission=is_mission,
             note_type=note_type
         )
@@ -7282,7 +7282,7 @@ def submit_checkin():
                     custom_category_id=None,
                     response_date=checkin_date,
                     value=value,
-                    notes=category_notes.get(str(cat_id), '')
+                    notes=sanitize_input(category_notes.get(str(cat_id), '')[:500])
                 )
                 db.session.add(response)
 
@@ -7781,7 +7781,7 @@ def save_brief_goals():
         ).first()
 
         if existing:
-            existing.content = brief_goals
+            existing.content = sanitize_input(brief_goals)
             existing.updated_at = datetime.utcnow()
         else:
             note = TherapistNote(
@@ -8898,7 +8898,7 @@ DAILY CHECK-IN SUMMARY:
                     cat_name = translate_category_name(response.category.name, lang)
                     content += f"  - {cat_name}: {response.value}/5"
                     if response.notes:
-                        content += f" ({trans('notes')}: {response.notes})"
+                        content += f" ({trans('notes')}: {escape(response.notes)})"
                     content += "\n"
             else:
                 content += f"  ✗ {trans('no_checkin')}\n"
@@ -8937,7 +8937,7 @@ DAILY CHECK-IN SUMMARY:
                     GoalCompletion.completion_date.between(week_start.date(), week_end.date())
                 ).all()
                 completed_days = sum(1 for c in completions if c.completed)
-                content += f"- {goal.goal_text}: {trans('completed')} {completed_days}/7 {trans('days')}\n"
+                content += f"- {escape(goal.goal_text)}: {trans('completed')} {completed_days}/7 {trans('days')}\n"
 
         # Add footer with proper translation
         if lang == 'he':
