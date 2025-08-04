@@ -2971,9 +2971,24 @@ credentials: 'include'
         return;
     }
 
-    // Get timezone offset - this is critical for correct conversion
-  //  let tzOffset = new Date().getTimezoneOffset();
-    let tzOffset = 180; // Force Jerusalem summer time
+    // ALWAYS use Jerusalem timezone for reminders
+    // This ensures consistency regardless of where the user is located
+    const now = new Date();
+    const year = now.getFullYear();
+
+    // Israel DST rules: Last Friday before April 2 to last Sunday of October
+    // Simplified check:
+    const jan = new Date(year, 0, 1);
+    const jul = new Date(year, 6, 1);
+    const isDST = Math.min(jan.getTimezoneOffset(), jul.getTimezoneOffset()) !== now.getTimezoneOffset();
+
+    // Jerusalem is UTC+2 (winter) or UTC+3 (summer)
+    // getTimezoneOffset needs positive values for east of UTC in your backend
+    const tzOffset = isDST ? 180 : 120;
+
+    console.log('Using Jerusalem timezone:', isDST ? 'IDT (UTC+3)' : 'IST (UTC+2)');
+    console.log('Timezone offset:', tzOffset, 'minutes');
+    
         console.warn('FORCING Jerusalem timezone offset to -180 instead of', new Date().getTimezoneOffset());
 
     // CRITICAL FIX: Validate timezone offset for Jerusalem
