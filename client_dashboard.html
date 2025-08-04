@@ -2973,7 +2973,7 @@ credentials: 'include'
 
     // Get timezone offset - this is critical for correct conversion
   //  let tzOffset = new Date().getTimezoneOffset();
-    let tzOffset = -180; // Force Jerusalem summer time
+    let tzOffset = 180; // Force Jerusalem summer time
         console.warn('FORCING Jerusalem timezone offset to -180 instead of', new Date().getTimezoneOffset());
 
     // CRITICAL FIX: Validate timezone offset for Jerusalem
