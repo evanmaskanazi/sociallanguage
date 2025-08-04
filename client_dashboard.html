@@ -2973,14 +2973,12 @@ credentials: 'include'
 
     // ALWAYS use Jerusalem timezone for reminders
     // This ensures consistency regardless of where the user is located
-    const now = new Date();
-    const year = now.getFullYear();
+  // ALWAYS force Jerusalem timezone for this therapy system
+const now = new Date();
+const currentMonth = now.getMonth();
 
-    // Israel DST rules: Last Friday before April 2 to last Sunday of October
-    // Simplified check:
-    const march = new Date(year, 3, 1);
-    const oct = new Date(year, 9, 1);
-    const isDST = Math.min(march.getTimezoneOffset(), oct.getTimezoneOffset()) !== now.getTimezoneOffset();
+// Jerusalem DST runs approximately March-October
+const isDST = currentMonth >= 2 && currentMonth <= 9; // March (2) to October (9)
 
     // Jerusalem is UTC+2 (winter) or UTC+3 (summer)
     // getTimezoneOffset needs positive values for east of UTC in your backend
