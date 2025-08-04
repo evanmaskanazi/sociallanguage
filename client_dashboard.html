@@ -2978,9 +2978,9 @@ credentials: 'include'
 
     // Israel DST rules: Last Friday before April 2 to last Sunday of October
     // Simplified check:
-    const jan = new Date(year, 0, 1);
-    const jul = new Date(year, 6, 1);
-    const isDST = Math.min(jan.getTimezoneOffset(), jul.getTimezoneOffset()) !== now.getTimezoneOffset();
+    const march = new Date(year, 3, 1);
+    const oct = new Date(year, 9, 1);
+    const isDST = Math.min(march.getTimezoneOffset(), oct.getTimezoneOffset()) !== now.getTimezoneOffset();
 
     // Jerusalem is UTC+2 (winter) or UTC+3 (summer)
     // getTimezoneOffset needs positive values for east of UTC in your backend
@@ -2988,7 +2988,7 @@ credentials: 'include'
 
     console.log('Using Jerusalem timezone:', isDST ? 'IDT (UTC+3)' : 'IST (UTC+2)');
     console.log('Timezone offset:', tzOffset, 'minutes');
-    
+
         console.warn('FORCING Jerusalem timezone offset to -180 instead of', new Date().getTimezoneOffset());
 
     // CRITICAL FIX: Validate timezone offset for Jerusalem
