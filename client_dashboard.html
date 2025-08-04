@@ -3044,6 +3044,17 @@ credentials: 'include',
 
             // After save, immediately check what was saved
             await loadReminderSettings();
+
+            document.getElementById('enableReminder').addEventListener('change', function() {
+        const isChecked = this.checked;
+
+        if (!isChecked) {
+            // When unchecking, immediately save the disabled state
+            saveDisabledReminder();
+        }
+    });
+
+
             console.log('Reloaded settings, time is now:', document.getElementById('reminderTime').value);
 
             // Check queue status after saving
@@ -3058,6 +3069,58 @@ credentials: 'include',
         showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
     }
 }
+
+
+
+async function saveDisabledReminder() {
+    console.log('Saving disabled reminder state...');
+
+    // Get the current time (even if hidden) to preserve it
+    const time = document.getElementById('reminderTime').value || '09:00';
+    const email = document.getElementById('reminderEmail').value;
+
+    // Use the same timezone logic as saveReminderSettings
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const isDST = currentMonth >= 2 && currentMonth <= 9;
+    const tzOffset = isDST ? 180 : 120;
+
+    try {
+        const response = await fetch('/api/client/update-reminder', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept-Language': i18n.currentLang
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                type: 'daily_checkin',
+                time: time,
+                is_active: false,  // Explicitly set to false
+                email: email || undefined,
+                timezone_offset: tzOffset,
+                language: i18n.currentLang
+            })
+        });
+
+        if (response.ok) {
+            console.log('Reminder disabled successfully');
+            showMessage('Reminder disabled', 'success');
+        } else {
+            const error = await response.json();
+            showMessage(error.error || 'Error', 'error');
+            // Re-check the box if save failed
+            document.getElementById('enableReminder').checked = true;
+        }
+    } catch (error) {
+        showMessage('Error: ' + error.message, 'error');
+        // Re-check the box if save failed
+        document.getElementById('enableReminder').checked = true;
+    }
+}
+
+
+
 
 function diagnoseTimezone() {
     const now = new Date();
