@@ -397,9 +397,17 @@ def timeout(seconds):
 
     return decorator
 
+from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
+
+
 
 # Create Flask app
 app = Flask(__name__)
+
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
+
 
 BASE_DIR = Path(__file__).resolve().parent
 app.static_folder = BASE_DIR
