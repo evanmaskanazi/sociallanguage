@@ -221,7 +221,7 @@ def send_reminder_test(self, email, client_id=None):
             </html>
             """
 
-        msg.attach(MIMEText(html_body, 'html'))
+            msg.attach(MIMEText(html_body, 'html'))
 
         # Send email
         server = smtplib.SMTP(smtp_server, smtp_port)
