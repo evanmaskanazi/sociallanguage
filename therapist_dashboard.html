@@ -1164,13 +1164,16 @@
                 </div>
 
                 <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-                    <button class="btn btn-primary" onclick="saveWeeklyReportSettings()">
-                        <span data-i18n="therapist.save_report_settings">Save Report Settings</span>
-                    </button>
-                    <button class="btn btn-secondary" onclick="testWeeklyReport()">
-                        <span data-i18n="therapist.test_report_email">Test Report Email</span>
-                    </button>
-                </div>
+    <button class="btn btn-primary" onclick="saveWeeklyReportSettings()">
+        <span data-i18n="therapist.save_report_settings">Save Report Settings</span>
+    </button>
+    <button class="btn btn-secondary" onclick="testWeeklyReport()">
+        <span data-i18n="therapist.test_report_email">Test Report Email</span>
+    </button>
+    <button class="btn btn-secondary" onclick="unsubscribeWeeklyReports()">
+        <span data-i18n="therapist.unsubscribe_weekly">Unsubscribe</span>
+    </button>
+</div>
 
                 <div id="weeklyReportStatus" style="margin-top: 1rem;"></div>
             </div>
@@ -1362,6 +1365,9 @@
                 'therapist.report_settings_saved': 'Report settings saved successfully',
                 'therapist.sending_test_report': 'Sending test report...',
                 'therapist.test_report_sent': 'Test report sent successfully',
+                'therapist.unsubscribe_weekly': 'Unsubscribe',
+                'therapist.confirm_unsubscribe_weekly': 'Are you sure you want to unsubscribe from weekly report emails?',
+                'therapist.unsubscribed_weekly': 'Successfully unsubscribed from weekly reports',
                 'days.monday': 'Monday',
                 'days.tuesday': 'Tuesday',
                 'days.wednesday': 'Wednesday',
@@ -1494,6 +1500,9 @@
                 'therapist.save_credentials': 'אנא שמור את הפרטים האלה עבור המטופל. הודעה זו תישאר גלויה עד שתעזוב את הלשונית הזו.',
                 'therapist.temp_password_label': 'סיסמה זמנית',
                 'therapist.custom_categories_management': 'ניהול קטגוריות מותאמות אישית',
+                'therapist.unsubscribe_weekly': 'בטל רישום',
+'therapist.confirm_unsubscribe_weekly': 'האם אתה בטוח שברצונך לבטל את הרישום לדוחות שבועיים?',
+'therapist.unsubscribed_weekly': 'הרישום לדוחות שבועיים בוטל בהצלחה',
     'therapist.current_custom_categories': 'קטגוריות מותאמות נוכחיות',
     'therapist.no_custom_categories': 'לא נוספו קטגוריות מותאמות',
     'therapist.add_custom_category_existing': 'הוסף קטגוריות מותאמות',
@@ -1730,6 +1739,9 @@
                 'therapist.remove_category': 'Удалить',
                 'therapist.max_custom_categories': 'Максимум можно добавить 4 пользовательские категории',
                 'therapist.ai_insights': 'Аналитика клиентов на основе ИИ',
+                'therapist.unsubscribe_weekly': 'Отписаться',
+'therapist.confirm_unsubscribe_weekly': 'Вы уверены, что хотите отписаться от еженедельных отчетов?',
+'therapist.unsubscribed_weekly': 'Успешно отписались от еженедельных отчетов',
 'therapist.analyzing_patterns': 'Анализ паттернов клиентов...',
 'therapist.no_insights': 'Значительные паттерны не обнаружены.',
 'therapist.insights_update': 'Аналитика обновляется по мере добавления отметок.',
@@ -1898,6 +1910,9 @@
                 'therapist.view_client': 'عرض',
                 'therapist.add_goal': 'إضافة هدف',
                 'therapist.delete_client': 'حذف',
+                'therapist.unsubscribe_weekly': 'إلغاء الاشتراك',
+'therapist.confirm_unsubscribe_weekly': 'هل أنت متأكد من أنك تريد إلغاء الاشتراك من التقارير الأسبوعية؟',
+'therapist.unsubscribed_weekly': 'تم إلغاء الاشتراك من التقارير الأسبوعية بنجاح',
 'therapist.confirm_delete_client': 'هل أنت متأكد من أنك تريد حذف العميل {name}؟ لا يمكن التراجع عن هذا الإجراء.',
 'therapist.confirm_delete_permanent': 'سيؤدي هذا إلى حذف جميع بيانات العميل نهائياً بما في ذلك تسجيلات الحضور والأهداف والملاحظات. هل أنت متأكد تماماً؟',
 'therapist.deleting_client': 'جاري حذف العميل...',
@@ -3615,6 +3630,39 @@ console.log('Jerusalem offset:', timezoneOffset);
                 showWeeklyReportStatus(i18n.t('msg.error') + ': ' + error.message, 'error');
             }
         }
+
+
+   async function unsubscribeWeeklyReports() {
+            if (!confirm(i18n.t('therapist.confirm_unsubscribe_weekly'))) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/therapist/unsubscribe-weekly-reports', {
+                    method: 'POST',
+                    headers: {
+                        'Accept-Language': i18n.currentLang
+                    },
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showWeeklyReportStatus(i18n.t('therapist.unsubscribed_weekly'), 'success');
+                    // Clear the form
+                    document.getElementById('weeklyReportTime').value = '';
+                    document.getElementById('weeklyReportDay').value = '1';
+                    document.getElementById('weeklyReportEmail').value = '';
+                } else {
+                    showWeeklyReportStatus(result.error || i18n.t('msg.error'), 'error');
+                }
+            } catch (error) {
+                showWeeklyReportStatus(i18n.t('msg.error') + ': ' + error.message, 'error');
+            }
+        }
+
+
 
         function showWeeklyReportStatus(message, type) {
             const statusDiv = document.getElementById('weeklyReportStatus');

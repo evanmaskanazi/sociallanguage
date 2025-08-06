@@ -8,6 +8,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from celery.schedules import crontab
+import jwt
 
 # Initialize Celery
 celery = Celery(
@@ -140,41 +141,87 @@ def send_reminder_test(self, email, client_id=None):
             'ar': 'اختبار Celery - الرفيق العلاجي'
         }
 
+        unsubscribe_url = None
+        if user and user.id:
+            unsubscribe_token = generate_unsubscribe_token(user.id, 'reminders')
+            base_url = os.environ.get('APP_BASE_URL', 'https://therapy-companion.onrender.com')
+            unsubscribe_url = f"{base_url}/api/unsubscribe/{unsubscribe_token}"
+
         test_bodies = {
-            'en': """This is a test email from the Therapeutic Companion Celery worker.
+            'en': f"""This is a test email from the Therapeutic Companion Celery worker.
 
-If you're receiving this, it means the background task system is working correctly!
+        If you're receiving this, it means the background task system is working correctly!
 
-Best regards,
-Therapeutic Companion Team""",
-            'he': """זוהי הודעת בדיקה ממערכת ה-Celery של המלווה הטיפולי.
+        {f'To unsubscribe, click here: {unsubscribe_url}' if unsubscribe_url else ''}
 
-אם אתה מקבל את זה, זה אומר שמערכת המשימות ברקע עובדת כראוי!
+        Best regards,
+        Therapeutic Companion Team""",
+            'he': f"""זוהי הודעת בדיקה ממערכת ה-Celery של המלווה הטיפולי.
 
-בברכה,
-צוות המלווה הטיפולי""",
-            'ru': """Это тестовое письмо от рабочего Celery Терапевтического Компаньона.
+        אם אתה מקבל את זה, זה אומר שמערכת המשימות ברקע עובדת כראוי!
 
-Если вы получили это, значит фоновая система задач работает правильно!
+        {f'להפסקת הרישום, לחץ כאן: {unsubscribe_url}' if unsubscribe_url else ''}
 
-С наилучшими пожеланиями,
-Команда Терапевтического Компаньона""",
-            'ar': """هذا بريد إلكتروني تجريبي من عامل Celery للرفيق العلاجي.
+        בברכה,
+        צוות המלווה הטיפולי""",
+            'ru': f"""Это тестовое письмо от рабочего Celery Терапевтического Компаньона.
 
-إذا كنت تتلقى هذا، فهذا يعني أن نظام المهام في الخلفية يعمل بشكل صحيح!
+        Если вы получили это, значит фоновая система задач работает правильно!
 
-مع أطيب التحيات،
-فريق الرفيق العلاجي"""
+        {f'Чтобы отписаться, нажмите здесь: {unsubscribe_url}' if unsubscribe_url else ''}
+
+        С наилучшими пожеланиями,
+        Команда Терапевтического Компаньона""",
+            'ar': f"""هذا بريد إلكتروني تجريبي من عامل Celery للرفيق العلاجي.
+
+        إذا كنت تتلقى هذا، فهذا يعني أن نظام المهام في الخلفية يعمل بشكل صحيح!
+
+        {f'لإلغاء الاشتراك، انقر هنا: {unsubscribe_url}' if unsubscribe_url else ''}
+
+        مع أطيب التحيات،
+        فريق الرفيق العلاجي"""
         }
 
         # Create email
-        msg = MIMEMultipart()
+        msg = MIMEMultipart('alternative')
         msg['From'] = smtp_username
         msg['To'] = email
         msg['Subject'] = test_subjects.get(reminder_lang, test_subjects['en'])
 
         body = test_bodies.get(reminder_lang, test_bodies['en'])
         msg.attach(MIMEText(body, 'plain'))
+
+        if unsubscribe_url:
+            html_body = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; direction: {'rtl' if reminder_lang in ['he', 'ar'] else 'ltr'};">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #2c3e50;">{test_subjects.get(reminder_lang, test_subjects['en'])}</h2>
+                    <p>{test_bodies.get(reminder_lang, test_bodies['en']).split(chr(10))[0]}</p>
+                    <p>{test_bodies.get(reminder_lang, test_bodies['en']).split(chr(10))[2]}</p>
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                    <p style="text-align: center; color: #666; font-size: 12px;">
+                        {'להפסקת הרישום, לחץ' if reminder_lang == 'he' else
+            'Чтобы отписаться, нажмите' if reminder_lang == 'ru' else
+            'لإلغاء الاشتراك، انقر' if reminder_lang == 'ar' else
+            'To unsubscribe, click'}
+                        <a href="{unsubscribe_url}" style="color: #666;">
+                            {'כאן' if reminder_lang == 'he' else
+            'здесь' if reminder_lang == 'ru' else
+            'هنا' if reminder_lang == 'ar' else
+            'here'}
+                        </a>
+                    </p>
+                    <p style="text-align: center; color: #999; font-size: 12px;">
+                        {test_bodies.get(reminder_lang, test_bodies['en']).split(chr(10))[-2]}<br>
+                        {test_bodies.get(reminder_lang, test_bodies['en']).split(chr(10))[-1]}
+                    </p>
+                </div>
+            </body>
+            </html>
+            """
+
+        msg.attach(MIMEText(html_body, 'html'))
 
         # Send email
         server = smtplib.SMTP(smtp_server, smtp_port)
@@ -188,6 +235,22 @@ Therapeutic Companion Team""",
     except Exception as e:
         # Retry with exponential backoff
         raise self.retry(exc=e, countdown=60 * (2 ** self.request.retries))
+
+
+def generate_unsubscribe_token(user_id, email_type='all'):
+    """Generate unsubscribe token"""
+    # Get JWT settings from environment
+    JWT_SECRET = os.environ.get('SECRET_KEY', 'your-secret-key')
+    JWT_ALGORITHM = 'HS256'
+
+    payload = {
+        'user_id': user_id,
+        'email_type': email_type,
+        'exp': datetime.utcnow() + timedelta(days=30)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
 
 
 @celery.task
@@ -257,7 +320,9 @@ def send_daily_reminders():
                                 'client_id': "Client ID",
                                 'already_completed': "If you've already completed today's check-in, please disregard this message.",
                                 'regards': "Best regards,\nYour Therapy Team",
-                                'title': "Daily Check-in Reminder"
+                                'title': "Daily Check-in Reminder",
+                                'unsubscribe_text': "To unsubscribe, click",  # ADD THIS
+                                'unsubscribe_here': "here"
                             },
                             'he': {
                                 'subject': "תזכורת יומית לצ'ק-אין - מלווה טיפולי",
@@ -269,7 +334,9 @@ def send_daily_reminders():
                                 'client_id': "מספר מטופל",
                                 'already_completed': "אם כבר השלמת את הצ'ק-אין של היום, אנא התעלם מהודעה זו.",
                                 'regards': "בברכה,\nצוות הטיפול שלך",
-                                'title': "תזכורת יומית לצ'ק-אין"
+                                'title': "תזכורת יומית לצ'ק-אין",
+                                'unsubscribe_text': "להפסקת הרישום, לחץ",  # ADD THIS
+                                'unsubscribe_here': "כאן"
                             },
                             'ru': {
                                 'subject': "Ежедневное напоминание об отметке - Терапевтический Компаньон",
@@ -281,7 +348,9 @@ def send_daily_reminders():
                                 'client_id': "ID клиента",
                                 'already_completed': "Если вы уже заполнили сегодняшнюю отметку, пожалуйста, игнорируйте это сообщение.",
                                 'regards': "С наилучшими пожеланиями,\nВаша терапевтическая команда",
-                                'title': "Ежедневное напоминание об отметке"
+                                'title': "Ежедневное напоминание об отметке",
+                                'unsubscribe_text': "Чтобы отписаться, нажмите",  # ADD THIS
+                                 'unsubscribe_here': "здесь"
                             },
                             'ar': {
                                 'subject': "تذكير يومي بتسجيل الحضور - الرفيق العلاجي",
@@ -293,7 +362,9 @@ def send_daily_reminders():
                                 'client_id': "معرف العميل",
                                 'already_completed': "إذا كنت قد أكملت بالفعل تسجيل حضور اليوم، يرجى تجاهل هذه الرسالة.",
                                 'regards': "مع أطيب التحيات،\nفريق العلاج الخاص بك",
-                                'title': "تذكير يومي بتسجيل الحضور"
+                                'title': "تذكير يومي بتسجيل الحضور",
+                                'unsubscribe_text': "لإلغاء الاشتراك، انقر",  # ADD THIS
+                                'unsubscribe_here': "هنا"
                             }
                         }
 
@@ -301,6 +372,11 @@ def send_daily_reminders():
                         trans = translations.get(reminder_lang, translations['en'])
 
                         # Create plain text body
+
+                        unsubscribe_token = generate_unsubscribe_token(client.user.id, 'reminders')
+                        unsubscribe_url = f"{base_url}/api/unsubscribe/{unsubscribe_token}"
+
+
                         body = f"""{trans['greeting']},
 
 {trans['reminder_text']}
@@ -310,7 +386,9 @@ def send_daily_reminders():
 {trans['login_text']}
 {base_url}/login.html
 
-{trans['client_id']}: {client.client_serial}
+{trans['client_id']}: {client.client_name if client.client_name else client.client_serial}
+
+{trans['unsubscribe_text']} {trans['unsubscribe_here']}: {unsubscribe_url}
 
 {trans['already_completed']}
 
@@ -336,7 +414,10 @@ def send_daily_reminders():
                 {trans['button_text']}
             </a>
         </div>
-        <p style="color: #666; font-size: 14px;">{trans['client_id']}: {client.client_serial}</p>
+        <p style="color: #666; font-size: 14px; text-align: center;">
+                    {trans['unsubscribe_text']} <a href="{unsubscribe_url}" style="color: #666;">{trans['unsubscribe_here']}</a>
+                </p>
+        <p style="color: #666; font-size: 14px;">{trans['client_id']}: {client.client_name if client.client_name else client.client_serial}</p>
         <p style="color: #666; font-size: 14px;">
             {trans['already_completed']}
         </p>
@@ -528,8 +609,128 @@ def send_weekly_reports():
             return {'error': str(e)}
 
 
+@celery.task(bind=True, max_retries=3)
+def send_weekly_report_batch_task(self, therapist_id, batch_size=10):
+    """Send weekly report in batches for therapists with many clients"""
+    try:
+        with app.app_context():
+            from models import Therapist, Reminder, Client
+            from datetime import datetime, date, timedelta
+            from email.mime.multipart import MIMEMultipart
+            from email.mime.text import MIMEText
+            from email.mime.base import MIMEBase
+            from email import encoders
+            import smtplib
+            import time
 
+            therapist = Therapist.query.get(therapist_id)
+            if not therapist:
+                return {'error': 'Therapist not found'}
 
+            # Get settings
+            settings = Reminder.query.filter_by(
+                client_id=therapist.id,
+                reminder_type='weekly_report'
+            ).first()
+
+            email = therapist.user.email
+            if settings and settings.reminder_email:
+                email = settings.reminder_email
+
+            # Get ALL active clients
+            active_clients = therapist.clients.filter_by(is_active=True).all()
+            if not active_clients:
+                return {'error': 'No active clients found'}
+
+            # Get current week
+            today = date.today()
+            week_start = today - timedelta(days=today.weekday())
+            week_end = week_start + timedelta(days=6)
+            year = today.year
+            week_num = today.isocalendar()[1]
+
+            lang = settings.reminder_language if settings else 'en'
+            total_sent = 0
+
+            # Process in batches
+            for i in range(0, len(active_clients), batch_size):
+                batch = active_clients[i:i + batch_size]
+                batch_num = (i // batch_size) + 1
+                total_batches = ((len(active_clients) - 1) // batch_size) + 1
+
+                # Create email for this batch
+                msg = MIMEMultipart()
+                msg['From'] = app.config['MAIL_USERNAME']
+                msg['To'] = email
+
+                # Subject with batch info
+                subjects = {
+                    'en': f"Weekly Therapy Report - Week {week_num}, {year} - Part {batch_num} of {total_batches}",
+                    'he': f"דוח טיפולי שבועי - שבוע {week_num}, {year} - חלק {batch_num} מתוך {total_batches}",
+                    'ru': f"Еженедельный отчет - Неделя {week_num}, {year} - Часть {batch_num} из {total_batches}",
+                    'ar': f"التقرير الأسبوعي - الأسبوع {week_num}, {year} - الجزء {batch_num} من {total_batches}"
+                }
+                msg['Subject'] = subjects.get(lang, subjects['en'])
+
+                # Body
+                bodies = {
+                    'en': f"This is part {batch_num} of {total_batches} of your weekly client reports.",
+                    'he': f"זהו חלק {batch_num} מתוך {total_batches} של הדוחות השבועיים שלך.",
+                    'ru': f"Это часть {batch_num} из {total_batches} ваших еженедельных отчетов.",
+                    'ar': f"هذا هو الجزء {batch_num} من {total_batches} من تقاريرك الأسبوعية."
+                }
+                body = bodies.get(lang, bodies['en'])
+                msg.attach(MIMEText(body, 'plain', 'utf-8'))
+
+                # Generate PDFs for this batch
+                attachment_count = 0
+                from new_backend import create_weekly_report_pdf
+
+                for client in batch:
+                    try:
+                        pdf_buffer = create_weekly_report_pdf(
+                            client, therapist, week_start, week_end, week_num, year, lang
+                        )
+
+                        # Attach PDF
+                        pdf_attachment = MIMEBase('application', 'pdf')
+                        pdf_attachment.set_payload(pdf_buffer.read())
+                        pdf_buffer.close()  # Free memory immediately
+
+                        encoders.encode_base64(pdf_attachment)
+                        safe_name = client.client_name.replace(' ', '_').replace('/', '_').replace('\\',
+                                                                                                   '_') if client.client_name else client.client_serial
+                        pdf_attachment.add_header(
+                            'Content-Disposition',
+                            f'attachment; filename=report_{safe_name}_week_{week_num}_{year}.pdf'
+                        )
+                        msg.attach(pdf_attachment)
+                        attachment_count += 1
+
+                    except Exception as e:
+                        app.logger.error(f"Failed to generate PDF for client {client.client_serial}: {e}")
+
+                if attachment_count > 0:
+                    # Send this batch
+                    server = smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT'])
+                    server.starttls()
+                    server.login(app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
+                    server.send_message(msg)
+                    server.quit()
+                    total_sent += attachment_count
+
+                    # Delay between batches to avoid overwhelming email server
+                    if i + batch_size < len(active_clients):
+                        time.sleep(2)
+
+            return {
+                'success': True,
+                'message': f'Reports sent successfully in {total_batches} batches with {total_sent} total reports'
+            }
+
+    except Exception as e:
+        app.logger.error(f"Weekly report batch task failed: {str(e)}")
+        raise self.retry(exc=e, countdown=60)
 
 
 @celery.task(bind=True, max_retries=3)

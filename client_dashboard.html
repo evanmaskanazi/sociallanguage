@@ -1062,6 +1062,29 @@
         </div>
     </div>
 
+
+        <div class="card" style="margin-top: 2rem;">
+    <h3 data-i18n="client.account_deletion">Account Deletion</h3>
+    <p style="color: #666; margin-bottom: 1rem;" data-i18n="client.deletion_desc">
+        Request deletion of your account and all associated data
+    </p>
+
+    <div style="background: #fff3cd; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+        <p style="color: #856404; margin: 0;" data-i18n="client.deletion_warning">
+            ⚠️ This action cannot be undone. All your data will be permanently deleted after approval by your therapist.
+        </p>
+    </div>
+
+    <button class="btn btn-secondary" onclick="requestAccountDeletion()" style="background: #dc3545; color: white;">
+        <span data-i18n="client.request_deletion">Request Account Deletion</span>
+    </button>
+</div>
+
+
+
+
+
+
     <!-- Consent Management Tab -->
     <div id="consent" class="tab-content">
         <h2 data-i18n="client.consent_management">Consent Management</h2>
@@ -1193,6 +1216,14 @@
                 'client.select_client_week': 'Please select a week',
                 'client.report_generated': 'Report generated and downloaded successfully!',
                 'client.error_progress': 'Error loading progress data',
+                'client.account_deletion': 'Account Deletion',
+'client.deletion_desc': 'Request deletion of your account and all associated data',
+'client.deletion_warning': '⚠️ This action cannot be undone. All your data will be permanently deleted after approval by your therapist.',
+'client.request_deletion': 'Request Account Deletion',
+'client.confirm_deletion': 'Are you sure you want to request account deletion? This will notify your therapist.',
+'client.confirm_deletion_final': 'This is your final confirmation. Your therapist will be notified and will need to approve the deletion. Continue?',
+'client.deletion_requested': 'Deletion request submitted. Your therapist will be notified.',
+'client.error_deletion_request': 'Error submitting deletion request:',
                 'checkin.title': 'Daily Check-in',
                 'checkin.medication': 'Did you take your medication as prescribed?',
                 'checkin.med_na': 'N/A',
@@ -1289,6 +1320,14 @@
                 'client.prepare_email': 'הכן דוח דוא״ל',
                 'client.report_status': 'סטטוס דוח',
                 'client.no_checkin': 'אין צ׳ק-אין',
+                'client.account_deletion': 'מחיקת חשבון',
+'client.deletion_desc': 'בקש מחיקת החשבון שלך וכל הנתונים הקשורים',
+'client.deletion_warning': '⚠️ פעולה זו אינה ניתנת לביטול. כל הנתונים שלך יימחקו לצמיתות לאחר אישור המטפל שלך.',
+'client.request_deletion': 'בקש מחיקת חשבון',
+'client.confirm_deletion': 'האם אתה בטוח שברצונך לבקש מחיקת חשבון? המטפל שלך יקבל הודעה על כך.',
+'client.confirm_deletion_final': 'זהו האישור הסופי שלך. המטפל שלך יקבל הודעה ויצטרך לאשר את המחיקה. להמשיך?',
+'client.deletion_requested': 'בקשת המחיקה נשלחה. המטפל שלך יקבל הודעה.',
+'client.error_deletion_request': 'שגיאה בשליחת בקשת מחיקה:',
                     'client.password_complexity': 'הסיסמה חייבת להכיל אותיות גדולות, אותיות קטנות, מספר ותו מיוחד.',
                 'client.today_marker': '(היום)',
                 'client.past_date': '(תאריך עבר)',
@@ -1424,6 +1463,14 @@
                 'client.select_client_week': 'Пожалуйста, выберите неделю',
                 'client.report_generated': 'Отчет создан и загружен успешно!',
                 'client.error_progress': 'Ошибка загрузки данных прогресса',
+                'client.account_deletion': 'Удаление аккаунта',
+'client.deletion_desc': 'Запросить удаление вашего аккаунта и всех связанных данных',
+'client.deletion_warning': '⚠️ Это действие нельзя отменить. Все ваши данные будут удалены навсегда после одобрения вашим терапевтом.',
+'client.request_deletion': 'Запросить удаление аккаунта',
+'client.confirm_deletion': 'Вы уверены, что хотите запросить удаление аккаунта? Ваш терапевт будет уведомлен.',
+'client.confirm_deletion_final': 'Это ваше окончательное подтверждение. Ваш терапевт будет уведомлен и должен будет одобрить удаление. Продолжить?',
+'client.deletion_requested': 'Запрос на удаление отправлен. Ваш терапевт будет уведомлен.',
+'client.error_deletion_request': 'Ошибка при отправке запроса на удаление:',
                 'checkin.title': 'Ежедневная отметка',
                 'checkin.medication': 'Вы принимали лекарства согласно предписанию?',
                 'checkin.med_na': 'Н/Д',
@@ -1540,6 +1587,14 @@
                 'client.report_generated': 'تم إنشاء التقرير وتنزيله بنجاح!',
                 'client.error_progress': 'خطأ في تحميل بيانات التقدم',
                 'checkin.title': 'تسجيل الحضور اليومي',
+                'client.account_deletion': 'حذف الحساب',
+'client.deletion_desc': 'طلب حذف حسابك وجميع البيانات المرتبطة',
+'client.deletion_warning': '⚠️ لا يمكن التراجع عن هذا الإجراء. سيتم حذف جميع بياناتك نهائياً بعد موافقة معالجك.',
+'client.request_deletion': 'طلب حذف الحساب',
+'client.confirm_deletion': 'هل أنت متأكد من أنك تريد طلب حذف الحساب؟ سيتم إخطار معالجك.',
+'client.confirm_deletion_final': 'هذا هو تأكيدك النهائي. سيتم إخطار معالجك وسيحتاج إلى الموافقة على الحذف. هل تريد المتابعة؟',
+'client.deletion_requested': 'تم إرسال طلب الحذف. سيتم إخطار معالجك.',
+'client.error_deletion_request': 'خطأ في إرسال طلب الحذف:',
                 'checkin.medication': 'هل تناولت الأدوية كما وصفت لك؟',
                 'checkin.med_na': 'غير متاح',
                 'checkin.med_no': 'لا',
@@ -2308,6 +2363,17 @@ dayCell.appendChild(statusIconDiv);
 
                 showMessage(getRandomPositiveMessage(), 'success', 10000, true);
 
+// Scroll to the message container smoothly
+setTimeout(() => {
+    const messageContainer = document.getElementById('messageContainer');
+    if (messageContainer) {
+        messageContainer.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }
+}, 100);
+
 // Update the streak display immediately
 setTimeout(() => {
 loadDashboard();
@@ -2319,7 +2385,7 @@ loadDashboard();
             streakP.textContent = `${i18n.t('dashboard.streak')}: 1 ${i18n.t('days')}`;
         }
     }
-}, 100);
+}, 200);
 
 
 
@@ -2950,16 +3016,41 @@ credentials: 'include'
     }
 }
 
-        function toggleReminder() {
-            const enabled = document.getElementById('enableReminder').checked;
-            document.getElementById('reminderTimeSection').style.display = enabled ? 'block' : 'none';
-            document.getElementById('reminderStatus').style.display = 'none';
-            document.getElementById('queueStatus').style.display = enabled ? 'block' : 'none';
 
-            if (enabled) {
+document.addEventListener('DOMContentLoaded', function() {
+    const reminderCheckbox = document.getElementById('enableReminder');
+    if (reminderCheckbox) {
+        reminderCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+
+            if (!isChecked) {
+                // When unchecking, immediately save the disabled state
+                saveDisabledReminder();
+            } else {
+                // When checking, show the time section but don't save yet
+                document.getElementById('reminderTimeSection').style.display = 'block';
+                document.getElementById('queueStatus').style.display = 'block';
                 checkQueueStatus();
             }
-        }
+        });
+    }
+});
+
+
+
+        function toggleReminder() {
+    const enabled = document.getElementById('enableReminder').checked;
+    document.getElementById('reminderTimeSection').style.display = enabled ? 'block' : 'none';
+    document.getElementById('reminderStatus').style.display = 'none';
+    document.getElementById('queueStatus').style.display = enabled ? 'block' : 'none';
+
+    if (enabled) {
+        checkQueueStatus();
+    } else {
+        // Auto-save when unchecking
+        saveDisabledReminder();
+    }
+}
 
         async function saveReminderSettings() {
     const enabled = document.getElementById('enableReminder').checked;
@@ -3019,21 +3110,22 @@ const isDST = currentMonth >= 2 && currentMonth <= 9; // March (2) to October (9
 
     try {
         const response = await fetch('/api/client/update-reminder', {
-            method: 'POST',
-            headers: {
-    'Content-Type': 'application/json',
-    'Accept-Language': i18n.currentLang
+    method: 'POST',
+    headers: {
+'Content-Type': 'application/json',
+'Accept-Language': i18n.currentLang
 },
 credentials: 'include',
-            body: JSON.stringify({
-                type: 'daily_checkin',
-                time: time || '09:00',
-                is_active: enabled,
-                email: email || undefined,
-                timezone_offset: tzOffset,  // Send the validated offset
-                language: i18n.currentLang
-            })
-        });
+    body: JSON.stringify({
+        type: 'daily_checkin',
+        time: time || '09:00',
+        is_active: enabled,
+        email: email || undefined,
+        timezone_offset: tzOffset,  // Send the validated offset
+        language: i18n.currentLang,
+        client_name: clientData && clientData.client_name ? clientData.client_name : null
+    })
+});
 
         if (response.ok) {
             console.log('Reminder saved successfully');
@@ -3045,14 +3137,7 @@ credentials: 'include',
             // After save, immediately check what was saved
             await loadReminderSettings();
 
-            document.getElementById('enableReminder').addEventListener('change', function() {
-        const isChecked = this.checked;
 
-        if (!isChecked) {
-            // When unchecking, immediately save the disabled state
-            saveDisabledReminder();
-        }
-    });
 
 
             console.log('Reloaded settings, time is now:', document.getElementById('reminderTime').value);
@@ -3087,21 +3172,22 @@ async function saveDisabledReminder() {
 
     try {
         const response = await fetch('/api/client/update-reminder', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept-Language': i18n.currentLang
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-                type: 'daily_checkin',
-                time: time,
-                is_active: false,  // Explicitly set to false
-                email: email || undefined,
-                timezone_offset: tzOffset,
-                language: i18n.currentLang
-            })
-        });
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept-Language': i18n.currentLang
+    },
+    credentials: 'include',
+    body: JSON.stringify({
+        type: 'daily_checkin',
+        time: time,
+        is_active: false,  // Explicitly set to false
+        email: email || undefined,
+        timezone_offset: tzOffset,
+        language: i18n.currentLang,
+        client_name: clientData && clientData.client_name ? clientData.client_name : null
+    })
+});
 
         if (response.ok) {
             console.log('Reminder disabled successfully');
@@ -3283,6 +3369,45 @@ const response = await fetch('/api/client/change-password', {
                 showMessage(i18n.t('client.error_changing_password') + ' ' + error.message, 'error');
             }
         }
+
+
+
+async function requestAccountDeletion() {
+    const confirmMsg = i18n.t('client.confirm_deletion');
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+
+    const secondConfirm = i18n.t('client.confirm_deletion_final');
+    if (!confirm(secondConfirm)) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/client/request-deletion', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept-Language': i18n.currentLang
+            },
+            credentials: 'include'
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            showMessage(i18n.t('client.deletion_requested'), 'success');
+        } else {
+            showMessage(result.error || i18n.t('msg.error'), 'error');
+        }
+    } catch (error) {
+        showMessage(i18n.t('client.error_deletion_request') + ' ' + error.message, 'error');
+    }
+}
+
+
+
+
     function updateUTCDisplay() {
     const timeInput = document.getElementById('reminderTime');
     const displaySpan = document.getElementById('utcTimeDisplay');
@@ -3322,22 +3447,24 @@ const response = await fetch('/api/client/change-password', {
             }
         });
          async function testReminder() {
-            try {
+    try {
 
-                const clientId = clientData && clientData.id ? clientData.id : null;
-                const response = await fetch('/api/client/test-reminder', {
-                    method: 'POST',
-                    headers: {
-    'Content-Type': 'application/json',
-    'Accept-Language': i18n.currentLang,
-    'X-CSRF-Token': await getCSRFToken()
+        const clientId = clientData && clientData.id ? clientData.id : null;
+        const clientName = clientData && clientData.client_name ? clientData.client_name : null;
+        const response = await fetch('/api/client/test-reminder', {
+            method: 'POST',
+            headers: {
+'Content-Type': 'application/json',
+'Accept-Language': i18n.currentLang,
+'X-CSRF-Token': await getCSRFToken()
 },
 credentials: 'include',  // Add this
 
-                     body: JSON.stringify({
-                     client_id: clientId
-                     })
-                });
+                 body: JSON.stringify({
+                 client_id: clientId,
+                 client_name: clientName
+                 })
+        });
 
                 if (response.ok) {
                     showMessage(i18n.t('client.test_sent'), 'success');

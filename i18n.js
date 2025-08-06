@@ -371,6 +371,7 @@ translations: {
         'therapist.mission': 'MISSION',
         'therapist.no_notes': 'No notes yet',
 
+
          // English
         'email.dear_therapist': 'Dear Therapist',
         'email.weekly_report_intro': 'Here is my weekly progress report for',
@@ -378,6 +379,8 @@ translations: {
         'email.best_regards': 'Best regards',
         'nav.daily_checkin': 'Daily Check-in',
         'nav.consent': 'Consent',
+        'email.unsubscribe_text': 'To unsubscribe, click',
+        'email.unsubscribe_here': 'here',
 
 
 
@@ -781,6 +784,8 @@ translations: {
         'client.generate_pdf': 'צור דוח PDF',
         'nav.daily_checkin': 'צ׳ק-אין יומי',
         'nav.consent': 'הסכמה',
+        'email.unsubscribe_text': 'להפסקת הרישום, לחץ',
+        'email.unsubscribe_here': 'כאן',
 
         // Index page
         'hero.subtitle': 'מערכת ליווי טיפולית מקיפה למטפלים ומטופלים',
@@ -950,6 +955,8 @@ translations: {
         'checkin.med_no': 'Нет',
         'checkin.med_partial': 'Частично',
         'checkin.med_na': 'Не применимо',
+        'email.unsubscribe_text': 'Чтобы отписаться, нажмите',
+        'email.unsubscribe_here': 'здесь',
 
 
 
@@ -1219,6 +1226,8 @@ translations: {
     'checkin.med_na': 'غير متاح',
     'therapist.generate_pdf': 'إنشاء تقرير PDF',
     'client.generate_pdf': 'إنشاء تقرير PDF',
+    'email.unsubscribe_text': 'لإلغاء الاشتراك، انقر',
+'email.unsubscribe_here': 'هنا',
 
 
     // Goals

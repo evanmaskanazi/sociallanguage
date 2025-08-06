@@ -149,6 +149,113 @@ else:
     ENCRYPTION_KEY = os.environ.get('FIELD_ENCRYPTION_KEY')
 
 
+class CacheManager:
+    """Centralized cache management with namespace support"""
+
+    def __init__(self, redis_client, default_ttl=3600):
+        self.redis = redis_client
+        self.default_ttl = default_ttl
+
+    def _make_key(self, namespace, key):
+        """Create namespaced cache key"""
+        return f"{namespace}:{key}"
+
+    def get(self, namespace, key):
+        """Get value from cache"""
+        if not self.redis:
+            return None
+        try:
+            data = self.redis.get(self._make_key(namespace, key))
+            if data:
+                return json.loads(data)
+        except Exception as e:
+            logger.error(f"Cache get error: {e}")
+        return None
+
+    def set(self, namespace, key, value, ttl=None):
+        """Set value in cache"""
+        if not self.redis:
+            return False
+        try:
+            self.redis.setex(
+                self._make_key(namespace, key),
+                ttl or self.default_ttl,
+                json.dumps(value)
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Cache set error: {e}")
+        return False
+
+    def delete(self, namespace, key):
+        """Delete from cache"""
+        if not self.redis:
+            return
+        try:
+            self.redis.delete(self._make_key(namespace, key))
+        except Exception as e:
+            logger.error(f"Cache delete error: {e}")
+
+    def invalidate_pattern(self, pattern):
+        """Invalidate all keys matching pattern"""
+        if not self.redis:
+            return
+        try:
+            keys = self.redis.keys(pattern)
+            if keys:
+                self.redis.delete(*keys)
+        except Exception as e:
+            logger.error(f"Cache invalidate error: {e}")
+
+    # Initialize cache manager
+
+
+cache = CacheManager(redis_client)
+
+
+def cached_endpoint(namespace, ttl=3600, key_func=None):
+    """Decorator for caching endpoint responses"""
+
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # Generate cache key
+            if key_func:
+                cache_key = key_func(*args, **kwargs)
+            else:
+                # Default key from args
+                cache_key = f"{f.__name__}:{str(args)}:{str(kwargs)}"
+
+            # Try cache first
+            cached_data = cache.get(namespace, cache_key)
+            if cached_data:
+                return jsonify(cached_data)
+
+            # Call original function
+            result = f(*args, **kwargs)
+
+            # Cache the result if it's a success response
+            if isinstance(result, tuple) and result[1] == 200:
+                response_data = result[0].get_json()
+                cache.set(namespace, cache_key, response_data, ttl)
+            elif hasattr(result, 'status_code') and result.status_code == 200:
+                response_data = result.get_json()
+                cache.set(namespace, cache_key, response_data, ttl)
+
+            return result
+
+        return decorated_function
+
+    return decorator
+
+
+
+
+
+
+
+
+
 def sanitize_input(text, allow_html=False):
     """Sanitize user input to prevent XSS"""
     if not text:
@@ -480,6 +587,226 @@ migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
 CORS(app, supports_credentials=True)
 
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+bcrypt = Bcrypt(app)
+CORS(app, supports_credentials=True)
+
+# Elasticsearch configuration
+from elasticsearch import Elasticsearch
+import elasticsearch.helpers
+
+
+class SearchManager:
+    """Manage Elasticsearch operations"""
+
+    def __init__(self):
+        self.es = None
+        es_url = os.environ.get('ELASTICSEARCH_URL', 'http://localhost:9200')
+        if es_url:
+            try:
+                self.es = Elasticsearch([es_url], timeout=30, max_retries=3)
+                if self.es.ping():
+                    logger.info("Elasticsearch connected successfully")
+                    self._create_indices()
+                else:
+                    logger.warning("Elasticsearch ping failed")
+                    self.es = None
+            except Exception as e:
+                logger.error(f"Elasticsearch connection failed: {e}")
+                self.es = None
+
+    def _create_indices(self):
+        """Create indices if they don't exist"""
+        indices = {
+            'clients': {
+                'mappings': {
+                    'properties': {
+                        'client_id': {'type': 'integer'},
+                        'client_serial': {'type': 'keyword'},
+                        'client_name': {'type': 'text'},
+                        'therapist_id': {'type': 'integer'},
+                        'start_date': {'type': 'date'},
+                        'is_active': {'type': 'boolean'},
+                        'last_checkin': {'type': 'date'},
+                        'checkin_count': {'type': 'integer'},
+                        'avg_emotional': {'type': 'float'},
+                        'avg_medication': {'type': 'float'},
+                        'tags': {'type': 'keyword'},
+                        'suggest': {
+                            'type': 'completion',
+                            'contexts': [{'name': 'therapist_id', 'type': 'category'}]
+                        }
+                    }
+                }
+            },
+            'checkins': {
+                'mappings': {
+                    'properties': {
+                        'client_id': {'type': 'integer'},
+                        'checkin_date': {'type': 'date'},
+                        'emotional_value': {'type': 'integer'},
+                        'medication_value': {'type': 'integer'},
+                        'activity_value': {'type': 'integer'},
+                        'categories': {'type': 'nested'},
+                        'notes_sentiment': {'type': 'float'}
+                    }
+                }
+            }
+        }
+
+        for index_name, index_config in indices.items():
+            if not self.es.indices.exists(index=index_name):
+                self.es.indices.create(index=index_name, body=index_config)
+                logger.info(f"Created Elasticsearch index: {index_name}")
+
+    def index_client(self, client, checkin_stats=None):
+        """Index or update client in Elasticsearch"""
+        if not self.es:
+            return
+
+        try:
+            doc = {
+                'client_id': client.id,
+                'client_serial': client.client_serial,
+                'client_name': client.client_name or client.client_serial,
+                'therapist_id': client.therapist_id,
+                'start_date': client.start_date.isoformat(),
+                'is_active': client.is_active,
+                'suggest': {
+                    'input': [client.client_serial, client.client_name] if client.client_name else [
+                        client.client_serial],
+                    'contexts': {'therapist_id': str(client.therapist_id)}
+                }
+            }
+
+            if checkin_stats:
+                doc.update(checkin_stats)
+
+            self.es.index(
+                index='clients',
+                id=client.id,
+                body=doc,
+                refresh=True
+            )
+        except Exception as e:
+            logger.error(f"Error indexing client {client.id}: {e}")
+
+    def search_clients(self, therapist_id, query, filters=None):
+        """Search clients with autocomplete"""
+        if not self.es:
+            return []
+
+        try:
+            # Build search query
+            search_body = {
+                'query': {
+                    'bool': {
+                        'must': [
+                            {'term': {'therapist_id': therapist_id}}
+                        ],
+                        'should': [
+                            {'match': {'client_name': {'query': query, 'boost': 2}}},
+                            {'prefix': {'client_serial': {'value': query.upper()}}},
+                            {'match': {'tags': query}}
+                        ],
+                        'minimum_should_match': 1
+                    }
+                },
+                'suggest': {
+                    'client_suggest': {
+                        'prefix': query,
+                        'completion': {
+                            'field': 'suggest',
+                            'contexts': {'therapist_id': str(therapist_id)},
+                            'size': 10
+                        }
+                    }
+                },
+                'size': 20
+            }
+
+            # Add filters if provided
+            if filters:
+                if 'is_active' in filters:
+                    search_body['query']['bool']['must'].append(
+                        {'term': {'is_active': filters['is_active']}}
+                    )
+                if 'date_range' in filters:
+                    search_body['query']['bool']['must'].append({
+                        'range': {
+                            'last_checkin': {
+                                'gte': filters['date_range']['from'],
+                                'lte': filters['date_range']['to']
+                            }
+                        }
+                    })
+
+            result = self.es.search(index='clients', body=search_body)
+
+            # Combine search hits and suggestions
+            clients = []
+            for hit in result['hits']['hits']:
+                clients.append(hit['_source'])
+
+            return clients
+
+        except Exception as e:
+            logger.error(f"Error searching clients: {e}")
+            return []
+
+    def get_analytics(self, therapist_id, date_range):
+        """Get aggregated analytics"""
+        if not self.es:
+            return {}
+
+        try:
+            aggs_body = {
+                'query': {
+                    'bool': {
+                        'must': [
+                            {'term': {'therapist_id': therapist_id}},
+                            {'range': {'checkin_date': {
+                                'gte': date_range['from'],
+                                'lte': date_range['to']
+                            }}}
+                        ]
+                    }
+                },
+                'aggs': {
+                    'avg_emotional': {'avg': {'field': 'emotional_value'}},
+                    'avg_medication': {'avg': {'field': 'medication_value'}},
+                    'checkins_over_time': {
+                        'date_histogram': {
+                            'field': 'checkin_date',
+                            'calendar_interval': 'day'
+                        }
+                    },
+                    'client_activity': {
+                        'terms': {
+                            'field': 'client_id',
+                            'size': 100
+                        }
+                    }
+                }
+            }
+
+            result = self.es.search(index='checkins', body=aggs_body, size=0)
+            return result['aggregations']
+
+        except Exception as e:
+            logger.error(f"Error getting analytics: {e}")
+            return {}
+
+
+# Initialize search manager
+search_manager = SearchManager()
+
+
+
+
+
+
 
 @app.before_request
 def before_request():
@@ -534,6 +861,12 @@ def after_request(response):
     # Add request ID to response headers
     if hasattr(g, 'request_id'):
         response.headers['X-Request-ID'] = g.request_id
+
+    if request.method == 'GET':
+        if request.path.startswith('/api/categories') or request.path.startswith('/api/tracking-categories'):
+            response.headers['Cache-Control'] = 'public, max-age=3600'  # 1 hour
+        elif request.path.endswith('.js') or request.path.endswith('.css'):
+            response.headers['Cache-Control'] = 'public, max-age=86400'  # 24 hours
 
     return response
 
@@ -1072,6 +1405,21 @@ class SessionToken(db.Model):
     token = db.Column(db.String(255), unique=True, nullable=False)
     expires_at = db.Column(db.DateTime, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+def cleanup_expired_sessions():
+    """Clean up expired session tokens"""
+    try:
+        expired_count = SessionToken.query.filter(
+            SessionToken.expires_at < datetime.utcnow()
+        ).delete()
+        db.session.commit()
+        if expired_count > 0:
+            logger.info(f"Cleaned up {expired_count} expired sessions")
+    except Exception as e:
+        logger.error(f"Error cleaning up sessions: {e}")
+        db.session.rollback()
+
 
 
 class AuditLog(db.Model):
@@ -1803,8 +2151,19 @@ def translate_day_name(day_index, lang='en'):
     return days[day_index] if 0 <= day_index < 7 else ''
 
 
+_categories_cache = None
+_categories_cache_time = None
+
+
 def ensure_default_categories():
     """Ensure all default tracking categories exist in the database"""
+    global _categories_cache, _categories_cache_time
+
+    # Return cached categories if fresh (less than 5 minutes old)
+    if _categories_cache and _categories_cache_time:
+        if (datetime.utcnow() - _categories_cache_time).seconds < 300:
+            return _categories_cache
+
     default_categories = [
         ('Emotion Level', 'Overall emotional state', True),
         ('Energy', 'Physical and mental energy levels', True),
@@ -1834,7 +2193,10 @@ def ensure_default_categories():
         db.session.commit()
         print(f"Added {categories_added} missing categories")
 
-    return TrackingCategory.query.all()
+        # Cache the results
+    _categories_cache = TrackingCategory.query.all()
+    _categories_cache_time = datetime.utcnow()
+    return _categories_cache
 
 
 def fix_existing_clients():
@@ -2703,6 +3065,74 @@ def get_therapist_clients():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/therapist/search-clients', methods=['GET'])
+@require_auth(['therapist'])
+@cached_endpoint('client_search', ttl=60,
+                 key_func=lambda: f"{request.current_user.therapist.id}:{request.args.get('q', '')}")
+def search_therapist_clients():
+    """Search clients with Elasticsearch"""
+    try:
+        therapist = request.current_user.therapist
+        query = request.args.get('q', '').strip()
+
+        if len(query) < 2:
+            return jsonify({'error': 'Query must be at least 2 characters'}), 400
+
+        # Search filters
+        filters = {}
+        if request.args.get('active_only') == 'true':
+            filters['is_active'] = True
+
+        # Use Elasticsearch if available
+        if search_manager.es:
+            results = search_manager.search_clients(therapist.id, query, filters)
+            return jsonify({
+                'success': True,
+                'results': results,
+                'source': 'elasticsearch'
+            })
+
+        # Fallback to database search
+        clients_query = therapist.clients
+
+        # Apply search
+        search_filter = or_(
+            Client.client_serial.ilike(f'%{query}%'),
+            Client.client_name.ilike(f'%{query}%')
+        )
+        clients_query = clients_query.filter(search_filter)
+
+        # Apply filters
+        if request.args.get('active_only') == 'true':
+            clients_query = clients_query.filter_by(is_active=True)
+
+        # Get results
+        clients = clients_query.limit(20).all()
+
+        results = []
+        for client in clients:
+            results.append({
+                'client_id': client.id,
+                'client_serial': client.client_serial,
+                'client_name': client.client_name or client.client_serial,
+                'is_active': client.is_active,
+                'start_date': client.start_date.isoformat()
+            })
+
+        return jsonify({
+            'success': True,
+            'results': results,
+            'source': 'database'
+        })
+
+    except Exception as e:
+        logger.error(f"Search error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+
+
+
 @app.route('/api/therapist/client/<int:client_id>', methods=['GET'])
 @require_auth(['therapist'])
 def get_client_details(client_id):
@@ -3215,6 +3645,9 @@ def get_system_stats():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+
 
 
 # ============= CLIENT REPORT ENDPOINTS =============
@@ -5600,6 +6033,46 @@ def test_weekly_report():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/therapist/test-weekly-report-batch', methods=['POST'])
+@require_auth(['therapist'])
+def test_weekly_report_batch():
+    """Send weekly report in batches for therapists with many clients"""
+    try:
+        therapist = request.current_user.therapist
+        data = request.json
+        batch_size = data.get('batch_size', 10)
+
+        # Validate batch size
+        if batch_size < 1 or batch_size > 50:
+            batch_size = 10
+
+        # Check if Celery is available
+        if not celery:
+            return jsonify({'error': 'Background task system not available'}), 503
+
+        # Check client count
+        client_count = therapist.clients.filter_by(is_active=True).count()
+
+        # Use batch task if more than 15 clients, otherwise use regular task
+        if client_count > 15:
+            from celery_app import send_weekly_report_batch_task
+            task = send_weekly_report_batch_task.delay(therapist.id, batch_size)
+        else:
+            from celery_app import send_weekly_report_task
+            task = send_weekly_report_task.delay(therapist.id)
+
+        return jsonify({
+            'success': True,
+            'task_id': task.id,
+            'message': f'Report generation started for {client_count} clients.',
+            'batch_mode': client_count > 15
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
 
 
 
@@ -6403,6 +6876,18 @@ def create_client():
                         db.session.add(custom_category)
                         custom_categories_created += 1
 
+        if search_manager.es:
+            checkin_stats = {
+                'last_checkin': None,
+                'checkin_count': 0,
+                'avg_emotional': 0,
+                'avg_medication': 0
+            }
+            search_manager.index_client(client, checkin_stats)
+
+
+
+
         db.session.commit()
 
                 # Final verification
@@ -6874,71 +7359,117 @@ def add_custom_categories_to_existing_client(client_id):
 
 @app.route('/api/client/dashboard', methods=['GET'])
 @require_auth(['client'])
+@cached_endpoint('client_dashboard', ttl=300, key_func=lambda: f"{request.current_user.id}:{get_language_from_header()}")
 def client_dashboard():
     """Get client dashboard data with translated category names"""
     try:
         client = request.current_user.client
         lang = get_language_from_header()
 
+        categories_cache_key = f"categories:{client.id}:{lang}"  # NEW LINE
+        tracking_categories = cache.get('client_categories', categories_cache_key)
+
         # Get today's check-in status
         today_checkin = client.checkins.filter_by(checkin_date=date.today()).first()
 
         # Get active tracking categories with translations
         # Get active tracking categories with translations
-        tracking_categories = []
+        if not tracking_categories:  # NEW LINE
+            # Build tracking categories (rest of existing code continues...)  # NEW COMMENT
+            tracking_categories = []  # INDENTED
+
+            # Batch load all today's responses for efficiency           # NEW SECTION START
+            today_responses = {}
+            if client.tracking_plans.count() > 0:
+                responses = CategoryResponse.query.filter(
+                    CategoryResponse.client_id == client.id,
+                    CategoryResponse.response_date == date.today()
+                ).all()
+
+                for resp in responses:
+                    if resp.category_id:
+                        today_responses[resp.category_id] = resp
+                    elif resp.custom_category_id:
+                        today_responses[f'custom_{resp.custom_category_id}'] = resp
+                        # NEW SECTION END
+
+
+
+
+
+
+
+
+
+
+
 
         # First, get all default categories
-        for plan in client.tracking_plans.filter_by(is_active=True):
-            if plan.category_id:  # Default category
+            for plan in client.tracking_plans.filter_by(is_active=True):
+                if plan.category_id:  # Default category
+                    # Get today's response
+                    today_response = today_responses.get(plan.category_id)
+
+                    # Translate category name and description
+                    translated_name = translate_category_name(plan.category.name, lang)
+
+                    tracking_categories.append({
+                        'id': plan.category_id,
+                        'name': translated_name,
+                        'original_name': plan.category.name,
+                        'description': translate_category_name(plan.category.name + '_desc', lang),
+                        'today_value': today_response.value if today_response else None,
+                        'is_custom': False
+                    })
+
+            # Then, get all custom categories for this client
+            custom_categories = CustomCategory.query.filter_by(
+                client_id=client.id,
+                is_active=True
+            ).all()
+
+            for custom_cat in custom_categories:
                 # Get today's response
-                today_response = CategoryResponse.query.filter_by(
-                    client_id=client.id,
-                    category_id=plan.category_id,
-                    response_date=date.today()
-                ).first()
+                try:
+                    # Get today's response
+                    today_response = today_responses.get(f'custom_{custom_cat.id}')
 
-                # Translate category name and description
-                translated_name = translate_category_name(plan.category.name, lang)
+                    tracking_categories.append({
+                        'id': f'custom_{custom_cat.id}',
+                        'name': custom_cat.name,
+                        'original_name': custom_cat.name,
+                        'description': custom_cat.description or '',
+                        'today_value': today_response.value if today_response else None,
+                        'is_custom': True,
+                        'reverse_scoring': custom_cat.reverse_scoring
+                    })
+                except Exception as e:
+                    logger.error(f"Error loading custom category {custom_cat.id}: {e}")
+                    continue
 
-                tracking_categories.append({
-                    'id': plan.category_id,
-                    'name': translated_name,
-                    'original_name': plan.category.name,
-                    'description': translate_category_name(plan.category.name + '_desc', lang),
-                    'today_value': today_response.value if today_response else None,
-                    'is_custom': False
-                })
+            cache.set('client_categories', categories_cache_key, tracking_categories, ttl=1800)
 
-        # Then, get all custom categories for this client
-        custom_categories = CustomCategory.query.filter_by(
-            client_id=client.id,
-            is_active=True
-        ).all()
+        else:  # <-- ONLY THIS SECTION IS IN THE ELSE
+            # Update today's values from fresh data for cached categories
+            responses = CategoryResponse.query.filter(
+                CategoryResponse.client_id == client.id,
+                CategoryResponse.response_date == date.today()
+            ).all()
 
-        for custom_cat in custom_categories:
-            # Get today's response
-            try:
-                # Get today's response
-                today_response = CategoryResponse.query.filter_by(
-                    client_id=client.id,
-                    custom_category_id=custom_cat.id,
-                    response_date=date.today()
-                ).first()
+            today_values = {}
+            for resp in responses:
+                if resp.category_id:
+                    today_values[resp.category_id] = resp.value
+                elif resp.custom_category_id:
+                    today_values[f'custom_{resp.custom_category_id}'] = resp.value
 
-                tracking_categories.append({
-                    'id': f'custom_{custom_cat.id}',
-                    'name': custom_cat.name,
-                    'original_name': custom_cat.name,
-                    'description': custom_cat.description or '',
-                    'today_value': today_response.value if today_response else None,
-                    'is_custom': True,
-                    'reverse_scoring': custom_cat.reverse_scoring
-                })
-            except Exception as e:
-                logger.error(f"Error loading custom category {custom_cat.id}: {e}")
-                continue
+            # Update cached categories with today's values
+            for cat in tracking_categories:
+                cat_id = cat['id']
+                cat['today_value'] = today_values.get(cat_id)
 
-        # Get this week's check-ins count
+
+            # Get this week's check-ins count
         week_start = date.today() - timedelta(days=date.today().weekday())
         week_end = week_start + timedelta(days=6)
         week_checkins = client.checkins.filter(
@@ -6958,8 +7489,7 @@ def client_dashboard():
                 break
 
 
-        # Get this week's goals
-        week_start = date.today() - timedelta(days=date.today().weekday())
+
         weekly_goals = []
         for goal in client.goals.filter_by(
                 week_start=week_start,
@@ -7325,6 +7855,10 @@ def submit_checkin():
                 db.session.add(completion)
             goals_updated += 1
 
+        cache.delete('client_dashboard', f"{request.current_user.id}:{get_language_from_header()}")
+        cache.invalidate_pattern(f"client_categories:{client.id}:*")
+
+
         db.session.commit()
 
         log_audit(
@@ -7428,10 +7962,6 @@ def submit_checkin():
             except Exception as e:
                 logger.error(f"Failed to queue completion email: {e}")
 
-
-
-
-
         logger.info('checkin_success', extra={
             'extra_data': {
                 'client_id': client.id,
@@ -7440,7 +7970,6 @@ def submit_checkin():
                 'is_update': is_update,
                 'categories_tracked': len(responses_logged),
                 'goals_updated': goals_updated,
-                'responses': responses_logged,
                 'request_id': g.request_id
             },
             'request_id': g.request_id,
@@ -9367,16 +9896,18 @@ def send_single_reminder_email_sync(client):
 
         subject = "Daily Check-in Reminder - Therapeutic Companion"
 
+        client_name = client.client_name if client.client_name else client.client_serial
+
         body = f"""Hello,
 
-This is your daily reminder to complete your therapy check-in.
+        This is your daily reminder to complete your therapy check-in.
 
-Your therapist is tracking your progress, and your daily input is valuable for your treatment.
+        Your therapist is tracking your progress, and your daily input is valuable for your treatment.
 
-Click here to log in and complete today's check-in:
-{base_url}/login.html
+        Click here to log in and complete today's check-in:
+        {base_url}/login.html
 
-Client ID: {sanitize_input(client.client_serial)}
+        Client ID: {sanitize_input(client_name)}
 
 If you've already completed today's check-in, please disregard this message.
 
@@ -9399,7 +9930,7 @@ Your Therapy Team"""
                         Complete Today's Check-in
                     </a>
                 </div>
-                <p style="color: #666; font-size: 14px;">Client ID: {sanitize_input(client.client_serial)}</p>
+                <p style="color: #666; font-size: 14px;">Client ID: {sanitize_input(client_name)}</p>
                 <p style="color: #666; font-size: 14px;">
                     If you've already completed today's check-in, please disregard this message.
                 </p>
@@ -9499,6 +10030,26 @@ def queue_stats():
             'scheduled': total_scheduled,
             'reserved': total_reserved,
             'workers': list((active_tasks or {}).keys())
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
+@app.route('/api/admin/db-pool-status', methods=['GET'])
+@require_auth(['therapist'])
+def db_pool_status():
+    """Monitor database connection pool health"""
+    try:
+        # Get pool statistics
+        pool = db.engine.pool
+
+        return jsonify({
+            'size': pool.size(),
+            'checked_in_connections': pool.checkedin(),
+            'overflow': pool.overflow(),
+            'total': pool.size() + pool.overflow(),
+            'status': 'healthy' if pool.checkedin() > 0 else 'warning'
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
