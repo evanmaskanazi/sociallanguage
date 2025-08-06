@@ -878,14 +878,14 @@ def after_request(response):
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
-    default_limits=["50000 per day", "10000 per hour"],  # More reasonable for production
+    default_limits=["5000 per day", "500 per hour"],  # More reasonable for production
     storage_uri="memory://"
 )
 
 
 
 # JWT configuration
-JWT_SECRET = app.config['SECRET_KEY']
+JWT_SECRET = os.environ.get('SECRET_KEY', 'your-secret-key')
 JWT_ALGORITHM = 'HS256'
 JWT_EXPIRATION_HOURS = 24
 
@@ -2486,7 +2486,7 @@ def register():
 
 
 @app.route('/api/auth/login', methods=['POST'])
-@limiter.limit("100 per minute")
+@limiter.limit("20 per minute")
 def login():
     """Login user with secure session management"""
     try:
