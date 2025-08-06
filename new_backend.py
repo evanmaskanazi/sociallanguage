@@ -590,8 +590,13 @@ CORS(app, supports_credentials=True)
 
 
 # Elasticsearch configuration
-from elasticsearch import Elasticsearch
-import elasticsearch.helpers
+try:
+    from elasticsearch import Elasticsearch
+    import elasticsearch.helpers
+    ELASTICSEARCH_AVAILABLE = True
+except ImportError:
+    ELASTICSEARCH_AVAILABLE = False
+    Elasticsearch = None
 
 
 class SearchManager:
@@ -599,6 +604,9 @@ class SearchManager:
 
     def __init__(self):
         self.es = None
+        if not ELASTICSEARCH_AVAILABLE:
+            logger.warning("Elasticsearch not installed - search will use database fallback")
+            return
         es_url = os.environ.get('ELASTICSEARCH_URL', 'http://localhost:9200')
         if es_url:
             try:
