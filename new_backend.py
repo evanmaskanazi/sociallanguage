@@ -60,6 +60,7 @@ from functools import lru_cache
 
 
 
+
 import bleach
 import html
 import redis
@@ -581,6 +582,9 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'options': '-c statement_timeout=30000'
     }
 }
+
+
+app.config['WTF_CSRF_EXEMPT_LIST'] = csrf_exempt_endpoints
 
 # Initialize extensions
 db = SQLAlchemy(app)
