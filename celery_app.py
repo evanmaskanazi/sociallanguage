@@ -98,7 +98,7 @@ def send_reminder_test(self, email, client_id=None):
                     user = None
 
                 # Email search fallback (if no client_id or client not found)
-                if not user:
+                if not user and not client_id:
                     # First try to find user by the email address
                     user = User.query.filter_by(email=email).first()
 
