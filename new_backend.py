@@ -403,6 +403,9 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 JWT_SECRET = os.environ.get('SECRET_KEY', 'your-secret-key')
 JWT_ALGORITHM = 'HS256'
+# JWT configuration
+
+JWT_EXPIRATION_HOURS = 24
 # Create Flask app
 app = Flask(__name__)
 
@@ -899,10 +902,7 @@ limiter = Limiter(
 
 
 
-# JWT configuration
-JWT_SECRET = os.environ.get('SECRET_KEY', 'your-secret-key')
-JWT_ALGORITHM = 'HS256'
-JWT_EXPIRATION_HOURS = 24
+
 
 # Translation mappings for categories - UPDATED WITH DESCRIPTIONS
 CATEGORY_TRANSLATIONS = {
