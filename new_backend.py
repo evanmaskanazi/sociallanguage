@@ -401,7 +401,8 @@ from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 
-
+JWT_SECRET = os.environ.get('SECRET_KEY', 'your-secret-key')
+JWT_ALGORITHM = 'HS256'
 # Create Flask app
 app = Flask(__name__)
 
