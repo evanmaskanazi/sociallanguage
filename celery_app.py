@@ -62,7 +62,7 @@ def send_reminder_test(self, email, client_id=None):
         import os
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-        from new_backend import app, db, User, Client, Reminder
+        from new_backend import app, db, User, Client, Reminder, generate_unsubscribe_token
 
         # Email configuration from environment
         smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
@@ -260,7 +260,7 @@ def send_daily_reminders():
     import os
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-    from new_backend import app, db, Client, Reminder, User, EmailQueue
+    from new_backend import app, db, Client, Reminder, User, EmailQueue, generate_unsubscribe_token
 
     with app.app_context():
         try:
