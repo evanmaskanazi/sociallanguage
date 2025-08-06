@@ -587,10 +587,7 @@ migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
 CORS(app, supports_credentials=True)
 
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
-bcrypt = Bcrypt(app)
-CORS(app, supports_credentials=True)
+
 
 # Elasticsearch configuration
 from elasticsearch import Elasticsearch
