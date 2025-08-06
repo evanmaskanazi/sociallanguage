@@ -23,7 +23,7 @@ if [ ! -z "$DATABASE_URL" ]; then
     echo ""
     echo "Initializing database..."
     python init_db.py
-    
+
     # Run the migration to fix existing clients
     echo ""
     echo "Fixing client tracking categories..."
@@ -33,7 +33,7 @@ else
     echo "WARNING: DATABASE_URL not set, skipping database initialization"
 fi
 
-# Start the application
+# Start the application with gevent workers
 echo ""
-echo "Starting Gunicorn..."
-exec gunicorn new_backend:app --bind 0.0.0.0:${PORT:-10000} --workers 2 --threads 2 --timeout 120 --log-level info
+echo "Starting Gunicorn with gevent workers..."
+exec gunicorn new_backend:app --bind 0.0.0.0:${PORT:-10000} --workers 2 --worker-class gevent --worker-connections 2000 --timeout 120 --log-level info --keep-alive 5
