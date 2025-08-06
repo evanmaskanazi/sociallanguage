@@ -593,6 +593,7 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 
 
 app.config['WTF_CSRF_EXEMPT_LIST'] = csrf_exempt_endpoints
+app.config['WTF_CSRF_CHECK_DEFAULT'] = False  #
 
 # Initialize extensions
 db = SQLAlchemy(app)
