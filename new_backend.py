@@ -878,7 +878,7 @@ def after_request(response):
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
-    default_limits=["5000 per day", "500 per hour"],  # More reasonable for production
+    default_limits=["50000 per day", "10000 per hour"],  # More reasonable for production
     storage_uri="memory://"
 )
 
@@ -2486,7 +2486,7 @@ def register():
 
 
 @app.route('/api/auth/login', methods=['POST'])
-@limiter.limit("20 per minute")
+@limiter.limit("100 per minute")
 def login():
     """Login user with secure session management"""
     try:
