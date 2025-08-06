@@ -458,7 +458,8 @@ csrf_exempt_endpoints = [
     'favicon',
     'debug_server_time',
     'static',
-    'login'
+    'login',
+    'unsubscribe'
 ]
 
 
