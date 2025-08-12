@@ -1861,16 +1861,15 @@ def send_email_async(app, to_email, subject, body, html_body=None):
             server = smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT'])
 
             # Enable TLS encryption
-            server.starttls()
-
-            # Verify TLS is active
-            if not server.has_extn('STARTTLS'):
-                app.logger.error("SMTP server doesn't support TLS encryption - aborting email with PHI")
+            try:
+                server.starttls()
+                server.ehlo()  # Re-identify ourselves over TLS connection
+                # Log encryption status for compliance
+                app.logger.info(f"Sending encrypted email to {to_email} via TLS")
+            except Exception as e:
+                app.logger.error(f"Failed to enable TLS encryption: {e}")
                 email_circuit_breaker.call_failed()
-                return False
-
-            # Additional TLS verification
-            server.ehlo()  # Re-identify ourselves over TLS connection
+                return False # Re-identify ourselves over TLS connection
 
             # Login and send
             server.login(app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
