@@ -3384,11 +3384,20 @@ async function requestAccountDeletion() {
     }
 
     try {
+
+        function getCookie(name) {
+             const value = `; ${document.cookie}`;
+              const parts = value.split(`; ${name}=`);
+              if (parts.length === 2) return parts.pop().split(';').shift();
+            }
+
+
         const response = await fetch('/api/client/request-deletion', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Accept-Language': i18n.currentLang
+                'Accept-Language': i18n.currentLang,
+                'X-CSRF-Token': getCookie('csrf_token')
             },
             credentials: 'include'
         });
