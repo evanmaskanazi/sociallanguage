@@ -319,6 +319,37 @@ def create_custom_categories_table():
             db.session.rollback()
 
 
+def add_category_response_constraint():
+    """Add constraint to ensure exactly one category type is set"""
+    with app.app_context():
+        try:
+            # First check if constraint already exists
+            result = db.session.execute(text("""
+                SELECT constraint_name 
+                FROM information_schema.table_constraints 
+                WHERE table_name = 'category_responses' 
+                AND constraint_name = 'check_category_xor_custom'
+            """)).fetchone()
+
+            if not result:
+                db.session.execute(text("""
+                    ALTER TABLE category_responses
+                    ADD CONSTRAINT check_category_xor_custom CHECK (
+                        (category_id IS NOT NULL AND custom_category_id IS NULL) OR
+                        (category_id IS NULL AND custom_category_id IS NOT NULL)
+                    )
+                """))
+                db.session.commit()
+                print("✓ Successfully added category XOR constraint")
+            else:
+                print("✓ Category XOR constraint already exists")
+
+        except Exception as e:
+            print(f"Error adding category constraint: {e}")
+            db.session.rollback()
+
+
+
 def initialize_database():
     """Initialize database with all required setup"""
     print("Starting database initialization...")
@@ -469,7 +500,7 @@ if __name__ == '__main__':
 
         create_custom_categories_table()
 
-
+        add_category_response_constraint()
         # Fix any existing reminder timezone issues
         fix_reminder_timezone_issue()
 

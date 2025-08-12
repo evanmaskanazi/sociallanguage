@@ -1274,6 +1274,58 @@ class CategoryResponse(db.Model):
     category = db.relationship('TrackingCategory', backref='responses')
     custom_category = db.relationship('CustomCategory', backref='responses')
 
+    def validate(self):
+        """Ensure exactly one category type is set"""
+        if (self.category_id is None) == (self.custom_category_id is None):
+            raise ValueError("Exactly one of category_id or custom_category_id must be set")
+
+    def save(self, commit=True):
+        """Save with validation"""
+        self.validate()
+        db.session.add(self)
+        if commit:
+            db.session.commit()
+        return self
+
+    @property
+    def category_name(self):
+        """Get the category name regardless of type"""
+        if self.category_id:
+            return self.category.name
+        elif self.custom_category_id:
+            return self.custom_category.name
+        return None
+
+    @property
+    def is_custom(self):
+        """Check if this is a custom category response"""
+        return self.custom_category_id is not None
+
+    @classmethod
+    def create_for_category(cls, client_id, category_id, response_date, value, notes=''):
+        """Create a response for a standard category"""
+        return cls(
+            client_id=client_id,
+            category_id=category_id,
+            custom_category_id=None,
+            response_date=response_date,
+            value=value,
+            notes=notes
+        )
+
+    @classmethod
+    def create_for_custom_category(cls, client_id, custom_category_id, response_date, value, notes=''):
+        """Create a response for a custom category"""
+        return cls(
+            client_id=client_id,
+            category_id=None,
+            custom_category_id=custom_category_id,
+            response_date=response_date,
+            value=value,
+            notes=notes
+        )
+
+
 
 class GoalCompletion(db.Model):
     __tablename__ = 'goal_completions'
@@ -6309,6 +6361,65 @@ def health_check():
     })
 
 
+@app.route('/api/health/detailed', methods=['GET'])
+@require_auth(['therapist'])  # Or create a special monitoring role
+def detailed_health_check():
+    """Detailed health check for monitoring"""
+    health_status = {
+        'status': 'healthy',
+        'timestamp': datetime.utcnow().isoformat(),
+        'services': {}
+    }
+
+    # Check database
+    try:
+        db.session.execute(text('SELECT 1'))
+        health_status['services']['database'] = {'status': 'healthy'}
+    except Exception as e:
+        health_status['services']['database'] = {'status': 'unhealthy', 'error': str(e)}
+        health_status['status'] = 'unhealthy'
+
+    # Check Redis
+    try:
+        if redis_client:
+            redis_client.ping()
+            health_status['services']['redis'] = {'status': 'healthy'}
+        else:
+            health_status['services']['redis'] = {'status': 'unavailable'}
+    except Exception as e:
+        health_status['services']['redis'] = {'status': 'unhealthy', 'error': str(e)}
+
+    # Check Celery
+    if celery:
+        try:
+            inspector = celery.control.inspect()
+            stats = inspector.stats()
+            if stats:
+                health_status['services']['celery'] = {
+                    'status': 'healthy',
+                    'workers': len(stats)
+                }
+            else:
+                health_status['services']['celery'] = {'status': 'no_workers'}
+        except Exception as e:
+            health_status['services']['celery'] = {'status': 'unhealthy', 'error': str(e)}
+    else:
+        health_status['services']['celery'] = {'status': 'not_configured'}
+
+    # Check email
+    email_configured = bool(app.config.get('MAIL_USERNAME'))
+    health_status['services']['email'] = {
+        'status': 'configured' if email_configured else 'not_configured'
+    }
+
+    # Feature availability based on service health
+    health_status['features'] = {
+        'reminders': health_status['services']['celery']['status'] == 'healthy',
+        'email_reports': email_configured,
+        'search': search_manager.es is not None
+    }
+
+    return jsonify(health_status), 200 if health_status['status'] == 'healthy' else 503
 
 @app.route('/api/test-pdf-libs', methods=['GET'])
 def test_pdf_libs():
@@ -7723,68 +7834,80 @@ def submit_checkin():
 
         # Process category responses
         responses_logged = []
+        validation_errors = []
 
         for cat_id, value in category_responses.items():
-            # Check if it's a custom category
-            if isinstance(cat_id, str) and cat_id.startswith('custom_'):
-                # Custom category
-                custom_cat_id = int(cat_id.replace('custom_', ''))
-                custom_category = CustomCategory.query.get(custom_cat_id)
+            try:
+                # Check if it's a custom category
+                if isinstance(cat_id, str) and cat_id.startswith('custom_'):
+                    # Custom category
+                    custom_cat_id = int(cat_id.replace('custom_', ''))
+                    custom_category = CustomCategory.query.get(custom_cat_id)
 
-                if not custom_category or custom_category.client_id != client.id:
-                    continue
+                    if not custom_category or custom_category.client_id != client.id:
+                        continue
 
-                # Create category response for custom category
-                response = CategoryResponse(
-                    client_id=client.id,
-                    category_id=None,
-                    custom_category_id=custom_cat_id,
-                    response_date=checkin_date,
-                    value=value,
-                    notes=category_notes.get(cat_id, '')
-                )
-                db.session.add(response)
+                    # Use the helper method for custom category
+                    response = CategoryResponse.create_for_custom_category(
+                        client_id=client.id,
+                        custom_category_id=custom_cat_id,
+                        response_date=checkin_date,
+                        value=value,
+                        notes=category_notes.get(cat_id, '')
+                    )
+                    response.save(commit=False)
 
-                responses_logged.append({
-                    'category': custom_category.name,
-                    'value': value,
-                    'has_notes': bool(category_notes.get(cat_id, '')),
-                    'is_custom': True
-                })
-            else:
-                # Default category
-                category = TrackingCategory.query.get(int(cat_id))
-                if not category:
-                    continue
+                    responses_logged.append({
+                        'category': custom_category.name,
+                        'value': value,
+                        'has_notes': bool(category_notes.get(cat_id, '')),
+                        'is_custom': True
+                    })
+                else:
+                    # Default category
+                    category = TrackingCategory.query.get(int(cat_id))
+                    if not category:
+                        continue
 
-                # Create category response
-                response = CategoryResponse(
-                    client_id=client.id,
-                    category_id=int(cat_id),
-                    custom_category_id=None,
-                    response_date=checkin_date,
-                    value=value,
-                    notes=sanitize_input(category_notes.get(str(cat_id), '')[:500])
-                )
-                db.session.add(response)
+                    # Use the helper method for standard category
+                    response = CategoryResponse.create_for_category(
+                        client_id=client.id,
+                        category_id=int(cat_id),
+                        response_date=checkin_date,
+                        value=value,
+                        notes=sanitize_input(category_notes.get(str(cat_id), '')[:500])
+                    )
+                    response.save(commit=False)
 
-                responses_logged.append({
-                    'category': category.name,
-                    'value': value,
-                    'has_notes': bool(category_notes.get(str(cat_id), '')),
-                    'is_custom': False
-                })
+                    responses_logged.append({
+                        'category': category.name,
+                        'value': value,
+                        'has_notes': bool(category_notes.get(str(cat_id), '')),
+                        'is_custom': False
+                    })
 
-                # Also update the legacy fields in daily_checkins for backward compatibility
-                if 'emotion' in category.name.lower():
-                    existing.emotional_value = value
-                    existing.emotional_notes = category_notes.get(str(cat_id), '')
-                elif 'medication' in category.name.lower():
-                    existing.medication_value = value
-                    existing.medication_notes = category_notes.get(str(cat_id), '')
-                elif 'physical activity' in category.name.lower() or 'activity' in category.name.lower():
-                    existing.activity_value = value
-                    existing.activity_notes = category_notes.get(str(cat_id), '')
+                    if 'emotion' in category.name.lower():
+                        existing.emotional_value = value
+                        existing.emotional_notes = category_notes.get(str(cat_id), '')
+                    elif 'medication' in category.name.lower():
+                        existing.medication_value = value
+                        existing.medication_notes = category_notes.get(str(cat_id), '')
+                    elif 'physical activity' in category.name.lower() or 'activity' in category.name.lower():
+                        existing.activity_value = value
+                        existing.activity_notes = category_notes.get(str(cat_id), '')
+
+            except ValueError as e:
+                validation_errors.append(f"Category {cat_id}: {str(e)}")
+                logger.error(f"Invalid category response for {cat_id}: {e}")
+
+        if validation_errors:  # Level 1 (OUTSIDE the for loop, same as for)
+            db.session.rollback()
+            return jsonify({
+                'error': 'Invalid category data',
+                'details': validation_errors
+            }), 400
+
+
 
         # Save goal completions
         goal_completions = data.get('goal_completions', {})
