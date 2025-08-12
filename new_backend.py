@@ -830,74 +830,7 @@ search_manager = SearchManager()
 
 
 
-@app.before_request
-def before_request():
-    try:
-        g.request_id = str(uuid.uuid4())
-        g.request_start_time = time.time()
 
-        # Log request start
-        extra_data = {
-            'method': request.method,
-            'path': request.path,
-            'remote_addr': request.remote_addr,
-            'user_agent': request.headers.get('User-Agent', ''),
-            'request_id': g.request_id
-        }
-
-        logger.info('request_started', extra={'extra_data': extra_data, 'request_id': g.request_id})
-    except Exception as e:
-        # Ensure these are set even if logging fails
-        g.request_id = str(uuid.uuid4())
-        g.request_start_time = time.time()
-        logger.error(f'Error in before_request: {e}')
-
-
-@app.after_request
-def after_request(response):
-    # Check if request_start_time was set
-    if hasattr(g, 'request_start_time'):
-        # Calculate request duration
-        duration = time.time() - g.request_start_time
-    else:
-        # If not set, use 0 or skip duration logging
-        duration = 0
-
-    # Log request completion
-    extra_data = {
-        'method': request.method,
-        'path': request.path,
-        'status_code': response.status_code,
-        'duration_ms': round(duration * 1000, 2) if duration > 0 else 'unknown',
-        'request_id': getattr(g, 'request_id', 'unknown')
-    }
-
-    # Add user info if authenticated
-    if hasattr(request, 'current_user') and request.current_user:
-        extra_data['user_id'] = request.current_user.id
-        extra_data['user_role'] = request.current_user.role
-
-    logger.info('request_completed',
-                extra={'extra_data': extra_data, 'request_id': getattr(g, 'request_id', 'unknown')})
-
-    # Add request ID to response headers
-    if hasattr(g, 'request_id'):
-        response.headers['X-Request-ID'] = g.request_id
-
-    if request.method == 'GET':
-        if request.path.startswith('/api/categories') or request.path.startswith('/api/tracking-categories'):
-            response.headers['Cache-Control'] = 'public, max-age=3600'  # 1 hour
-        elif request.path.endswith('.js') or request.path.endswith('.css'):
-            response.headers['Cache-Control'] = 'public, max-age=86400'  # 24 hours
-
-    return response
-
-limiter = Limiter(
-    app=app,
-    key_func=get_remote_address,
-    default_limits=["5000 per day", "500 per hour"],  # More reasonable for production
-    storage_uri="memory://"
-)
 
 
 
