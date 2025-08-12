@@ -3,81 +3,174 @@ Enhanced Therapeutic Companion Backend
 With PostgreSQL, Authentication, Role-Based Access, Client Reports, and Password Reset
 """
 import os
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase.cidfonts import UnicodeCIDFont
-from reportlab.platypus import Paragraph
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter, A4
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-
 import re
 import random
 import string
-from flask import Flask, request, jsonify, send_file, session,render_template, jsonify, redirect, url_for,  make_response,render_template,  redirect, url_for,  flash
+import secrets
+import json
+import time
+import uuid
+import html
+import bleach
+import redis
+import smtplib
+import openpyxl
+import jwt
+import logging
+import traceback
+import signal
+from pathlib import Path
+from datetime import datetime, date, timedelta
+from functools import wraps, lru_cache
+from threading import Thread
+from io import BytesIO
+
+# Flask imports
+from flask import (Flask, request, jsonify, send_file, session,
+                   render_template, redirect, url_for, make_response,
+                   flash, Response, g, abort)
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from functools import wraps
-import os
-import time
-from datetime import datetime, date, timedelta
-from pathlib import Path
-import secrets
-import jwt
-from sqlalchemy import text
-from datetime import datetime, timedelta, date
-from sqlalchemy import and_, or_, func
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-import smtplib
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_talisman import Talisman
+from flask_wtf.csrf import CSRFProtect, generate_csrf
+from werkzeug.middleware.proxy_fix import ProxyFix
+from werkzeug.utils import secure_filename
+from markupsafe import escape, Markup
+
+# Database imports
+from sqlalchemy import text, and_, or_, func
+
+# Email imports
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
-from io import BytesIO
-import uuid
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-from flask import Response
-import signal
-from functools import wraps
-from threading import Thread
-# ADD THIS BLOCK - Structured Logging Configuration
-import logging
-import json
-import traceback
-from flask import g
-import uuid
-import time
-from markupsafe import escape
-from functools import lru_cache
+
+# Excel imports
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+# PDF imports
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Table, TableStyle, Spacer
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+
+# Cryptography import (FIXED - was missing)
+from cryptography.fernet import Fernet
+import base64
 
 
+# Image processing (optional - you can remove this block if not needed)
+# from PIL import Image
+# import io
+
+# === LOGGING CONFIGURATION (MOVED UP - before it's used) ===
+class StructuredFormatter(logging.Formatter):
+    def format(self, record):
+        log_obj = {
+            'timestamp': self.formatTime(record),
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.getMessage(),
+            'module': record.module,
+            'function': record.funcName,
+            'line': record.lineno
+        }
+
+        # Add extra fields if present
+        if hasattr(record, 'request_id'):
+            log_obj['request_id'] = record.request_id
+        if hasattr(record, 'user_id'):
+            log_obj['user_id'] = record.user_id
+        if hasattr(record, 'extra_data'):
+            log_obj.update(record.extra_data)
+
+        return json.dumps(log_obj)
 
 
-import bleach
-import html
-import redis
+# Set up logger
+logger = logging.getLogger('therapy_companion')
+handler = logging.StreamHandler()
+handler.setFormatter(StructuredFormatter())
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
-from functools import lru_cache
-from flask import make_response
+# Disable werkzeug logging in production
+if os.environ.get('PRODUCTION'):
+    logging.getLogger('werkzeug').setLevel(logging.WARNING)
 
-# Add Flask-Talisman security headers HERE
-from flask_talisman import Talisman
+# === CONSTANTS AND CONFIGURATION ===
+JWT_SECRET = os.environ.get('SECRET_KEY', 'your-secret-key')
+JWT_ALGORITHM = 'HS256'
+JWT_EXPIRATION_HOURS = 24
 
-from markupsafe import escape, Markup
-import html
-import re
+# Define allowed origins
+ALLOWED_ORIGINS = [
+    'https://therapy-companion.onrender.com',
+    'http://localhost:5000',  # For development
+    'http://127.0.0.1:5000'  # For development
+]
+
+# Dangerous patterns for XSS protection
+DANGEROUS_PATTERNS = [
+    r'<script',
+    r'javascript:',
+    r'onerror=',
+    r'onclick=',
+    r'onload=',
+    r'<iframe',
+    r'<object',
+    r'<embed',
+    r'vbscript:',
+    r'data:text/html'
+]
+
+# === ENCRYPTION KEY SETUP (FIXED - after logger is defined) ===
+ENCRYPTION_KEY = os.environ.get('FIELD_ENCRYPTION_KEY')
+if not ENCRYPTION_KEY:
+    if os.environ.get('PRODUCTION'):
+        raise ValueError("FIELD_ENCRYPTION_KEY must be set in production")
+    else:
+        # Generate a development key
+        ENCRYPTION_KEY = Fernet.generate_key()
+        logger.warning("Using generated encryption key - DO NOT use in production!")
+else:
+    # Ensure it's bytes
+    ENCRYPTION_KEY = ENCRYPTION_KEY if isinstance(ENCRYPTION_KEY, bytes) else ENCRYPTION_KEY.encode()
+
+fernet = Fernet(ENCRYPTION_KEY)
+
+# === REDIS CLIENT SETUP ===
+redis_client = redis.from_url(os.environ.get('REDIS_URL', 'redis://localhost:6379'))
+
+
+# === UTILITY FUNCTIONS ===
+def encrypt_field(data):
+    """Encrypt sensitive field data"""
+    if not data:
+        return None
+    if isinstance(data, str):
+        data = data.encode()
+    return fernet.encrypt(data).decode()
+
+
+def decrypt_field(encrypted_data):
+    """Decrypt sensitive field data"""
+    if not encrypted_data:
+        return None
+    return fernet.decrypt(encrypted_data.encode()).decode()
+
 
 def safe_render(template, **kwargs):
     """Automatically escape all template variables"""
-    # Escape all string values in kwargs
     safe_kwargs = {}
     for key, value in kwargs.items():
         if isinstance(value, str):
@@ -86,19 +179,84 @@ def safe_render(template, **kwargs):
             safe_kwargs[key] = value
     return render_template(template, **safe_kwargs)
 
+
 def sanitize_html(text):
     """Remove all HTML tags from text"""
     if not text:
         return text
-    # Remove all HTML tags
     clean = re.compile('<.*?>')
     return re.sub(clean, '', str(text))
 
 
+def sanitize_input(text, allow_html=False):
+    """Sanitize user input to prevent XSS"""
+    if not text:
+        return text
+
+    if allow_html:
+        allowed_tags = ['b', 'i', 'u', 'em', 'strong', 'p', 'br']
+        allowed_attributes = {}
+        text = bleach.clean(text, tags=allowed_tags, attributes=allowed_attributes, strip=True)
+    else:
+        text = html.escape(text)
+
+    text = text.replace('\x00', '')  # Remove null bytes
+    return text
 
 
+def validate_email(email):
+    """Validate email format"""
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
 
 
+def validate_date(date_string):
+    """Validate date format and range"""
+    try:
+        date_obj = datetime.strptime(date_string, '%Y-%m-%d').date()
+        if date_obj < date(2020, 1, 1) or date_obj > date.today() + timedelta(days=30):
+            return False
+        return True
+    except:
+        return False
+
+
+def validate_cors_origin():
+    """Manually validate CORS origins to prevent case-sensitivity issues"""
+    origin = request.headers.get('Origin')
+
+    if not origin:
+        return True  # No origin header, allow
+
+    # Normalize origin to lowercase for comparison
+    origin_lower = origin.lower()
+
+    # Check against allowed origins (case-insensitive)
+    for allowed in ALLOWED_ORIGINS:
+        if origin_lower == allowed.lower():
+            return True
+
+    return False
+
+
+def timeout(seconds):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            def timeout_handler(signum, frame):
+                raise TimeoutError(f"Function {func.__name__} timed out after {seconds} seconds")
+
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(seconds)
+            try:
+                result = func(*args, **kwargs)
+            finally:
+                signal.alarm(0)
+            return result
+
+        return wrapper
+
+    return decorator
 
 
 def cache_response(timeout=300):
@@ -107,17 +265,12 @@ def cache_response(timeout=300):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            # Only cache GET requests
             if request.method != 'GET':
                 return f(*args, **kwargs)
 
-            # Create cache key
             cache_key = f"{request.path}?{request.query_string.decode()}"
-
-            # Get response
             response = f(*args, **kwargs)
 
-            # Add cache headers
             if isinstance(response, tuple):
                 resp, status = response[0], response[1]
             else:
@@ -133,23 +286,7 @@ def cache_response(timeout=300):
     return decorator
 
 
-
-
-
-redis_client = redis.from_url(os.environ.get('REDIS_URL', 'redis://localhost:6379'))
-
-if not os.environ.get('FIELD_ENCRYPTION_KEY'):
-    if os.environ.get('PRODUCTION'):
-        raise ValueError("FIELD_ENCRYPTION_KEY must be set in production")
-    else:
-        # Generate a development key
-        import secrets
-        ENCRYPTION_KEY = Fernet.generate_key()
-        logger.warning("Using generated encryption key - DO NOT use in production!")
-else:
-    ENCRYPTION_KEY = os.environ.get('FIELD_ENCRYPTION_KEY')
-
-
+# === CACHE MANAGER CLASS ===
 class CacheManager:
     """Centralized cache management with namespace support"""
 
@@ -208,9 +345,8 @@ class CacheManager:
         except Exception as e:
             logger.error(f"Cache invalidate error: {e}")
 
-    # Initialize cache manager
 
-
+# Initialize cache manager
 cache = CacheManager(redis_client)
 
 
@@ -220,22 +356,17 @@ def cached_endpoint(namespace, ttl=3600, key_func=None):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            # Generate cache key
             if key_func:
                 cache_key = key_func(*args, **kwargs)
             else:
-                # Default key from args
                 cache_key = f"{f.__name__}:{str(args)}:{str(kwargs)}"
 
-            # Try cache first
             cached_data = cache.get(namespace, cache_key)
             if cached_data:
                 return jsonify(cached_data)
 
-            # Call original function
             result = f(*args, **kwargs)
 
-            # Cache the result if it's a success response
             if isinstance(result, tuple) and result[1] == 200:
                 response_data = result[0].get_json()
                 cache.set(namespace, cache_key, response_data, ttl)
@@ -250,235 +381,113 @@ def cached_endpoint(namespace, ttl=3600, key_func=None):
     return decorator
 
 
-
-
-
-
-
-
-
-def sanitize_input(text, allow_html=False):
-    """Sanitize user input to prevent XSS"""
-    if not text:
-        return text
-
-    if allow_html:
-        # Allow only safe HTML tags
-        allowed_tags = ['b', 'i', 'u', 'em', 'strong', 'p', 'br']
-        allowed_attributes = {}
-        text = bleach.clean(text, tags=allowed_tags, attributes=allowed_attributes, strip=True)
-    else:
-        # Escape all HTML
-        text = html.escape(text)
-
-    # Additional sanitization
-    text = text.replace('\x00', '')  # Remove null bytes
-
-    return text
-
-
-def validate_email(email):
-    """Validate email format"""
-    import re
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return re.match(pattern, email) is not None
-
-
-def validate_date(date_string):
-    """Validate date format and range"""
-    try:
-        date_obj = datetime.strptime(date_string, '%Y-%m-%d').date()
-        # Check reasonable range
-        if date_obj < date(2020, 1, 1) or date_obj > date.today() + timedelta(days=30):
-            return False
-        return True
-    except:
-        return False
-
-
-
-
-
-
-
-
-
-
-from cryptography.fernet import Fernet
-import base64
-
-# Generate or load encryption key
-ENCRYPTION_KEY = os.environ.get('FIELD_ENCRYPTION_KEY')
-if not ENCRYPTION_KEY:
-    # In production, this MUST come from environment
-    raise ValueError("FIELD_ENCRYPTION_KEY must be set in production")
-
-fernet = Fernet(ENCRYPTION_KEY if isinstance(ENCRYPTION_KEY, bytes) else ENCRYPTION_KEY.encode())
-
-
-def encrypt_field(data):
-    """Encrypt sensitive field data"""
-    if not data:
-        return None
-    if isinstance(data, str):
-        data = data.encode()
-    return fernet.encrypt(data).decode()
-
-
-def decrypt_field(encrypted_data):
-    """Decrypt sensitive field data"""
-    if not encrypted_data:
-        return None
-    return fernet.decrypt(encrypted_data.encode()).decode()
-
-
-
-
-
-
-
-
-# Configure structured logging
-class StructuredFormatter(logging.Formatter):
-    def format(self, record):
-        log_obj = {
-            'timestamp': self.formatTime(record),
-            'level': record.levelname,
-            'logger': record.name,
-            'message': record.getMessage(),
-            'module': record.module,
-            'function': record.funcName,
-            'line': record.lineno
-        }
-
-        # Add extra fields if present
-        if hasattr(record, 'request_id'):
-            log_obj['request_id'] = record.request_id
-        if hasattr(record, 'user_id'):
-            log_obj['user_id'] = record.user_id
-        if hasattr(record, 'extra_data'):
-            log_obj.update(record.extra_data)
-
-        return json.dumps(log_obj)
-
-
-# Set up logger
-logger = logging.getLogger('therapy_companion')
-handler = logging.StreamHandler()
-handler.setFormatter(StructuredFormatter())
-logger.addHandler(handler)
-logger.setLevel(logging.INFO)
-
-# Disable werkzeug logging in production
-if os.environ.get('PRODUCTION'):
-    logging.getLogger('werkzeug').setLevel(logging.WARNING)
-
-
-
-
-def timeout(seconds):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            def timeout_handler(signum, frame):
-                raise TimeoutError(f"Function {func.__name__} timed out after {seconds} seconds")
-
-            # Set the timeout
-            signal.signal(signal.SIGALRM, timeout_handler)
-            signal.alarm(seconds)
-            try:
-                result = func(*args, **kwargs)
-            finally:
-                # Disable the timeout
-                signal.alarm(0)
-            return result
-
-        return wrapper
-
-    return decorator
-
-from flask import Flask
-from werkzeug.middleware.proxy_fix import ProxyFix
-
-
-JWT_SECRET = os.environ.get('SECRET_KEY', 'your-secret-key')
-JWT_ALGORITHM = 'HS256'
-# JWT configuration
-
-JWT_EXPIRATION_HOURS = 24
-# Create Flask app
+# === CREATE FLASK APP ===
 app = Flask(__name__)
 
+# Apply proxy fix for Render
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
-
-
+# Set directories
 BASE_DIR = Path(__file__).resolve().parent
 app.static_folder = BASE_DIR
 app.template_folder = BASE_DIR
 
+# === FLASK CONFIGURATION ===
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+app.config.update(
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=24),
+    SESSION_COOKIE_NAME='__Host-session'
+)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+    'DATABASE_URL',
+    'postgresql://localhost/therapy_companion'
+).replace('postgres://', 'postgresql://')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Email configuration
+app.config['MAIL_SERVER'] = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('SMTP_PORT', 587))
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('SYSTEM_EMAIL')
+app.config['MAIL_PASSWORD'] = os.environ.get('SYSTEM_EMAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SYSTEM_EMAIL')
 
-
-# Security headers including CSP
-csp = {
-    'default-src': "'self'",
-    'script-src': "'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://code.jquery.com https://stackpath.bootstrapcdn.com",
-    'style-src': "'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://stackpath.bootstrapcdn.com",
-    'font-src': "'self' https://fonts.gstatic.com data:",
-    'img-src': "'self' data: https:",
-    'connect-src': "'self'"
+# Database connection pooling
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_size': 20,
+    'pool_recycle': 3600,
+    'pool_pre_ping': True,
+    'max_overflow': 40,
+    'pool_timeout': 30,
+    'connect_args': {
+        'connect_timeout': 10,
+        'options': '-c statement_timeout=30000'
+    }
 }
+
+# CSRF configuration
+app.config['WTF_CSRF_EXEMPT_LIST'] = ['health_check', 'index', 'login_page',
+                                      'therapist_dashboard_page', 'client_dashboard_page',
+                                      'serve_i18n', 'favicon', 'debug_server_time',
+                                      'static', 'login', 'unsubscribe']
+app.config['WTF_CSRF_CHECK_DEFAULT'] = False
+
+# === INITIALIZE EXTENSIONS ===
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+bcrypt = Bcrypt(app)
+CORS(app, supports_credentials=True)
+
+# Initialize CSRF protection
+csrf = CSRFProtect()
+csrf.init_app(app)
 
 # Initialize Talisman with security settings
 Talisman(app,
          force_https=False if app.debug else True,
          strict_transport_security={'max_age': 31536000, 'include_subdomains': True},
-         content_security_policy=False,  # No CSP
+         content_security_policy=False,
          frame_options='SAMEORIGIN',
          content_security_policy_nonce_in=[]
+         )
+
+# Initialize rate limiter
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["50000 per day", "10000 per hour"],
+    storage_uri="memory://"
 )
 
-# Add additional security headers
-@app.after_request
-def set_security_headers(response):
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
-    response.headers['X-XSS-Protection'] = '1; mode=block'
-    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'
-    return response
 
+# === REQUEST HANDLERS ===
+@app.before_request
+def before_request():
+    try:
+        g.request_id = str(uuid.uuid4())
+        g.request_start_time = time.time()
 
+        extra_data = {
+            'method': request.method,
+            'path': request.path,
+            'remote_addr': request.remote_addr,
+            'user_agent': request.headers.get('User-Agent', ''),
+            'request_id': g.request_id
+        }
 
-
-
-# CSRF Protection
-from flask_wtf.csrf import CSRFProtect, generate_csrf
-from functools import wraps
-
-csrf = CSRFProtect()
-csrf.init_app(app)
-
-# Exempt only read-only endpoints
-csrf_exempt_endpoints = [
-    'health_check',
-    'index',
-    'login_page',
-    'therapist_dashboard_page',
-    'client_dashboard_page',
-    'serve_i18n',
-    'favicon',
-    'debug_server_time',
-    'static',
-    'login',
-    'unsubscribe'
-]
+        logger.info('request_started', extra={'extra_data': extra_data, 'request_id': g.request_id})
+    except Exception as e:
+        g.request_id = str(uuid.uuid4())
+        g.request_start_time = time.time()
+        logger.error(f'Error in before_request: {e}')
 
 
 @app.before_request
 def csrf_protect():
-    if request.endpoint in csrf_exempt_endpoints:
+    if request.endpoint in app.config['WTF_CSRF_EXEMPT_LIST']:
         return
     if request.method in ["POST", "PUT", "DELETE", "PATCH"]:
         token = None
@@ -490,34 +499,26 @@ def csrf_protect():
             return jsonify({'error': 'CSRF token missing'}), 403
 
 
-# ADD THE NEW VALIDATION CODE HERE:
-# Dangerous patterns to check for
-DANGEROUS_PATTERNS = [
-    r'<script',
-    r'javascript:',
-    r'onerror=',
-    r'onclick=',
-    r'onload=',
-    r'<iframe',
-    r'<object',
-    r'<embed',
-    r'vbscript:',
-    r'data:text/html'
-]
+@app.before_request
+def check_cors():
+    if request.method == 'OPTIONS':
+        return
+
+    if not validate_cors_origin():
+        logger.warning(f"CORS validation failed for origin: {request.headers.get('Origin')}")
+        abort(403, description="CORS validation failed")
 
 
 @app.before_request
 def validate_inputs():
     """Check all inputs for XSS attempts"""
-    # Check all request data
     for key, value in request.values.items():
         if value and isinstance(value, str):
             for pattern in DANGEROUS_PATTERNS:
                 if re.search(pattern, value, re.IGNORECASE):
-                    app.logger.warning(f"Potential XSS attempt blocked: {key}={value[:50]}...")
+                    logger.warning(f"Potential XSS attempt blocked: {key}={value[:50]}...")
                     return jsonify({'error': 'Invalid input detected'}), 400
 
-    # Check JSON data if present
     if request.is_json and request.json:
         def check_dict(d):
             for key, value in d.items():
@@ -535,75 +536,73 @@ def validate_inputs():
 
 
 @app.after_request
+def after_request(response):
+    if hasattr(g, 'request_start_time'):
+        duration = time.time() - g.request_start_time
+    else:
+        duration = 0
+
+    extra_data = {
+        'method': request.method,
+        'path': request.path,
+        'status_code': response.status_code,
+        'duration_ms': round(duration * 1000, 2) if duration > 0 else 'unknown',
+        'request_id': getattr(g, 'request_id', 'unknown')
+    }
+
+    if hasattr(request, 'current_user') and request.current_user:
+        extra_data['user_id'] = request.current_user.id
+        extra_data['user_role'] = request.current_user.role
+
+    logger.info('request_completed',
+                extra={'extra_data': extra_data, 'request_id': getattr(g, 'request_id', 'unknown')})
+
+    if hasattr(g, 'request_id'):
+        response.headers['X-Request-ID'] = g.request_id
+
+    if request.method == 'GET':
+        if request.path.startswith('/api/categories') or request.path.startswith('/api/tracking-categories'):
+            response.headers['Cache-Control'] = 'public, max-age=3600'
+        elif request.path.endswith('.js') or request.path.endswith('.css'):
+            response.headers['Cache-Control'] = 'public, max-age=86400'
+
+    return response
+
+
+@app.after_request
+def set_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'
+
+    origin = request.headers.get('Origin')
+    if origin and validate_cors_origin():
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, X-CSRF-Token'
+
+    return response
+
+
+@app.after_request
 def set_csrf_cookie(response):
     if 'csrf_token' not in session:
         session['csrf_token'] = generate_csrf()
     response.set_cookie('csrf_token', session['csrf_token'],
                         secure=app.config['SESSION_COOKIE_SECURE'],
-                        httponly=False,  # JavaScript needs to read it
-                        samesite='Strict',  # Changed from 'Lax' to 'Strict'
-                        max_age=86400)  # 24 hours
+                        httponly=False,
+                        samesite='Strict',
+                        max_age=86400)
     return response
 
 
-# Add CSRF token endpoint
+# === CSRF TOKEN ENDPOINT ===
 @app.route('/api/csrf-token', methods=['GET'])
 def get_csrf_token():
     return jsonify({'csrf_token': generate_csrf()})
-
-
-
-
-
-# Configuration
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
-# Secure session cookie settings
-app.config.update(
-    SESSION_COOKIE_SECURE=True,  # HTTPS only
-    SESSION_COOKIE_HTTPONLY=True,  # No JS access
-    SESSION_COOKIE_SAMESITE='Lax',  # CSRF protection
-    PERMANENT_SESSION_LIFETIME=timedelta(hours=24),
-    SESSION_COOKIE_NAME='__Host-session'  # Secure prefix
-)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-    'DATABASE_URL',
-    'postgresql://localhost/therapy_companion'
-).replace('postgres://', 'postgresql://')  # Fix for Render
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SESSION_COOKIE_SECURE'] = os.environ.get('PRODUCTION', False)
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-
-# Email configuration
-app.config['MAIL_SERVER'] = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
-app.config['MAIL_PORT'] = int(os.environ.get('SMTP_PORT', 587))
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.environ.get('SYSTEM_EMAIL')
-app.config['MAIL_PASSWORD'] = os.environ.get('SYSTEM_EMAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SYSTEM_EMAIL')
-
-# Database connection pooling - optimized for production
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-     'pool_size': 20,  # Increased pool size
-    'pool_recycle': 3600,  # Recycle connections every hour
-    'pool_pre_ping': True,
-    'max_overflow': 40,  # Allow more overflow connections
-    'pool_timeout': 30,  # Wait up to 30 seconds for connection
-    'connect_args': {
-        'connect_timeout': 10,
-        'options': '-c statement_timeout=30000'
-    }
-}
-
-
-app.config['WTF_CSRF_EXEMPT_LIST'] = csrf_exempt_endpoints
-app.config['WTF_CSRF_CHECK_DEFAULT'] = False  #
-
-# Initialize extensions
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
-bcrypt = Bcrypt(app)
-CORS(app, supports_credentials=True)
 
 
 
