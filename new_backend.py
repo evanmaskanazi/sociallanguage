@@ -1943,10 +1943,23 @@ def send_email(to_email, subject, body, html_body=None):
     # Check if Celery is available and configured
     try:
         from celery_app import send_email_task
-        # Use Celery to send email asynchronously
-        task = send_email_task.delay(to_email, subject, body, html_body)
-        logger.info(f"Email queued via Celery: {task.id}")
+
+        # Create EmailQueue entry for Celery
+        email_queue = EmailQueue(
+            to_email=to_email,
+            subject=subject,
+            body=body,
+            html_body=html_body,
+            status='pending'
+        )
+        db.session.add(email_queue)
+        db.session.commit()
+
+        # Use Celery to send email asynchronously - pass only the ID
+        task = send_email_task.delay(email_queue.id)
+        logger.info(f"Email queued via Celery with task id: {task.id} for queue id: {email_queue.id}")
         return True
+
     except ImportError:
         # Celery not available, fall back to thread-based sending
         logger.info("Celery not available, using thread-based email sending")
@@ -1965,8 +1978,16 @@ def send_email(to_email, subject, body, html_body=None):
         thread.start()
 
         return True
+
     except Exception as e:
         logger.error(f"Error queueing email with Celery: {e}")
+        db.session.rollback()  # Rollback the failed EmailQueue entry
+
+        # Check circuit breaker before falling back
+        if not email_circuit_breaker.can_attempt_call():
+            app.logger.warning(f"Email circuit breaker is open, skipping email to {to_email}")
+            return False
+
         # Fall back to thread-based sending
         thread = Thread(
             target=send_email_async,
