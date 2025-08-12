@@ -3399,6 +3399,7 @@ async function requestAccountDeletion() {
                 'Accept-Language': i18n.currentLang,
                 'X-CSRF-Token': getCookie('csrf_token')
             },
+            body: JSON.stringify({}),
             credentials: 'include'
         });
 
