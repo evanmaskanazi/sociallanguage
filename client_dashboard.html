@@ -11,6 +11,9 @@
 
     <!-- Add i18n script -->
     <script src="i18n.js"></script>
+     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" integrity="sha512-H+rglffZ6f5gF7UJgvH4Naa+fGCgjrHKMgoFOGmcPTRwR6oILo5R+gtzNrpDp7iMV3udbymBVjkeZGNz1Em4rQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <style>
         * {
@@ -519,6 +522,69 @@
             animation: slideDown 0.3s ease-out;
         }
 
+
+
+/* Achievement Styles */
+.achievement-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+    margin: 0.25rem;
+    font-weight: 600;
+    color: #333;
+    transition: transform 0.2s ease;
+}
+
+.achievement-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+}
+
+.achievement-locked {
+    background: #e0e0e0;
+    color: #999;
+    box-shadow: none;
+}
+
+.achievement-new {
+    animation: achievementPulse 2s ease-in-out infinite;
+}
+
+@keyframes achievementPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.milestone-progress {
+    background: #f0f0f0;
+    border-radius: 10px;
+    height: 20px;
+    overflow: hidden;
+    margin: 0.5rem 0;
+}
+
+.milestone-progress-bar {
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    height: 100%;
+    transition: width 0.5s ease;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 0.5rem;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+
+
+
+
+
         .message.success {
             background: #d4edda;
             color: #155724;
@@ -824,21 +890,33 @@
         </div>
 
         <div class="dashboard-grid">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title" data-i18n="client.quick_stats">Quick Stats</h3>
-                    <div class="card-icon icon-progress">📊</div>
-                </div>
-                <div id="quickStats">
-                    <p data-i18n="msg.loading">Loading stats...</p>
-                </div>
-            </div>
-
-            <div class="card">
-    <div class="card-header">
-        <h3 class="card-title" data-i18n="client.week_goals">This Week's Goals</h3>
-        <div class="card-icon icon-goals">🎯</div>
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title" data-i18n="client.quick_stats">Quick Stats</h3>
+            <div class="card-icon icon-progress">📊</div>
+        </div>
+        <div id="quickStats">
+            <p data-i18n="msg.loading">Loading stats...</p>
+        </div>
     </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title" data-i18n="client.achievements">Achievements</h3>
+            <div class="card-icon icon-progress">🏆</div>
+        </div>
+        <div id="achievementsContainer">
+            <div class="loading">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title" data-i18n="client.week_goals">This Week's Goals</h3>
+            <div class="card-icon icon-goals">🎯</div>
+        </div>
 
     <!-- Brief Goals Section -->
     <div style="padding: 0 1rem 1rem 1rem;">
@@ -931,25 +1009,46 @@
 
     <!-- Progress Tab -->
     <div id="progress" class="tab-content">
-        <h2 data-i18n="client.your_progress">Your Progress</h2>
+    <h2 data-i18n="client.your_progress">Your Progress</h2>
 
-        <div class="date-selection">
-            <label><strong data-i18n="client.view_progress">View Progress:</strong></label>
-            <select id="progressRange" class="form-input" style="width: auto;">
-                <option value="7" data-i18n="client.last_7_days">Last 7 days</option>
-                <option value="30" data-i18n="client.last_30_days">Last 30 days</option>
-                <option value="90" data-i18n="client.last_90_days">Last 90 days</option>
-            </select>
-            <button class="btn btn-secondary btn-small" onclick="loadProgress()" data-i18n="client.update">Update</button>
+    <div class="date-selection">
+        <label><strong data-i18n="client.view_progress">View Progress:</strong></label>
+        <select id="progressRange" class="form-input" style="width: auto;">
+            <option value="7" data-i18n="client.last_7_days">Last 7 days</option>
+            <option value="30" data-i18n="client.last_30_days">Last 30 days</option>
+            <option value="90" data-i18n="client.last_90_days">Last 90 days</option>
+        </select>
+        <button class="btn btn-secondary btn-small" onclick="loadProgress()" data-i18n="client.update">Update</button>
+    </div>
+
+    <!-- New: Progress Charts Section -->
+    <div class="dashboard-grid" style="margin-top: 2rem;">
+        <div class="card">
+            <h3 style="color: #333; margin-bottom: 1rem;">
+                <span data-i18n="client.progress_chart">Progress Chart</span>
+            </h3>
+            <canvas id="progressChart" style="max-height: 300px;"></canvas>
         </div>
 
-        <div id="progressContent">
-            <div class="loading">
-                <div class="spinner"></div>
-                <p data-i18n="client.loading_progress">Loading progress data...</p>
+        <div class="card">
+            <h3 style="color: #333; margin-bottom: 1rem;">
+                <span data-i18n="client.insights">Personalized Insights</span>
+            </h3>
+            <div id="progressInsights" style="line-height: 1.8;">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
             </div>
         </div>
     </div>
+
+    <div id="progressContent">
+        <div class="loading">
+            <div class="spinner"></div>
+            <p data-i18n="client.loading_progress">Loading progress data...</p>
+        </div>
+    </div>
+</div>
 
     <!-- Reports Tab -->
     <div id="reports" class="tab-content">
@@ -1112,6 +1211,24 @@
             // English
             Object.assign(window.i18n.translations.en, {
                 // Category translations
+                'client.achievements': 'Achievements',
+'client.next_milestone': 'Next Milestone',
+'client.progress_chart': 'Progress Chart',
+'client.insights': 'Personalized Insights',
+'client.goals_empty': 'Please enter goals',
+'client.goals_too_long': 'Goals are too long (maximum 500 words)',
+'client.goals_saved': 'Goals saved successfully',
+'client.brief_goals_too_long': 'Brief description is too long (maximum 20 words)',
+'client.brief_goals_saved': 'Brief goals saved successfully',
+'client.no_goals_yet': 'No goals set for this week',
+'client.click_add_brief': 'Click to add brief goals',
+'client.add_goals': 'Add Goals',
+'client.goals_description_header': 'Goals Description',
+'client.goals_placeholder': 'Enter your goals for this week (500 words max)...',
+'client.brief_goals_label': 'Brief Description:',
+'client.brief_goals_placeholder': 'Brief goals (20 words max)',
+'client.save_goals': 'Save Goals',
+'client.characters': 'characters',
                 'category.emotion_level': 'Emotion Level',
                 'category.emotion_level_desc': 'Overall emotional state',
                 'category.energy': 'Energy',
@@ -1235,6 +1352,24 @@
             // Hebrew
             Object.assign(window.i18n.translations.he, {
                 // Category translations
+               'client.achievements': 'הישגים',
+'client.next_milestone': 'היעד הבא',
+'client.progress_chart': 'תרשים התקדמות',
+'client.insights': 'תובנות מותאמות אישית',
+'client.goals_empty': 'אנא הזן יעדים',
+'client.goals_too_long': 'היעדים ארוכים מדי (מקסימום 500 מילים)',
+'client.goals_saved': 'היעדים נשמרו בהצלחה',
+'client.brief_goals_too_long': 'התיאור הקצר ארוך מדי (מקסימום 20 מילים)',
+'client.brief_goals_saved': 'היעדים הקצרים נשמרו בהצלחה',
+'client.no_goals_yet': 'אין יעדים שהוגדרו לשבוע זה',
+'client.click_add_brief': 'לחץ להוספת יעדים קצרים',
+'client.add_goals': 'הוסף יעדים',
+'client.goals_description_header': 'תיאור היעדים',
+'client.goals_placeholder': 'הזן את היעדים שלך לשבוע זה (מקסימום 500 מילים)...',
+'client.brief_goals_label': 'תיאור קצר:',
+'client.brief_goals_placeholder': 'יעדים קצרים (מקסימום 20 מילים)',
+'client.save_goals': 'שמור יעדים',
+'client.characters': 'תווים',
                 'category.emotion_level': 'רמה רגשית',
                 'category.emotion_level_desc': 'מצב רגשי כללי',
                 'category.energy': 'אנרגיה',
@@ -1359,6 +1494,24 @@
             // Russian
             Object.assign(window.i18n.translations.ru, {
                 // Category translations
+               'client.achievements': 'Достижения',
+'client.next_milestone': 'Следующая веха',
+'client.progress_chart': 'График прогресса',
+'client.insights': 'Персонализированные инсайты',
+'client.goals_empty': 'Пожалуйста, введите цели',
+'client.goals_too_long': 'Цели слишком длинные (максимум 500 слов)',
+'client.goals_saved': 'Цели успешно сохранены',
+'client.brief_goals_too_long': 'Краткое описание слишком длинное (максимум 20 слов)',
+'client.brief_goals_saved': 'Краткие цели успешно сохранены',
+'client.no_goals_yet': 'Цели на эту неделю не установлены',
+'client.click_add_brief': 'Нажмите, чтобы добавить краткие цели',
+'client.add_goals': 'Добавить цели',
+'client.goals_description_header': 'Описание целей',
+'client.goals_placeholder': 'Введите ваши цели на эту неделю (максимум 500 слов)...',
+'client.brief_goals_label': 'Краткое описание:',
+'client.brief_goals_placeholder': 'Краткие цели (максимум 20 слов)',
+'client.save_goals': 'Сохранить цели',
+'client.characters': 'символов',
                 'category.emotion_level': 'Эмоциональный уровень',
                 'category.emotion_level_desc': 'Общее эмоциональное состояние',
                 'category.energy': 'Энергия',
@@ -1482,6 +1635,24 @@
             // Arabic
             Object.assign(window.i18n.translations.ar, {
                 // Category translations
+                'client.achievements': 'الإنجازات',
+'client.next_milestone': 'الهدف التالي',
+'client.progress_chart': 'مخطط التقدم',
+'client.insights': 'رؤى شخصية',
+'client.goals_empty': 'يرجى إدخال الأهداف',
+'client.goals_too_long': 'الأهداف طويلة جداً (500 كلمة كحد أقصى)',
+'client.goals_saved': 'تم حفظ الأهداف بنجاح',
+'client.brief_goals_too_long': 'الوصف المختصر طويل جداً (20 كلمة كحد أقصى)',
+'client.brief_goals_saved': 'تم حفظ الأهداف المختصرة بنجاح',
+'client.no_goals_yet': 'لم يتم تحديد أهداف لهذا الأسبوع',
+'client.click_add_brief': 'انقر لإضافة أهداف مختصرة',
+'client.add_goals': 'إضافة أهداف',
+'client.goals_description_header': 'وصف الأهداف',
+'client.goals_placeholder': 'أدخل أهدافك لهذا الأسبوع (500 كلمة كحد أقصى)...',
+'client.brief_goals_label': 'وصف مختصر:',
+'client.brief_goals_placeholder': 'أهداف مختصرة (20 كلمة كحد أقصى)',
+'client.save_goals': 'حفظ الأهداف',
+'client.characters': 'أحرف',
                 'category.emotion_level': 'المستوى العاطفي',
                 'category.emotion_level_desc': 'الحالة العاطفية العامة',
                 'category.energy': 'الطاقة',
@@ -1607,7 +1778,75 @@
         }
 
         // Global variables
-        let authToken = localStorage.getItem('authToken');
+      //  let authToken = localStorage.getItem('authToken');
+
+
+                // ADD SECURITY HELPERS HERE
+        // Security Helper Functions
+        const SecurityHelpers = {
+            // Safely create text content
+            safeText: function(element, text) {
+                element.textContent = text || '';
+            },
+
+            // Safely set HTML content (sanitized)
+            safeHTML: function(element, html) {
+                if (typeof DOMPurify !== 'undefined') {
+                    element.innerHTML = DOMPurify.sanitize(html);
+                } else {
+                    element.textContent = html; // Fallback to text
+                }
+            },
+
+
+            // Encode HTML entities
+            encodeHTML: function(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            },
+
+            // Validate and sanitize input
+            sanitizeInput: function(input) {
+                if (typeof input !== 'string') return '';
+                return input.replace(/[<>\"\']/g, '');
+            }
+        };
+
+
+// ADD INPUT VALIDATION HERE
+        // Input Validation Functions
+        const InputValidation = {
+            validateDate: function(dateStr) {
+                const regex = /^\d{4}-\d{2}-\d{2}$/;
+                if (!regex.test(dateStr)) return false;
+                const date = new Date(dateStr);
+                return date instanceof Date && !isNaN(date);
+            },
+
+            validateWeek: function(weekStr) {
+                const regex = /^\d{4}-W\d{2}$/;
+                return regex.test(weekStr);
+            },
+
+            validateEmail: function(email) {
+                const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return regex.test(email);
+            },
+
+            validateTime: function(timeStr) {
+                const regex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+                return regex.test(timeStr);
+            },
+
+            sanitizeNotes: function(text) {
+                // Remove any HTML tags and limit length
+                return text.replace(/<[^>]*>/g, '').substring(0, 1000);
+            }
+        };
+
+
+
 
         async function checkAuth() {
             try {
@@ -1691,9 +1930,13 @@
 
  // Global functions that need to be accessible from HTML onclick
         function logout() {
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('userRole');
-            window.location.href = '/login.html';
+            // Clear session on server
+            fetch('/api/logout', {
+                method: 'POST',
+                credentials: 'include'
+            }).finally(() => {
+                window.location.href = '/login.html';
+            });
         }
 
         function showTab(tabName, event) {
@@ -1845,6 +2088,9 @@ credentials: 'include'
 
             // Update overview goals list
             updateOverviewGoals();
+
+            // Load achievements
+            loadAchievements();
 
             // Setup ALL categories dynamically
             setupAllCategories();
@@ -2239,11 +2485,19 @@ dayCell.appendChild(statusIconDiv);
         }
 
         function selectDate(date) {
-            selectedDate = date;
-            document.getElementById('checkinDate').value = date.toISOString().split('T')[0];
-            showTab('checkin');
-            checkDateStatus(date);
-        }
+    selectedDate = date;
+    const dateString = date.toISOString().split('T')[0];
+
+    // ADD THIS VALIDATION
+    if (!InputValidation.validateDate(dateString)) {
+        showMessage('Invalid date format', 'error');
+        return;
+    }
+
+    document.getElementById('checkinDate').value = dateString;
+    showTab('checkin');
+    checkDateStatus(date);
+}
 
         // Check-in Functions
         function setToday() {
@@ -2289,6 +2543,12 @@ dayCell.appendChild(statusIconDiv);
                     showMessage(i18n.t('client.select_date'), 'error');
                     return;
                 }
+                // Additional date validation
+                const selectedDate = new Date(checkinDate);
+                const today = new Date();
+                today.setHours(23, 59, 59, 999);
+
+
 
                 // Check if future date
                 if (new Date(checkinDate) > new Date()) {
@@ -2313,7 +2573,7 @@ dayCell.appendChild(statusIconDiv);
                     // Get notes
                     const notesElement = document.getElementById(`category-${catId}-notes`);
                     if (notesElement && notesElement.value) {
-                        categoryNotes[catId] = notesElement.value;
+                        categoryNotes[catId] = InputValidation.sanitizeNotes(notesElement.value);
                     }
                 });
 
@@ -2362,6 +2622,18 @@ dayCell.appendChild(statusIconDiv);
                 }
 
                 showMessage(getRandomPositiveMessage(), 'success', 10000, true);
+
+// Check for new achievements
+const beforeStreak = clientData.current_streak || 0;
+const afterStreak = beforeStreak + 1;
+
+const milestones = [3, 7, 14, 30, 90];
+if (milestones.includes(afterStreak)) {
+    setTimeout(() => {
+        showAchievementUnlocked(afterStreak);
+    }, 2000);
+}
+
 
 // Scroll to the message container smoothly
 setTimeout(() => {
@@ -2436,51 +2708,55 @@ loadDashboard();
                 return;
             }
 
-            goalsList.innerHTML = weeklyGoals.map(goal => {
-                return `
-                    <li class="goal-item">
-                        <input type="checkbox"
-                               id="goal-${goal.id}"
-                               class="goal-checkbox">
-                        <span class="goal-text">${goal.text}</span>
-                    </li>
-                `;
-            }).join('');
+            // Clear and rebuild safely
+            while (goalsList.firstChild) {
+                goalsList.removeChild(goalsList.firstChild);
+            }
+
+            weeklyGoals.forEach(goal => {
+                const li = document.createElement('li');
+                li.className = 'goal-item';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `goal-${goal.id}`;
+                checkbox.className = 'goal-checkbox';
+
+                const span = document.createElement('span');
+                span.className = 'goal-text';
+                SecurityHelpers.safeText(span, goal.text);
+
+                li.appendChild(checkbox);
+                li.appendChild(span);
+                goalsList.appendChild(li);
+            });
         }
 
         function updateOverviewGoals() {
-            const goalsList = document.getElementById('overviewGoalsList');
-
-            if (weeklyGoals.length === 0) {
-                goalsList.innerHTML = `<li style="color: #999;">${i18n.t('client.no_goals_week')}</li>`;
-                return;
-            }
-
-            goalsList.innerHTML = weeklyGoals.map(goal => {
-                const isCompleted = goal.today_completed === true;
-                return `
-                    <li class="goal-item ${isCompleted ? 'completed' : ''}">
-                        <span class="goal-text">${goal.text}</span>
-                    </li>
-                `;
-            }).join('');
-        }
-
-
-function updateOverviewGoals() {
     const goalsList = document.getElementById('overviewGoalsList');
 
+    // Clear existing content safely
+    while (goalsList.firstChild) {
+        goalsList.removeChild(goalsList.firstChild);
+    }
+
     if (weeklyGoals.length === 0) {
-        goalsList.innerHTML = `<li style="color: #999;">${i18n.t('client.no_goals_week')}</li>`;
+        const li = document.createElement('li');
+        li.style.color = '#999';
+        SecurityHelpers.safeText(li, i18n.t('client.no_goals_week'));
+        goalsList.appendChild(li);
     } else {
-        goalsList.innerHTML = weeklyGoals.map(goal => {
-            const isCompleted = goal.today_completed === true;
-            return `
-                <li class="goal-item ${isCompleted ? 'completed' : ''}">
-                    <span class="goal-text">${goal.text}</span>
-                </li>
-            `;
-        }).join('');
+        weeklyGoals.forEach(goal => {
+            const li = document.createElement('li');
+            li.className = `goal-item ${goal.today_completed === true ? 'completed' : ''}`;
+
+            const span = document.createElement('span');
+            span.className = 'goal-text';
+            SecurityHelpers.safeText(span, goal.text);
+
+            li.appendChild(span);
+            goalsList.appendChild(li);
+        });
     }
 
     // Load brief goals for current week
@@ -2513,47 +2789,276 @@ async function loadBriefGoalsForCurrentWeek() {
 
         // Progress Functions
         async function loadProgress() {
-            try {
-                const days = document.getElementById('progressRange').value;
-                const progressContent = document.getElementById('progressContent');
+    try {
+        const days = document.getElementById('progressRange').value;
+        const progressContent = document.getElementById('progressContent');
+        const insightsDiv = document.getElementById('progressInsights');
 
-                progressContent.innerHTML = `<div class="loading"><div class="spinner"></div><p>${i18n.t('client.loading_progress')}</p></div>`;
+        progressContent.innerHTML = `<div class="loading"><div class="spinner"></div><p>${i18n.t('client.loading_progress')}</p></div>`;
+        insightsDiv.innerHTML = `<div class="loading"><div class="spinner"></div></div>`;
 
-                const response = await fetch('/api/client/progress', {
-                    headers: {
+        const response = await fetch('/api/client/progress', {
+            headers: {
+                'Accept-Language': i18n.currentLang
+            },
+            credentials: 'include'
+        });
 
-    'Accept-Language': i18n.currentLang
-},
-credentials: 'include'
-                });
+        if (!response.ok) {
+            throw new Error('Failed to load progress');
+        }
 
-                if (!response.ok) {
-                    throw new Error('Failed to load progress');
-                }
+        const data = await response.json();
 
-                const data = await response.json();
+        // Create chart data
+        const chartData = prepareChartData(data.progress.checkins);
+        renderProgressChart(chartData);
 
-// Display progress (simplified version)
-progressContent.innerHTML = `
-    <div class="card">
-        <h3 data-i18n="checkin.title">${i18n.t('checkin.title')}</h3>
-        <p><span data-i18n="client.total_checkins">${i18n.t('client.total_checkins')}</span> ${data.progress.checkins.length}</p>
-        <p><span data-i18n="client.avg_emotional">${i18n.t('client.avg_emotional')}</span> ${calculateAverage(data.progress.checkins, 'emotional')}/5</p>
-        <p><span data-i18n="client.medication_adherence">${i18n.t('client.medication_adherence')}</span> ${calculateAdherence(data.progress.checkins)}%</p>
-        <p><span data-i18n="client.avg_activity">${i18n.t('client.avg_activity')}</span> ${calculateAverage(data.progress.checkins, 'activity')}/5</p>
-    </div>
-`;
+        // Generate insights
+        const insights = generateProgressInsights(data.progress.checkins);
+        displayInsights(insights);
 
-// Re-apply translations to dynamically created content
-if (window.i18n) {
-    i18n.translatePage();
+        // Display progress stats securely
+        progressContent.innerHTML = '';
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const h3 = document.createElement('h3');
+        h3.dataset.i18n = 'checkin.title';
+        h3.textContent = i18n.t('checkin.title');
+        card.appendChild(h3);
+
+        const stats = [
+            { label: 'client.total_checkins', value: data.progress.checkins.length },
+            { label: 'client.avg_emotional', value: `${calculateAverage(data.progress.checkins, 'emotional')}/5` },
+            { label: 'client.medication_adherence', value: `${calculateAdherence(data.progress.checkins)}%` },
+            { label: 'client.avg_activity', value: `${calculateAverage(data.progress.checkins, 'activity')}/5` }
+        ];
+
+        stats.forEach(stat => {
+            const p = document.createElement('p');
+            const span = document.createElement('span');
+            span.dataset.i18n = stat.label;
+            span.textContent = i18n.t(stat.label);
+            p.appendChild(span);
+            p.appendChild(document.createTextNode(' ' + stat.value));
+            card.appendChild(p);
+        });
+
+        progressContent.appendChild(card);
+
+        // Re-apply translations
+        if (window.i18n) {
+            i18n.translatePage();
+        }
+
+    } catch (error) {
+        const progressContent = document.getElementById('progressContent');
+        progressContent.innerHTML = '';
+        const errorP = document.createElement('p');
+        errorP.style.color = '#f44336';
+        errorP.textContent = i18n.t('client.error_progress');
+        progressContent.appendChild(errorP);
+
+        const insightsDiv = document.getElementById('progressInsights');
+        insightsDiv.innerHTML = '';
+        const errorP2 = document.createElement('p');
+        errorP2.style.color = '#f44336';
+        errorP2.textContent = 'Unable to generate insights';
+        insightsDiv.appendChild(errorP2);
+    }
 }
 
-            } catch (error) {
-                document.getElementById('progressContent').innerHTML =
-                    `<p style="color: #f44336;">${i18n.t('client.error_progress')}</p>`;
+
+
+function prepareChartData(checkins) {
+    // Sort by date
+    const sorted = [...checkins].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    const labels = sorted.map(c => new Date(c.date).toLocaleDateString(i18n.currentLang, { month: 'short', day: 'numeric' }));
+    const emotionalData = sorted.map(c => c.emotional || 0);
+    const activityData = sorted.map(c => c.activity || 0);
+    const medicationData = sorted.map(c => c.medication === 5 ? 5 : (c.medication === 3 ? 3 : 0));
+
+    return {
+        labels,
+        datasets: [
+            {
+                label: translateCategoryName('emotion_level'),
+                data: emotionalData,
+                borderColor: 'rgb(102, 126, 234)',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                tension: 0.4
+            },
+            {
+                label: translateCategoryName('physical_activity'),
+                data: activityData,
+                borderColor: 'rgb(85, 239, 196)',
+                backgroundColor: 'rgba(85, 239, 196, 0.1)',
+                tension: 0.4
+            },
+            {
+                label: translateCategoryName('medication'),
+                data: medicationData,
+                borderColor: 'rgb(116, 185, 255)',
+                backgroundColor: 'rgba(116, 185, 255, 0.1)',
+                tension: 0.4
+            }
+        ]
+    };
+}
+
+function renderProgressChart(data) {
+    const ctx = document.getElementById('progressChart');
+
+    // Destroy existing chart if any
+    if (window.progressChartInstance) {
+        window.progressChartInstance.destroy();
+    }
+
+    window.progressChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom'
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 5,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
             }
         }
+    });
+}
+
+function generateProgressInsights(checkins) {
+    if (checkins.length < 3) {
+        return [{
+            type: 'info',
+            text: 'Complete more check-ins to see personalized insights!'
+        }];
+    }
+
+    const insights = [];
+    const recent = checkins.slice(-7);
+    const older = checkins.slice(0, -7);
+
+    // Trend analysis
+    if (recent.length >= 3 && older.length >= 3) {
+        const recentAvg = calculateAverage(recent, 'emotional');
+        const olderAvg = calculateAverage(older, 'emotional');
+
+        if (recentAvg > olderAvg + 0.5) {
+            insights.push({
+                type: 'positive',
+                text: `Your emotional well-being has improved by ${((recentAvg - olderAvg) * 20).toFixed(0)}% compared to earlier!`
+            });
+        } else if (recentAvg < olderAvg - 0.5) {
+            insights.push({
+                type: 'suggestion',
+                text: `Your emotional ratings have dipped recently. Consider discussing coping strategies with your therapist.`
+            });
+        }
+    }
+
+    // Consistency insights
+    const lastWeekCount = checkins.filter(c => {
+        const date = new Date(c.date);
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return date >= weekAgo;
+    }).length;
+
+    if (lastWeekCount >= 6) {
+        insights.push({
+            type: 'positive',
+            text: 'Excellent consistency! You checked in almost every day this week.'
+        });
+    }
+
+    // Medication adherence
+    const medicationAdherence = calculateAdherence(recent);
+    if (medicationAdherence >= 90) {
+        insights.push({
+            type: 'positive',
+            text: 'Outstanding medication adherence! Keep up the great work.'
+        });
+    } else if (medicationAdherence < 50) {
+        insights.push({
+            type: 'suggestion',
+            text: 'Your medication adherence could improve. Set reminders if needed.'
+        });
+    }
+
+    // Pattern detection
+    const morningCheckins = checkins.filter(c => {
+        const hour = parseInt(c.time.split(':')[0]);
+        return hour < 12;
+    });
+
+    if (morningCheckins.length > checkins.length * 0.7) {
+        insights.push({
+            type: 'info',
+            text: 'You prefer morning check-ins. This consistency helps track your progress!'
+        });
+    }
+
+    return insights;
+}
+
+function displayInsights(insights) {
+    const container = document.getElementById('progressInsights');
+
+    if (insights.length === 0) {
+        container.innerHTML = '<p style="color: #666;">No insights available yet.</p>';
+        return;
+    }
+
+    container.innerHTML = insights.map(insight => {
+        let icon, color;
+        switch(insight.type) {
+            case 'positive':
+                icon = '✨';
+                color = '#4caf50';
+                break;
+            case 'suggestion':
+                icon = '💡';
+                color = '#ff9800';
+                break;
+            case 'info':
+            default:
+                icon = 'ℹ️';
+                color = '#2196f3';
+        }
+
+        return `
+            <div style="margin-bottom: 1rem; padding: 0.75rem; background: ${color}15; border-left: 3px solid ${color}; border-radius: 4px;">
+                <span style="font-size: 1.2rem; margin-right: 0.5rem;">${icon}</span>
+                <span style="color: #333;">${insight.text}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+
+
+
+
+
 
         function calculateAverage(checkins, field) {
             if (checkins.length === 0) return 0;
@@ -2575,6 +3080,14 @@ if (window.i18n) {
                 showMessage(i18n.t('client.select_client_week'), 'error');
                 return;
             }
+
+
+ // ADD THIS VALIDATION
+    if (!InputValidation.validateWeek(week)) {
+        showMessage('Invalid week format', 'error');
+        return;
+    }
+
 
             try {
                 const response = await fetch(`/api/client/generate-report/${week}`, {
@@ -2620,6 +3133,14 @@ if (window.i18n) {
         return;
     }
 
+
+ // ADD THIS VALIDATION
+    if (!InputValidation.validateWeek(week)) {
+        showMessage('Invalid week format', 'error');
+        return;
+    }
+
+
     try {
         const response = await fetch(`/api/client/generate-pdf/${week}`, {
             headers: {
@@ -2659,6 +3180,15 @@ credentials: 'include'
         showMessage(i18n.t('client.select_client_week'), 'error');
         return;
     }
+
+
+// ADD THIS VALIDATION
+    if (!InputValidation.validateWeek(week)) {
+        showMessage('Invalid week format', 'error');
+        return;
+    }
+
+
 
     try {
         // Parse week
@@ -2871,15 +3401,27 @@ credentials: 'include'
     messageDiv.className = `message ${type} ${isFlashy ? 'flashy' : ''}`;
 
     if (isFlashy) {
-        messageDiv.innerHTML = `
-            <div class="flashy-content">
-                <span class="flashy-icon">🌟</span>
-                <p class="flashy-text">${text}</p>
-                <span class="flashy-icon">🌟</span>
-            </div>
-        `;
+        const flashyContent = document.createElement('div');
+        flashyContent.className = 'flashy-content';
+
+        const icon1 = document.createElement('span');
+        icon1.className = 'flashy-icon';
+        icon1.textContent = '🌟';
+
+        const flashyText = document.createElement('p');
+        flashyText.className = 'flashy-text';
+        SecurityHelpers.safeText(flashyText, text);
+
+        const icon2 = document.createElement('span');
+        icon2.className = 'flashy-icon';
+        icon2.textContent = '🌟';
+
+        flashyContent.appendChild(icon1);
+        flashyContent.appendChild(flashyText);
+        flashyContent.appendChild(icon2);
+        messageDiv.appendChild(flashyContent);
     } else {
-        messageDiv.textContent = text;
+        SecurityHelpers.safeText(messageDiv, text);
     }
 
     container.appendChild(messageDiv);
@@ -2955,16 +3497,19 @@ function getRandomPositiveMessage() {
 
 
 
-        function logout() {
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('userRole');
-            window.location.href = '/login.html';
-        }
 
         // Set date input event listener
-        document.getElementById('checkinDate').addEventListener('change', function() {
-            checkDateStatus(new Date(this.value));
-        });
+       document.getElementById('checkinDate').addEventListener('change', function() {
+    // ADD VALIDATION HERE
+    if (this.value && !InputValidation.validateDate(this.value)) {
+        showMessage('Invalid date format', 'error');
+        this.value = '';
+        return;
+    }
+    if (this.value) {
+        checkDateStatus(new Date(this.value));
+    }
+});
 
 
 // Email Reminder Functions with Celery
@@ -3057,10 +3602,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const time = document.getElementById('reminderTime').value;
     const email = document.getElementById('reminderEmail').value;
 
+
     if (!time && enabled) {
         showMessage(i18n.t('client.please_select_time'), 'error');
         return;
     }
+
+
+
+// ADD EMAIL VALIDATION HERE
+    if (email && !InputValidation.validateEmail(email)) {
+        showMessage('Invalid email format', 'error');
+        return;
+    }
+
+// After the email validation, add:
+    if (time && !InputValidation.validateTime(time)) {
+        showMessage('Invalid time format', 'error');
+        return;
+    }
+
+
 
     // ALWAYS use Jerusalem timezone for reminders
     // This ensures consistency regardless of where the user is located
@@ -3680,67 +4242,95 @@ async function loadConsentStatus() {
         }
 
         async function saveWeeklyGoals() {
-            const goalsText = document.getElementById('goalsTextArea').value.trim();
+    const goalsTextArea = document.getElementById('goalsTextArea');
+    const goalsText = goalsTextArea.value.trim();
 
-            if (!goalsText) {
-                showMessage(i18n.t('client.goals_empty'), 'error');
-                return;
-            }
-
-            // Count words
-            const wordCount = goalsText.split(/\s+/).filter(word => word.length > 0).length;
-            if (wordCount > 500) {
-                showMessage(i18n.t('client.goals_too_long'), 'error');
-                return;
-            }
-
-            try {
-                const [year, week] = currentEditingWeek.split('-W');
-                const weekStart = getDateFromWeek(parseInt(year), parseInt(week));
-
-                const response = await fetch('/api/client/save-goals', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept-Language': i18n.currentLang
-                    },
-                    credentials: 'include',
-                    body: JSON.stringify({
-                        week_start: weekStart,
-                        goals: goalsText
-                    })
-                });
-
-                if (!response.ok) throw new Error('Failed to save goals');
-
-                showMessage(i18n.t('client.goals_saved'), 'success');
-
-                // Hide editor and show display
-                document.getElementById('goalsTextArea').style.display = 'none';
-                document.getElementById('goalsDisplay').style.display = 'block';
-                document.getElementById('saveGoalsBtn').style.display = 'none';
-                document.getElementById('goalsCharCount').style.display = 'none';
-
-                // Update display
-                const goalsDisplay = document.getElementById('goalsDisplay');
-goalsDisplay.innerHTML = '';
-const lines = goalsText.split('\n');
-lines.forEach((line, index) => {
-    if (index > 0) {
-        goalsDisplay.appendChild(document.createElement('br'));
+    if (!goalsText) {
+        showMessage(i18n.t('client.goals_empty'), 'error');
+        return;
     }
-    goalsDisplay.appendChild(document.createTextNode(line));
-});
 
-                // Reload if on overview tab
-                if (document.querySelector('.tab-content.active')?.id === 'overview') {
-                    loadCurrentWeekOverview();
-                }
+    // Sanitize the goals text
+    const sanitizedGoals = InputValidation.sanitizeNotes(goalsText);
 
-            } catch (error) {
-                showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
+    // Count words on sanitized text
+    const wordCount = sanitizedGoals.split(/\s+/).filter(word => word.length > 0).length;
+    if (wordCount > 500) {
+        showMessage(i18n.t('client.goals_too_long'), 'error');
+        return;
+    }
+
+    try {
+        // Validate week format before parsing
+        if (!currentEditingWeek || !InputValidation.validateWeek(currentEditingWeek)) {
+            showMessage('Invalid week format', 'error');
+            return;
+        }
+
+        const [year, week] = currentEditingWeek.split('-W');
+        const weekStart = getDateFromWeek(parseInt(year), parseInt(week));
+
+        const response = await fetch('/api/client/save-goals', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept-Language': i18n.currentLang
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                week_start: weekStart,
+                goals: sanitizedGoals  // Use sanitized version
+            })
+        });
+
+        if (!response.ok) throw new Error('Failed to save goals');
+
+        showMessage(i18n.t('client.goals_saved'), 'success');
+
+        // Hide editor and show display
+        goalsTextArea.style.display = 'none';
+        document.getElementById('goalsDisplay').style.display = 'block';
+        document.getElementById('saveGoalsBtn').style.display = 'none';
+        document.getElementById('goalsCharCount').style.display = 'none';
+
+        // Update display securely
+        const goalsDisplay = document.getElementById('goalsDisplay');
+
+        // Clear existing content safely
+        while (goalsDisplay.firstChild) {
+            goalsDisplay.removeChild(goalsDisplay.firstChild);
+        }
+
+        // Add sanitized content line by line
+        const lines = sanitizedGoals.split('\n');
+        lines.forEach((line, index) => {
+            if (index > 0) {
+                goalsDisplay.appendChild(document.createElement('br'));
+            }
+            // Using createTextNode is already safe, but let's use our helper
+            const textNode = document.createTextNode(line);
+            goalsDisplay.appendChild(textNode);
+        });
+
+        // Reload if on overview tab
+        const activeTab = document.querySelector('.tab-content.active');
+        if (activeTab && activeTab.id === 'overview') {
+            if (typeof loadCurrentWeekOverview === 'function') {
+                loadCurrentWeekOverview();
+            } else {
+                // If loadCurrentWeekOverview doesn't exist, reload dashboard
+                loadDashboard();
             }
         }
+
+    } catch (error) {
+        showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
+    }
+}
+
+
+
+
 
         async function loadWeeklyGoals() {
             const weekInput = document.getElementById('goalsWeek').value;
@@ -3865,6 +4455,179 @@ lines.forEach((line, index) => {
                 charCount.textContent = goalsTextArea.value.length;
             }
         }
+
+// Achievement System
+async function loadAchievements() {
+    try {
+        const container = document.getElementById('achievementsContainer');
+
+        // Calculate achievements from existing data
+        const achievements = calculateAchievements();
+
+        container.innerHTML = `
+            <div style="margin-bottom: 1rem;">
+                ${achievements.earned.map(a => `
+                    <div class="achievement-badge ${a.isNew ? 'achievement-new' : ''}">
+                        <span style="font-size: 1.5rem;">${a.icon}</span>
+                        <span>${a.name}</span>
+                    </div>
+                `).join('')}
+            </div>
+
+            <div style="border-top: 1px solid #e0e0e0; padding-top: 1rem;">
+                <p style="font-weight: 600; margin-bottom: 0.5rem;">
+                    <span data-i18n="client.next_milestone">Next Milestone</span>:
+                </p>
+                ${achievements.next ? `
+                    <div>
+                        <p style="margin-bottom: 0.5rem; color: #666;">
+                            ${achievements.next.name} - ${achievements.next.description}
+                        </p>
+                        <div class="milestone-progress">
+                            <div class="milestone-progress-bar" style="width: ${achievements.next.progress}%">
+                                ${achievements.next.progress}%
+                            </div>
+                        </div>
+                    </div>
+                ` : '<p style="color: #666;">All achievements unlocked!</p>'}
+            </div>
+        `;
+
+        // Re-apply translations
+        if (window.i18n) {
+            i18n.translatePage();
+        }
+
+    } catch (error) {
+        console.error('Error loading achievements:', error);
+    }
+}
+
+function calculateAchievements() {
+    const earned = [];
+    let next = null;
+
+    // Check streak achievements
+    const currentStreak = clientData.current_streak || 0;
+
+    const streakAchievements = [
+        { days: 3, name: 'Getting Started', icon: '🌱', description: '3-day streak' },
+        { days: 7, name: 'Week Warrior', icon: '⭐', description: '7-day streak' },
+        { days: 14, name: 'Fortnight Focus', icon: '🔥', description: '14-day streak' },
+        { days: 30, name: 'Monthly Master', icon: '🏆', description: '30-day streak' },
+        { days: 90, name: 'Quarter Champion', icon: '👑', description: '90-day streak' }
+    ];
+
+    for (const achievement of streakAchievements) {
+        if (currentStreak >= achievement.days) {
+            earned.push({
+                ...achievement,
+                isNew: currentStreak === achievement.days
+            });
+        } else if (!next) {
+            next = {
+                ...achievement,
+                progress: Math.round((currentStreak / achievement.days) * 100)
+            };
+        }
+    }
+
+    // Check weekly completion achievements
+    const weekCompletions = clientData.week_checkins_count || 0;
+
+    if (weekCompletions === 7) {
+        earned.push({
+            name: 'Perfect Week',
+            icon: '💯',
+            description: 'Completed all 7 days this week',
+            isNew: true
+        });
+    } else if (weekCompletions >= 5) {
+        earned.push({
+            name: 'Consistent Week',
+            icon: '📅',
+            description: 'Completed 5+ days this week'
+        });
+    }
+
+    // Check total checkins (would need API support)
+    const totalCheckins = parseInt(document.querySelector('#quickStats p')?.textContent?.match(/\d+/)?.[0] || '0');
+
+    const totalAchievements = [
+        { total: 10, name: 'First Steps', icon: '👣' },
+        { total: 50, name: 'Dedicated', icon: '💪' },
+        { total: 100, name: 'Century', icon: '💯' },
+        { total: 365, name: 'Year-Round', icon: '🌟' }
+    ];
+
+    for (const achievement of totalAchievements) {
+        if (totalCheckins >= achievement.total) {
+            earned.push(achievement);
+        }
+    }
+
+    return { earned, next };
+}
+
+
+
+        function showAchievementUnlocked(days) {
+    const achievementMap = {
+        3: { name: 'Getting Started', icon: '🌱' },
+        7: { name: 'Week Warrior', icon: '⭐' },
+        14: { name: 'Fortnight Focus', icon: '🔥' },
+        30: { name: 'Monthly Master', icon: '🏆' },
+        90: { name: 'Quarter Champion', icon: '👑' }
+    };
+
+    const achievement = achievementMap[days];
+    if (!achievement) return;
+
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 2rem;
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        text-align: center;
+        z-index: 1000;
+        animation: achievementBounce 0.5s ease-out;
+    `;
+
+    modal.innerHTML = `
+        <div style="font-size: 4rem; margin-bottom: 1rem; animation: achievementSpin 1s ease-in-out;">
+            ${achievement.icon}
+        </div>
+        <h2 style="color: #333; margin-bottom: 0.5rem;">Achievement Unlocked!</h2>
+        <p style="font-size: 1.2rem; color: #666; margin-bottom: 1.5rem;">${achievement.name}</p>
+        <p style="color: #999;">${days}-day streak achieved!</p>
+        <button class="btn btn-primary" onclick="this.parentElement.remove()">Awesome!</button>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Add animation styles
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes achievementBounce {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        @keyframes achievementSpin {
+            0% { transform: rotate(0deg) scale(0.5); }
+            50% { transform: rotate(180deg) scale(1.2); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+
 
 
 
