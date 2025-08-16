@@ -2588,6 +2588,7 @@ window.addEventListener('load', function() {
     } else if (tabName === 'consent') {
         loadConsentStatus();
     } else if (tabName === 'checkin') {
+        console.log('Check-in tab selected, calling checkHistoricalCrisisPatterns');
         // Check for crisis patterns when switching to check-in tab
         checkHistoricalCrisisPatterns();
     }
@@ -2796,30 +2797,19 @@ window.addEventListener('load', function() {
 
 
 
-        // Initialize
+       // Initialize
 document.addEventListener('DOMContentLoaded', async function() {
     try {
-
         let chartLoadAttempts = 0;
-    while (typeof Chart === 'undefined' && chartLoadAttempts < 20) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        chartLoadAttempts++;
-    }
+        while (typeof Chart === 'undefined' && chartLoadAttempts < 20) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            chartLoadAttempts++;
+        }
 
-    if (typeof Chart === 'undefined') {
-        console.error('Chart.js failed to load after 2 seconds');
-    }
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js failed to load after 2 seconds');
+        }
 
-
-        const isAuthenticated = await checkAuth();
-        if (!isAuthenticated) return;
-
-        await loadDashboard();
-
-
-
-        document.addEventListener('DOMContentLoaded', async function() {
-    try {
         const isAuthenticated = await checkAuth();
         if (!isAuthenticated) return;
 
@@ -2830,8 +2820,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Make sure categories are loaded first
         await setupAllCategories();  // Add await if this is async
 
+        console.log('About to call checkHistoricalCrisisPatterns from DOMContentLoaded');
 
-        // Add this line to check crisis patterns on page load
         // THEN check crisis patterns
         setTimeout(() => {
             checkHistoricalCrisisPatterns();
@@ -3480,14 +3470,7 @@ async function checkHistoricalCrisisPatterns() {
         const data = await response.json();
         const checkins = data.progress?.checkins || [];
 
-        console.log('=== CRISIS PATTERN DEBUG ===');
-        console.log('Total checkins found:', checkins.length);
-
-        // Debug: Show the structure of the first checkin
-        if (checkins.length > 0) {
-            console.log('First checkin structure:', JSON.stringify(checkins[0], null, 2));
-            console.log('All keys in first checkin:', Object.keys(checkins[0]));
-        }
+        console.log('Checking crisis patterns. Total checkins:', checkins.length);
 
         // Count low mood days
         let lowMoodCount = 0;
@@ -3497,47 +3480,35 @@ async function checkHistoricalCrisisPatterns() {
         // Sort by date (oldest first)
         checkins.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        checkins.forEach((checkin, index) => {
+        checkins.forEach(checkin => {
             let hasLowMood = false;
-            let debugInfo = { date: checkin.date, values: {} };
+            let emotionValue = null;
 
-            // Check all possible emotional/mood fields
-            if (checkin.emotion_level !== undefined) {
-                debugInfo.values.emotion_level = checkin.emotion_level;
-                if (checkin.emotion_level <= 2) hasLowMood = true;
-            }
-
-            if (checkin.emotional !== undefined) {
-                debugInfo.values.emotional = checkin.emotional;
-                if (checkin.emotional <= 2) hasLowMood = true;
-            }
-
-            if (checkin['Emotion Level'] !== undefined) {
-                debugInfo.values['Emotion Level'] = checkin['Emotion Level'];
-                if (checkin['Emotion Level'] <= 2) hasLowMood = true;
-            }
-
-            // Check category_responses
+            // The emotion data is likely in category_responses
             if (checkin.category_responses) {
-                debugInfo.category_responses = checkin.category_responses;
+                // Find the Emotion Level category ID
+                // We need to check each category to find the one for emotions
+                for (const [categoryId, value] of Object.entries(checkin.category_responses)) {
+                    // Check if this category is the emotion one
+                    // You'll need to match this with your trackingCategories
+                    const category = trackingCategories?.find(cat =>
+                        cat.id == categoryId &&
+                        (cat.name === 'Emotion Level' ||
+                         cat.original_name === 'Emotion Level' ||
+                         cat.name.toLowerCase().includes('emotion'))
+                    );
 
-                // Make sure trackingCategories is defined and loaded
-                if (typeof trackingCategories !== 'undefined' && Array.isArray(trackingCategories)) {
-                    trackingCategories.forEach(cat => {
-                        if (cat.original_name?.toLowerCase().includes('emotion')) {
-                            const value = checkin.category_responses[cat.id];
-                            debugInfo.values[`category_${cat.id}_${cat.original_name}`] = value;
-                            if (value !== undefined && value <= 2) {
-                                hasLowMood = true;
-                            }
+                    if (category) {
+                        emotionValue = value;
+                        if (value <= 2) {
+                            hasLowMood = true;
                         }
-                    });
-                } else {
-                    console.log('Warning: trackingCategories not defined or not an array');
+                        break;
+                    }
                 }
             }
 
-            console.log(`Checkin ${index}:`, debugInfo, 'hasLowMood:', hasLowMood);
+            console.log(`Date: ${checkin.date}, Emotion Value: ${emotionValue}, Has Low Mood: ${hasLowMood}`);
 
             if (hasLowMood) {
                 lowMoodCount++;
@@ -3548,26 +3519,23 @@ async function checkHistoricalCrisisPatterns() {
             }
         });
 
-        console.log('=== FINAL RESULTS ===');
-        console.log('Low mood count:', lowMoodCount);
-        console.log('Max consecutive:', maxConsecutive);
-        console.log('Should show crisis support:', (maxConsecutive >= 3 || lowMoodCount >= 5));
+        console.log('Crisis check - Low mood count:', lowMoodCount, 'Max consecutive:', maxConsecutive);
 
         // Show crisis support if conditions are met
         if (maxConsecutive >= 3 || lowMoodCount >= 5) {
-            console.log('SHOWING crisis support based on historical data');
             document.getElementById('crisisSupport').style.display = 'block';
             loadCrisisResources();
         } else {
-            console.log('HIDING crisis support - conditions not met');
+            // Hide it if conditions aren't met
             document.getElementById('crisisSupport').style.display = 'none';
         }
 
     } catch (error) {
         console.error('Error checking historical crisis patterns:', error);
+        // On error, hide the crisis support
+        document.getElementById('crisisSupport').style.display = 'none';
     }
 }
-
 
 
         // XSS-Safe Crisis Resources Loading
