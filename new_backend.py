@@ -1868,8 +1868,20 @@ class HomeworkSubmission(db.Model):
     client = db.relationship('Client', backref='homework_submissions')
 
 
+class SafetyPlan(db.Model):
+    __tablename__ = 'safety_plans'
 
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=False)
+    warning_signs = db.Column(db.Text)
+    coping_strategies = db.Column(db.Text)
+    support_contacts = db.Column(db.Text)
+    professional_contacts = db.Column(db.Text)
+    safe_environment = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime)
 
+    client = db.relationship('Client', backref='safety_plan')
 
 
 
@@ -10663,6 +10675,36 @@ def request_urgent_session():
         logger.error(f"Error requesting urgent session: {str(e)}")
         db.session.rollback()
         return jsonify({'error': 'Failed to send urgent request'}), 500
+
+
+@app.route('/api/client/safety-plan', methods=['GET'])
+@require_auth(['client'])
+def get_client_safety_plan():
+    """Get client's safety plan"""
+    try:
+        client = request.current_user.client
+
+        # Check if client has a safety plan
+        safety_plan = SafetyPlan.query.filter_by(client_id=client.id).first()
+
+        if safety_plan:
+            return jsonify({
+                'safety_plan': {
+                    'warning_signs': safety_plan.warning_signs,
+                    'coping_strategies': safety_plan.coping_strategies,
+                    'support_contacts': safety_plan.support_contacts,
+                    'professional_contacts': safety_plan.professional_contacts,
+                    'safe_environment': safety_plan.safe_environment,
+                    'created_at': safety_plan.created_at.isoformat(),
+                    'updated_at': safety_plan.updated_at.isoformat() if safety_plan.updated_at else None
+                }
+            })
+        else:
+            return jsonify({'safety_plan': None})
+
+    except Exception as e:
+        logger.error(f"Error getting safety plan: {str(e)}")
+        return jsonify({'error': 'Failed to load safety plan'}), 500
 
 
 
