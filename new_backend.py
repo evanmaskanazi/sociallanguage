@@ -10532,15 +10532,17 @@ def client_queue_status():
         return jsonify({'error': str(e)}), 500
 
 
+# Client endpoints
 @app.route('/api/client/homework', methods=['GET'])
-@login_required
-@role_required('client')
+@require_auth(['client'])
 def get_client_homework():
     """Get homework assignments for current client"""
     try:
+        client = request.current_user.client
+
         # Get assignments for this client
         assignments = db.session.query(HomeworkAssignment).filter_by(
-            client_id=current_user.id,
+            client_id=client.id,
             is_active=True
         ).order_by(HomeworkAssignment.due_date.asc()).all()
 
@@ -10550,23 +10552,23 @@ def get_client_homework():
                 'type': a.homework_type,
                 'title': a.title,
                 'description': a.description,
-                'therapist_name': a.therapist.username if a.therapist else 'Your Therapist',
+                'therapist_name': a.therapist.user.username if a.therapist else 'Your Therapist',
                 'due_date': a.due_date.isoformat() if a.due_date else None,
                 'completed': a.completed,
                 'created_at': a.created_at.isoformat()
             } for a in assignments]
         })
     except Exception as e:
-        app.logger.error(f"Error getting homework: {str(e)}")
+        logger.error(f"Error getting homework: {str(e)}")
         return jsonify({'error': 'Failed to load homework'}), 500
 
 
 @app.route('/api/client/submit-homework', methods=['POST'])
-@login_required
-@role_required('client')
+@require_auth(['client'])
 def submit_homework():
     """Submit completed homework"""
     try:
+        client = request.current_user.client
         data = request.get_json()
         assignment_id = data.get('assignment_id')
         responses = data.get('responses', {})
@@ -10574,7 +10576,7 @@ def submit_homework():
         # Find the assignment
         assignment = HomeworkAssignment.query.filter_by(
             id=assignment_id,
-            client_id=current_user.id
+            client_id=client.id
         ).first()
 
         if not assignment:
@@ -10583,7 +10585,7 @@ def submit_homework():
         # Create submission record
         submission = HomeworkSubmission(
             assignment_id=assignment_id,
-            client_id=current_user.id,
+            client_id=client.id,
             responses=json.dumps(responses),
             submitted_at=datetime.utcnow()
         )
@@ -10598,10 +10600,10 @@ def submit_homework():
         # Notify therapist
         notification = TherapistNotification(
             therapist_id=assignment.therapist_id,
-            client_id=current_user.id,
+            client_id=client.id,
             type='homework_completed',
             title=f'Homework Completed: {assignment.title}',
-            message=f'{current_user.username} has completed their {assignment.title} homework.',
+            message=f'{client.client_name or client.client_serial} has completed their {assignment.title} homework.',
             created_at=datetime.utcnow()
         )
         db.session.add(notification)
@@ -10609,18 +10611,18 @@ def submit_homework():
 
         return jsonify({'success': True})
     except Exception as e:
-        app.logger.error(f"Error submitting homework: {str(e)}")
+        logger.error(f"Error submitting homework: {str(e)}")
         db.session.rollback()
         return jsonify({'error': 'Failed to submit homework'}), 500
 
 
-# Therapist endpoints for assigning homework
+# Therapist endpoints
 @app.route('/api/therapist/assign-homework', methods=['POST'])
-@login_required
-@role_required('therapist')
+@require_auth(['therapist'])
 def assign_homework():
     """Assign homework to a client"""
     try:
+        therapist = request.current_user.therapist
         data = request.get_json()
         client_id = data.get('client_id')
         homework_type = data.get('type')
@@ -10631,7 +10633,7 @@ def assign_homework():
         # Verify therapist has access to this client
         client = Client.query.filter_by(
             id=client_id,
-            therapist_id=current_user.id
+            therapist_id=therapist.id
         ).first()
 
         if not client:
@@ -10640,7 +10642,7 @@ def assign_homework():
         # Create assignment
         assignment = HomeworkAssignment(
             client_id=client_id,
-            therapist_id=current_user.id,
+            therapist_id=therapist.id,
             homework_type=homework_type,
             title=title,
             description=description,
@@ -10652,26 +10654,36 @@ def assign_homework():
         db.session.add(assignment)
         db.session.commit()
 
+        logger.info('homework_assigned', extra={
+            'extra_data': {
+                'therapist_id': therapist.id,
+                'client_id': client_id,
+                'homework_type': homework_type,
+                'assignment_id': assignment.id
+            }
+        })
+
         return jsonify({
             'success': True,
             'assignment_id': assignment.id
         })
     except Exception as e:
-        app.logger.error(f"Error assigning homework: {str(e)}")
+        logger.error(f"Error assigning homework: {str(e)}")
         db.session.rollback()
         return jsonify({'error': 'Failed to assign homework'}), 500
 
 
 @app.route('/api/therapist/client/<int:client_id>/homework', methods=['GET'])
-@login_required
-@role_required('therapist')
+@require_auth(['therapist'])
 def get_client_homework_status(client_id):
     """Get homework status for a specific client"""
     try:
+        therapist = request.current_user.therapist
+
         # Verify access
         client = Client.query.filter_by(
             id=client_id,
-            therapist_id=current_user.id
+            therapist_id=therapist.id
         ).first()
 
         if not client:
@@ -10693,7 +10705,7 @@ def get_client_homework_status(client_id):
             } for a in assignments]
         })
     except Exception as e:
-        app.logger.error(f"Error getting client homework: {str(e)}")
+        logger.error(f"Error getting client homework: {str(e)}")
         return jsonify({'error': 'Failed to load homework'}), 500
 
 
