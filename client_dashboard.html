@@ -795,14 +795,14 @@ window.addEventListener('load', function() {
 
 
 /* Crisis Support Styles */
-        .homework-template {
+        .task-template {
             background: white;
             padding: 2rem;
             border-radius: 12px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
 
-        .homework-form .form-group {
+        .task-form .form-group {
             margin-bottom: 1.5rem;
         }
 
@@ -913,7 +913,7 @@ window.addEventListener('load', function() {
         <div class="nav-tab" onclick="showTab('checkin', event)" data-i18n="nav.daily_checkin">Daily Check-in</div>
         <div class="nav-tab" onclick="showTab('progress', event)" data-i18n="nav.progress">Progress</div>
         <div class="nav-tab" onclick="showTab('goals', event)" data-i18n="nav.goals">Goals</div>
-        <div class="nav-tab" onclick="showTab('homework', event)" data-i18n="nav.homework">Homework</div>
+        <div class="nav-tab" onclick="showTab('task', event)" data-i18n="nav.task">task</div>
         <div class="nav-tab" onclick="showTab('reports', event)" data-i18n="nav.reports">Reports</div>
         <div class="nav-tab" onclick="showTab('settings', event)" data-i18n="nav.settings">Settings</div>
         <div class="nav-tab" onclick="showTab('consent', event)" data-i18n="nav.consent">Consent</div>
@@ -1108,48 +1108,48 @@ window.addEventListener('load', function() {
 
 
 
-         <!-- Therapy Homework Tab -->
-    <div id="homework" class="tab-content">
-        <h2 data-i18n="homework.title">Therapy Homework</h2>
+         <!-- Therapy task Tab -->
+    <div id="task" class="tab-content">
+        <h2 data-i18n="task.title">Therapy task</h2>
 
         <div class="date-selection">
-            <label><strong data-i18n="homework.current">Current Assignments:</strong></label>
-            <button class="btn btn-secondary btn-small" onclick="loadHomework()" data-i18n="homework.refresh">Refresh</button>
+            <label><strong data-i18n="task.current">Current Assignments:</strong></label>
+            <button class="btn btn-secondary btn-small" onclick="loadtask()" data-i18n="task.refresh">Refresh</button>
         </div>
 
-        <div id="homeworkContent">
+        <div id="taskContent">
             <div class="loading">
                 <div class="spinner"></div>
                 <p data-i18n="msg.loading">Loading assignments...</p>
             </div>
         </div>
 
-        <!-- Homework Templates -->
-        <div id="homeworkTemplates" style="display: none;">
+        <!-- task Templates -->
+        <div id="taskTemplates" style="display: none;">
             <!-- Thought Record Template -->
-            <div id="thoughtRecordTemplate" class="homework-template">
+            <div id="thoughtRecordTemplate" class="task-template">
                 <h3>CBT Thought Record</h3>
-                <form class="homework-form" onsubmit="submitThoughtRecord(event)">
+                <form class="task-form" onsubmit="submitThoughtRecord(event)">
                     <div class="form-group">
-                        <label data-i18n="homework.situation">Situation:</label>
+                        <label data-i18n="task.situation">Situation:</label>
                         <textarea class="notes-textarea" name="situation" required
                             placeholder="What happened? When? Where? Who was involved?"></textarea>
                     </div>
 
                     <div class="form-group">
-                        <label data-i18n="homework.thoughts">Automatic Thoughts:</label>
+                        <label data-i18n="task.thoughts">Automatic Thoughts:</label>
                         <textarea class="notes-textarea" name="thoughts" required
                             placeholder="What went through your mind?"></textarea>
                     </div>
 
                     <div class="form-group">
-                        <label data-i18n="homework.emotions">Emotions (rate 0-100%):</label>
+                        <label data-i18n="task.emotions">Emotions (rate 0-100%):</label>
                         <input type="text" class="form-input" name="emotions" required
                             placeholder="e.g., Anxious 80%, Sad 60%">
                     </div>
 
                     <div class="form-group">
-    <label data-i18n="homework.evidence_for">Evidence For:</label>
+    <label data-i18n="task.evidence_for">Evidence For:</label>
     <small style="color: #666; display: block; margin-bottom: 0.5rem;">
         What facts support your automatic thought? Be specific.
     </small>
@@ -1158,18 +1158,18 @@ window.addEventListener('load', function() {
 </div>
 
                     <div class="form-group">
-    <label data-i18n="homework.evidence_against">Evidence Against:</label>
+    <label data-i18n="task.evidence_against">Evidence Against:</label>
     <small style="color: #666; display: block; margin-bottom: 0.5rem;"
-           data-i18n="homework.evidence_against_help">
+           data-i18n="task.evidence_against_help">
         What facts contradict your negative thought? Look for exceptions or alternative explanations.
     </small>
     <textarea class="notes-textarea" name="evidence_against" required
-        data-i18n-placeholder="homework.evidence_against_placeholder"
+        data-i18n-placeholder="task.evidence_against_placeholder"
         placeholder="Example: 'I got positive feedback last week' or 'My boss was stressed about other issues'"></textarea>
 </div>
 
                     <div class="form-group">
-    <label data-i18n="homework.balanced_thought">Balanced Thought:</label>
+    <label data-i18n="task.balanced_thought">Balanced Thought:</label>
     <small style="color: #666; display: block; margin-bottom: 0.5rem;">
         A more realistic way to think about the situation.
     </small>
@@ -1178,31 +1178,31 @@ window.addEventListener('load', function() {
 </div>
 
                     <div class="form-group">
-    <label data-i18n="homework.emotions_after">Emotions Now (rate 0-100%):</label>
+    <label data-i18n="task.emotions_after">Emotions Now (rate 0-100%):</label>
     <small style="color: #666; display: block; margin-bottom: 0.5rem;"
-           data-i18n="homework.emotions_after_help">
+           data-i18n="task.emotions_after_help">
         After considering all evidence and your balanced thought, how do you feel now?
     </small>
     <input type="text" class="form-input" name="emotions_after" required
-        data-i18n-placeholder="homework.emotions_after_placeholder"
+        data-i18n-placeholder="task.emotions_after_placeholder"
         placeholder="Example: 'Anxious 40%, Confident 60%' (notice the reduction)">
 </div>
 
-                    <button type="submit" class="btn btn-primary" data-i18n="homework.submit">Submit Homework</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="task.submit">Submit task</button>
                 </form>
             </div>
 
             <!-- DBT Distress Tolerance Template -->
-            <div id="distressToleranceTemplate" class="homework-template">
+            <div id="distressToleranceTemplate" class="task-template">
                 <h3>DBT Distress Tolerance Skills Practice</h3>
-                <form class="homework-form" onsubmit="submitDistressTolerance(event)">
+                <form class="task-form" onsubmit="submitDistressTolerance(event)">
                     <div class="form-group">
-                        <label data-i18n="homework.distress_level">Distress Level (0-10):</label>
+                        <label data-i18n="task.distress_level">Distress Level (0-10):</label>
                         <input type="number" class="form-input" name="distress_level" min="0" max="10" required>
                     </div>
 
                     <div class="form-group">
-                        <label data-i18n="homework.skill_used">Which TIPP skill did you use?</label>
+                        <label data-i18n="task.skill_used">Which TIPP skill did you use?</label>
                         <select class="form-input" name="skill_used" required>
                             <option value="">Select a skill</option>
                             <option value="temperature">Temperature Change</option>
@@ -1213,56 +1213,56 @@ window.addEventListener('load', function() {
                     </div>
 
                     <div class="form-group">
-                        <label data-i18n="homework.skill_details">How did you apply it?</label>
+                        <label data-i18n="task.skill_details">How did you apply it?</label>
                         <textarea class="notes-textarea" name="skill_details" required></textarea>
                     </div>
 
                     <div class="form-group">
-                        <label data-i18n="homework.distress_after">Distress Level After (0-10):</label>
+                        <label data-i18n="task.distress_after">Distress Level After (0-10):</label>
                         <input type="number" class="form-input" name="distress_after" min="0" max="10" required>
                     </div>
 
-                    <button type="submit" class="btn btn-primary" data-i18n="homework.submit">Submit Homework</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="task.submit">Submit task</button>
                 </form>
             </div>
 
 <!-- Exposure Log Template -->
-<div id="exposureLogTemplate" class="homework-template">
+<div id="exposureLogTemplate" class="task-template">
     <h3>Exposure Therapy Log</h3>
-    <form class="homework-form" onsubmit="submitExposureLog(event)">
+    <form class="task-form" onsubmit="submitExposureLog(event)">
         <div class="form-group">
-            <label data-i18n="homework.exposure_situation">Exposure Situation:</label>
+            <label data-i18n="task.exposure_situation">Exposure Situation:</label>
             <textarea class="notes-textarea" name="situation" required
                 placeholder="What situation did you expose yourself to?"></textarea>
         </div>
 
         <div class="form-group">
-            <label data-i18n="homework.anxiety_before">Anxiety Before (0-10):</label>
+            <label data-i18n="task.anxiety_before">Anxiety Before (0-10):</label>
             <input type="number" class="form-input" name="anxiety_before" min="0" max="10" required>
         </div>
 
         <div class="form-group">
-            <label data-i18n="homework.duration">Duration (minutes):</label>
+            <label data-i18n="task.duration">Duration (minutes):</label>
             <input type="number" class="form-input" name="duration" min="1" required>
         </div>
 
         <div class="form-group">
-            <label data-i18n="homework.anxiety_peak">Peak Anxiety (0-10):</label>
+            <label data-i18n="task.anxiety_peak">Peak Anxiety (0-10):</label>
             <input type="number" class="form-input" name="anxiety_peak" min="0" max="10" required>
         </div>
 
         <div class="form-group">
-            <label data-i18n="homework.anxiety_after">Anxiety After (0-10):</label>
+            <label data-i18n="task.anxiety_after">Anxiety After (0-10):</label>
             <input type="number" class="form-input" name="anxiety_after" min="0" max="10" required>
         </div>
 
         <div class="form-group">
-            <label data-i18n="homework.observations">Observations:</label>
+            <label data-i18n="task.observations">Observations:</label>
             <textarea class="notes-textarea" name="observations" required
                 placeholder="What did you notice? What did you learn?"></textarea>
         </div>
 
-        <button type="submit" class="btn btn-primary" data-i18n="homework.submit">Submit Homework</button>
+        <button type="submit" class="btn btn-primary" data-i18n="task.submit">Submit task</button>
     </form>
 </div>
 
@@ -1479,13 +1479,13 @@ window.addEventListener('load', function() {
             Object.assign(window.i18n.translations.en, {
                 // Category translations
 
-                 'nav.homework': 'Homework',
-                     'homework.evidence_against_help': 'What facts contradict your negative thought? Look for exceptions or alternative explanations.',
-    'homework.evidence_against_placeholder': 'Example: "I got positive feedback last week" or "My boss was stressed about other issues"',
+                 'nav.task': 'task',
+                     'task.evidence_against_help': 'What facts contradict your negative thought? Look for exceptions or alternative explanations.',
+    'task.evidence_against_placeholder': 'Example: "I got positive feedback last week" or "My boss was stressed about other issues"',
 
     // Emotions After
-    'homework.emotions_after_help': 'After considering all evidence and your balanced thought, how do you feel now?',
-    'homework.emotions_after_placeholder': 'Example: "Anxious 40%, Confident 60%" (notice the reduction)',
+    'task.emotions_after_help': 'After considering all evidence and your balanced thought, how do you feel now?',
+    'task.emotions_after_placeholder': 'Example: "Anxious 40%, Confident 60%" (notice the reduction)',
 
     // Emotions (original)
      'crisis.call_someone_trust': 'Call Someone You Trust',
@@ -1496,35 +1496,35 @@ window.addEventListener('load', function() {
     'crisis.support_group': 'A support group member',
     'crisis.use_phone_now': 'Use your phone to call or text them now.',
     'crisis.ok_call_someone': 'OK, I\'ll Call Someone',
-    'homework.emotions_help': 'Rate each emotion from 0-100% intensity',
-        'homework.evidence_for_help': 'What facts support your automatic thought? Be specific.',
-    'homework.evidence_for_placeholder': 'Example: "My boss frowned when I presented" or "I made 3 mistakes"',
-    'homework.balanced_thought_help': 'A more realistic way to think about the situation.',
-    'homework.balanced_thought_placeholder': 'Example: "I made some mistakes but also did many things well"',
-    'homework.instructions_title': 'ℹ️ How to complete this form',
-    'homework.instructions_text': 'Your therapist will have explained this in session. As a reminder: Evidence For: Facts that support your negative thought. Evidence Against: Facts that contradict it. Balanced Thought: A more realistic perspective considering all evidence.',
-    'homework.emotions_placeholder': 'Example: "Anxious 80%, Sad 60%, Angry 40%"',
-                'homework.title': 'Therapy Homework',
-                'homework.current': 'Current Assignments:',
-                'homework.refresh': 'Refresh',
-                'homework.no_assignments': 'No homework assignments yet',
-                'homework.assigned_by': 'Assigned by',
-                'homework.due_date': 'Due',
-                'homework.completed': 'Completed',
-                'homework.start': 'Start Homework',
-                'homework.submit': 'Submit Homework',
-                'homework.submitted_success': 'Homework submitted successfully!',
-                'homework.situation': 'Situation:',
-                'homework.thoughts': 'Automatic Thoughts:',
-                'homework.emotions': 'Emotions (rate 0-100%):',
-                'homework.evidence_for': 'Evidence For:',
-                'homework.evidence_against': 'Evidence Against:',
-                'homework.balanced_thought': 'Balanced Thought:',
-                'homework.emotions_after': 'Emotions Now (rate 0-100%):',
-                'homework.distress_level': 'Distress Level (0-10):',
-                'homework.skill_used': 'Which TIPP skill did you use?',
-                'homework.skill_details': 'How did you apply it?',
-                'homework.distress_after': 'Distress Level After (0-10):',
+    'task.emotions_help': 'Rate each emotion from 0-100% intensity',
+        'task.evidence_for_help': 'What facts support your automatic thought? Be specific.',
+    'task.evidence_for_placeholder': 'Example: "My boss frowned when I presented" or "I made 3 mistakes"',
+    'task.balanced_thought_help': 'A more realistic way to think about the situation.',
+    'task.balanced_thought_placeholder': 'Example: "I made some mistakes but also did many things well"',
+    'task.instructions_title': 'ℹ️ How to complete this form',
+    'task.instructions_text': 'Your therapist will have explained this in session. As a reminder: Evidence For: Facts that support your negative thought. Evidence Against: Facts that contradict it. Balanced Thought: A more realistic perspective considering all evidence.',
+    'task.emotions_placeholder': 'Example: "Anxious 80%, Sad 60%, Angry 40%"',
+                'task.title': 'Therapy task',
+                'task.current': 'Current Assignments:',
+                'task.refresh': 'Refresh',
+                'task.no_assignments': 'No task assignments yet',
+                'task.assigned_by': 'Assigned by',
+                'task.due_date': 'Due',
+                'task.completed': 'Completed',
+                'task.start': 'Start task',
+                'task.submit': 'Submit task',
+                'task.submitted_success': 'task submitted successfully!',
+                'task.situation': 'Situation:',
+                'task.thoughts': 'Automatic Thoughts:',
+                'task.emotions': 'Emotions (rate 0-100%):',
+                'task.evidence_for': 'Evidence For:',
+                'task.evidence_against': 'Evidence Against:',
+                'task.balanced_thought': 'Balanced Thought:',
+                'task.emotions_after': 'Emotions Now (rate 0-100%):',
+                'task.distress_level': 'Distress Level (0-10):',
+                'task.skill_used': 'Which TIPP skill did you use?',
+                'task.skill_details': 'How did you apply it?',
+                'task.distress_after': 'Distress Level After (0-10):',
 
                 // Crisis translations
                 'crisis.support_title': 'We\'re Here to Help',
@@ -1560,12 +1560,12 @@ window.addEventListener('load', function() {
 'client.brief_goals_placeholder': 'Brief goals (20 words max)',
 'client.save_goals': 'Save Goals',
 'client.characters': 'characters',
-  'homework.exposure_situation': 'Exposure Situation:',
-    'homework.anxiety_before': 'Anxiety Before (0-10):',
-    'homework.duration': 'Duration (minutes):',
-    'homework.anxiety_peak': 'Peak Anxiety (0-10):',
-    'homework.anxiety_after': 'Anxiety After (0-10):',
-    'homework.observations': 'Observations:',
+  'task.exposure_situation': 'Exposure Situation:',
+    'task.anxiety_before': 'Anxiety Before (0-10):',
+    'task.duration': 'Duration (minutes):',
+    'task.anxiety_peak': 'Peak Anxiety (0-10):',
+    'task.anxiety_after': 'Anxiety After (0-10):',
+    'task.observations': 'Observations:',
                 'category.emotion_level': 'Emotion Level',
                 'category.emotion_level_desc': 'Overall emotional state',
                 'category.energy': 'Energy',
@@ -1696,8 +1696,8 @@ window.addEventListener('load', function() {
             Object.assign(window.i18n.translations.he, {
                 // Category translations
 
-             'nav.homework': 'שיעורי בית',
-             'homework.exposure_situation': 'מצב החשיפה:',
+             'nav.task': 'שיעורי בית',
+             'task.exposure_situation': 'מצב החשיפה:',
                  'crisis.call_someone_trust': 'התקשר למישהו שאתה סומך עליו',
     'crisis.reach_out_message': 'פנה למישהו שאכפת לו ממך. זה יכול להיות:',
     'crisis.family_member': 'בן משפחה',
@@ -1706,44 +1706,44 @@ window.addEventListener('load', function() {
     'crisis.support_group': 'חבר בקבוצת תמיכה',
     'crisis.use_phone_now': 'השתמש בטלפון שלך כדי להתקשר או לשלוח הודעה עכשיו.',
     'crisis.ok_call_someone': 'בסדר, אתקשר למישהו',
-               'homework.evidence_against_help': 'אילו עובדות סותרות את המחשבה השלילית שלך? חפש חריגים או הסברים חלופיים.',
-                   'homework.evidence_for_help': 'אילו עובדות תומכות במחשבה האוטומטית שלך? היה ספציפי.',
-    'homework.evidence_for_placeholder': 'דוגמה: "הבוס שלי זעף כשהצגתי" או "עשיתי 3 טעויות"',
-    'homework.balanced_thought_help': 'דרך ריאליסטית יותר לחשוב על הסיטואציה.',
-    'homework.balanced_thought_placeholder': 'דוגמה: "עשיתי כמה טעויות אבל גם עשיתי דברים רבים טוב"',
-    'homework.instructions_title': 'ℹ️ איך למלא את הטופס הזה',
-    'homework.instructions_text': 'המטפל/ת שלך הסביר/ה זאת בפגישה. כתזכורת: ראיות בעד: עובדות שתומכות במחשבה השלילית שלך. ראיות נגד: עובדות שסותרות אותה. מחשבה מאוזנת: פרספקטיבה ריאליסטית יותר בהתחשב בכל הראיות.',
-    'homework.evidence_against_placeholder': 'דוגמה: "קיבלתי משוב חיובי בשבוע שעבר" או "הבוס היה לחוץ מנושאים אחרים"',
-    'homework.emotions_after_help': 'לאחר שקילת כל הראיות והמחשבה המאוזנת, איך אתה מרגיש עכשיו?',
-    'homework.emotions_after_placeholder': 'דוגמה: "חרדה 40%, ביטחון 60%" (שים לב להפחתה)',
-    'homework.emotions_help': 'דרג כל רגש מ-0-100% עוצמה',
-    'homework.emotions_placeholder': 'דוגמה: "חרדה 80%, עצב 60%, כעס 40%"',
-    'homework.anxiety_before': 'חרדה לפני (0-10):',
-    'homework.duration': 'משך זמן (דקות):',
-    'homework.anxiety_peak': 'שיא החרדה (0-10):',
-    'homework.anxiety_after': 'חרדה אחרי (0-10):',
-    'homework.observations': 'תצפיות:',
-    'homework.title': 'שיעורי בית טיפוליים',
-    'homework.current': 'משימות נוכחיות:',
-    'homework.refresh': 'רענן',
-    'homework.no_assignments': 'אין שיעורי בית עדיין',
-    'homework.assigned_by': 'ניתן על ידי',
-    'homework.due_date': 'תאריך יעד',
-    'homework.completed': 'הושלם',
-    'homework.start': 'התחל שיעורי בית',
-    'homework.submit': 'שלח שיעורי בית',
-    'homework.submitted_success': 'שיעורי הבית נשלחו בהצלחה!',
-    'homework.situation': 'מצב:',
-    'homework.thoughts': 'מחשבות אוטומטיות:',
-    'homework.emotions': 'רגשות (דרג 0-100%):',
-    'homework.evidence_for': 'ראיות בעד:',
-    'homework.evidence_against': 'ראיות נגד:',
-    'homework.balanced_thought': 'מחשבה מאוזנת:',
-    'homework.emotions_after': 'רגשות עכשיו (דרג 0-100%):',
-    'homework.distress_level': 'רמת מצוקה (0-10):',
-    'homework.skill_used': 'איזו מיומנות TIPP השתמשת?',
-    'homework.skill_details': 'איך יישמת אותה?',
-    'homework.distress_after': 'רמת מצוקה אחרי (0-10):',
+               'task.evidence_against_help': 'אילו עובדות סותרות את המחשבה השלילית שלך? חפש חריגים או הסברים חלופיים.',
+                   'task.evidence_for_help': 'אילו עובדות תומכות במחשבה האוטומטית שלך? היה ספציפי.',
+    'task.evidence_for_placeholder': 'דוגמה: "הבוס שלי זעף כשהצגתי" או "עשיתי 3 טעויות"',
+    'task.balanced_thought_help': 'דרך ריאליסטית יותר לחשוב על הסיטואציה.',
+    'task.balanced_thought_placeholder': 'דוגמה: "עשיתי כמה טעויות אבל גם עשיתי דברים רבים טוב"',
+    'task.instructions_title': 'ℹ️ איך למלא את הטופס הזה',
+    'task.instructions_text': 'המטפל/ת שלך הסביר/ה זאת בפגישה. כתזכורת: ראיות בעד: עובדות שתומכות במחשבה השלילית שלך. ראיות נגד: עובדות שסותרות אותה. מחשבה מאוזנת: פרספקטיבה ריאליסטית יותר בהתחשב בכל הראיות.',
+    'task.evidence_against_placeholder': 'דוגמה: "קיבלתי משוב חיובי בשבוע שעבר" או "הבוס היה לחוץ מנושאים אחרים"',
+    'task.emotions_after_help': 'לאחר שקילת כל הראיות והמחשבה המאוזנת, איך אתה מרגיש עכשיו?',
+    'task.emotions_after_placeholder': 'דוגמה: "חרדה 40%, ביטחון 60%" (שים לב להפחתה)',
+    'task.emotions_help': 'דרג כל רגש מ-0-100% עוצמה',
+    'task.emotions_placeholder': 'דוגמה: "חרדה 80%, עצב 60%, כעס 40%"',
+    'task.anxiety_before': 'חרדה לפני (0-10):',
+    'task.duration': 'משך זמן (דקות):',
+    'task.anxiety_peak': 'שיא החרדה (0-10):',
+    'task.anxiety_after': 'חרדה אחרי (0-10):',
+    'task.observations': 'תצפיות:',
+    'task.refresh': 'רענן',
+    'task.assigned_by': 'ניתן על ידי',
+    'task.due_date': 'תאריך יעד',
+    'task.completed': 'הושלם',
+   'task.title': 'משימה טיפולית',
+'task.current': 'משימה נוכחית:',
+'task.no_assignments': 'אין משימות עדיין',
+'task.start': 'התחל משימה',
+'task.submit': 'שלח משימה',
+'task.submitted_success': 'המשימה נשלחה בהצלחה!',
+    'task.situation': 'מצב:',
+    'task.thoughts': 'מחשבות אוטומטיות:',
+    'task.emotions': 'רגשות (דרג 0-100%):',
+    'task.evidence_for': 'ראיות בעד:',
+    'task.evidence_against': 'ראיות נגד:',
+    'task.balanced_thought': 'מחשבה מאוזנת:',
+    'task.emotions_after': 'רגשות עכשיו (דרג 0-100%):',
+    'task.distress_level': 'רמת מצוקה (0-10):',
+    'task.skill_used': 'איזו מיומנות TIPP השתמשת?',
+    'task.skill_details': 'איך יישמת אותה?',
+    'task.distress_after': 'רמת מצוקה אחרי (0-10):',
 
     // Crisis translations
     'crisis.support_title': 'אנחנו כאן כדי לעזור',
@@ -1913,8 +1913,8 @@ window.addEventListener('load', function() {
                 // Category translations
 
 
-              'nav.homework': 'Домашние задания',
-               'homework.evidence_against_help': 'Какие факты противоречат вашей негативной мысли? Ищите исключения или альтернативные объяснения.',
+              'nav.task': 'Домашние задания',
+               'task.evidence_against_help': 'Какие факты противоречат вашей негативной мысли? Ищите исключения или альтернативные объяснения.',
                'crisis.call_someone_trust': 'Позвоните тому, кому доверяете',
     'crisis.reach_out_message': 'Обратитесь к тому, кто о вас заботится. Это может быть:',
     'crisis.family_member': 'Член семьи',
@@ -1923,44 +1923,44 @@ window.addEventListener('load', function() {
     'crisis.support_group': 'Участник группы поддержки',
     'crisis.use_phone_now': 'Используйте свой телефон, чтобы позвонить или написать им сейчас.',
     'crisis.ok_call_someone': 'Хорошо, я позвоню кому-нибудь',
-                   'homework.evidence_for_help': 'Какие факты подтверждают вашу автоматическую мысль? Будьте конкретны.',
-    'homework.evidence_for_placeholder': 'Пример: "Мой босс нахмурился, когда я презентовал" или "Я сделал 3 ошибки"',
-    'homework.balanced_thought_help': 'Более реалистичный способ думать о ситуации.',
-    'homework.balanced_thought_placeholder': 'Пример: "Я сделал несколько ошибок, но также сделал многое хорошо"',
-    'homework.instructions_title': 'ℹ️ Как заполнить эту форму',
-    'homework.instructions_text': 'Ваш терапевт объяснил это на сеансе. Напоминаем: Доказательства За: Факты, поддерживающие вашу негативную мысль. Доказательства Против: Факты, которые ей противоречат. Сбалансированная Мысль: Более реалистичная перспектива с учётом всех доказательств.',
-    'homework.evidence_against_placeholder': 'Пример: "Я получил положительный отзыв на прошлой неделе" или "Босс был в стрессе из-за других вопросов"',
-    'homework.emotions_after_help': 'После рассмотрения всех доказательств и вашей сбалансированной мысли, как вы себя чувствуете сейчас?',
-    'homework.emotions_after_placeholder': 'Пример: "Тревога 40%, Уверенность 60%" (обратите внимание на снижение)',
-    'homework.emotions_help': 'Оцените каждую эмоцию от 0-100% интенсивности',
-    'homework.emotions_placeholder': 'Пример: "Тревога 80%, Грусть 60%, Злость 40%"',
-                 'homework.exposure_situation': 'Ситуация воздействия:',
-    'homework.anxiety_before': 'Тревога до (0-10):',
-    'homework.duration': 'Продолжительность (минуты):',
-    'homework.anxiety_peak': 'Пик тревоги (0-10):',
-    'homework.anxiety_after': 'Тревога после (0-10):',
-    'homework.observations': 'Наблюдения:',
-    'homework.title': 'Терапевтические домашние задания',
-    'homework.current': 'Текущие задания:',
-    'homework.refresh': 'Обновить',
-    'homework.no_assignments': 'Домашних заданий пока нет',
-    'homework.assigned_by': 'Назначено',
-    'homework.due_date': 'Срок выполнения',
-    'homework.completed': 'Выполнено',
-    'homework.start': 'Начать домашнее задание',
-    'homework.submit': 'Отправить домашнее задание',
-    'homework.submitted_success': 'Домашнее задание успешно отправлено!',
-    'homework.situation': 'Ситуация:',
-    'homework.thoughts': 'Автоматические мысли:',
-    'homework.emotions': 'Эмоции (оцените 0-100%):',
-    'homework.evidence_for': 'Доказательства за:',
-    'homework.evidence_against': 'Доказательства против:',
-    'homework.balanced_thought': 'Сбалансированная мысль:',
-    'homework.emotions_after': 'Эмоции сейчас (оцените 0-100%):',
-    'homework.distress_level': 'Уровень дистресса (0-10):',
-    'homework.skill_used': 'Какой навык TIPP вы использовали?',
-    'homework.skill_details': 'Как вы его применили?',
-    'homework.distress_after': 'Уровень дистресса после (0-10):',
+                   'task.evidence_for_help': 'Какие факты подтверждают вашу автоматическую мысль? Будьте конкретны.',
+    'task.evidence_for_placeholder': 'Пример: "Мой босс нахмурился, когда я презентовал" или "Я сделал 3 ошибки"',
+    'task.balanced_thought_help': 'Более реалистичный способ думать о ситуации.',
+    'task.balanced_thought_placeholder': 'Пример: "Я сделал несколько ошибок, но также сделал многое хорошо"',
+    'task.instructions_title': 'ℹ️ Как заполнить эту форму',
+    'task.instructions_text': 'Ваш терапевт объяснил это на сеансе. Напоминаем: Доказательства За: Факты, поддерживающие вашу негативную мысль. Доказательства Против: Факты, которые ей противоречат. Сбалансированная Мысль: Более реалистичная перспектива с учётом всех доказательств.',
+    'task.evidence_against_placeholder': 'Пример: "Я получил положительный отзыв на прошлой неделе" или "Босс был в стрессе из-за других вопросов"',
+    'task.emotions_after_help': 'После рассмотрения всех доказательств и вашей сбалансированной мысли, как вы себя чувствуете сейчас?',
+    'task.emotions_after_placeholder': 'Пример: "Тревога 40%, Уверенность 60%" (обратите внимание на снижение)',
+    'task.emotions_help': 'Оцените каждую эмоцию от 0-100% интенсивности',
+    'task.emotions_placeholder': 'Пример: "Тревога 80%, Грусть 60%, Злость 40%"',
+                 'task.exposure_situation': 'Ситуация воздействия:',
+    'task.anxiety_before': 'Тревога до (0-10):',
+    'task.duration': 'Продолжительность (минуты):',
+    'task.anxiety_peak': 'Пик тревоги (0-10):',
+    'task.anxiety_after': 'Тревога после (0-10):',
+    'task.observations': 'Наблюдения:',
+    'task.refresh': 'Обновить',
+    'task.assigned_by': 'Назначено',
+    'task.due_date': 'Срок выполнения',
+    'task.completed': 'Выполнено',
+   'task.title': 'Терапевтическое задание',
+'task.current': 'Текущее задание:',
+'task.no_assignments': 'Заданий пока нет',
+'task.start': 'Начать задание',
+'task.submit': 'Отправить задание',
+'task.submitted_success': 'Задание успешно отправлено!',
+    'task.situation': 'Ситуация:',
+    'task.thoughts': 'Автоматические мысли:',
+    'task.emotions': 'Эмоции (оцените 0-100%):',
+    'task.evidence_for': 'Доказательства за:',
+    'task.evidence_against': 'Доказательства против:',
+    'task.balanced_thought': 'Сбалансированная мысль:',
+    'task.emotions_after': 'Эмоции сейчас (оцените 0-100%):',
+    'task.distress_level': 'Уровень дистресса (0-10):',
+    'task.skill_used': 'Какой навык TIPP вы использовали?',
+    'task.skill_details': 'Как вы его применили?',
+    'task.distress_after': 'Уровень дистресса после (0-10):',
 
     // Crisis translations
     'crisis.support_title': 'Мы здесь, чтобы помочь',
@@ -2128,8 +2128,8 @@ window.addEventListener('load', function() {
                 // Category translations
 
 
-                'nav.homework': 'الواجبات المنزلية',
-                 'homework.evidence_against_help': 'ما هي الحقائق التي تتعارض مع فكرتك السلبية؟ ابحث عن الاستثناءات أو التفسيرات البديلة.',
+                'nav.task': 'الواجبات المنزلية',
+                 'task.evidence_against_help': 'ما هي الحقائق التي تتعارض مع فكرتك السلبية؟ ابحث عن الاستثناءات أو التفسيرات البديلة.',
                   'crisis.call_someone_trust': 'اتصل بشخص تثق به',
     'crisis.reach_out_message': 'تواصل مع شخص يهتم بك. يمكن أن يكون:',
     'crisis.family_member': 'أحد أفراد العائلة',
@@ -2138,44 +2138,44 @@ window.addEventListener('load', function() {
     'crisis.support_group': 'عضو في مجموعة الدعم',
     'crisis.use_phone_now': 'استخدم هاتفك للاتصال أو إرسال رسالة نصية الآن.',
     'crisis.ok_call_someone': 'حسناً، سأتصل بشخص ما',
-                     'homework.evidence_for_help': 'ما هي الحقائق التي تدعم فكرتك التلقائية؟ كن محدداً.',
-    'homework.evidence_for_placeholder': 'مثال: "عبس رئيسي عندما قدمت" أو "ارتكبت 3 أخطاء"',
-    'homework.balanced_thought_help': 'طريقة أكثر واقعية للتفكير في الموقف.',
-    'homework.balanced_thought_placeholder': 'مثال: "ارتكبت بعض الأخطاء ولكنني أيضاً قمت بأشياء كثيرة بشكل جيد"',
-    'homework.instructions_title': 'ℹ️ كيفية ملء هذا النموذج',
-    'homework.instructions_text': 'سيكون معالجك قد شرح هذا في الجلسة. كتذكير: الأدلة المؤيدة: الحقائق التي تدعم فكرتك السلبية. الأدلة المعارضة: الحقائق التي تناقضها. الفكرة المتوازنة: منظور أكثر واقعية مع الأخذ في الاعتبار جميع الأدلة.',
-    'homework.evidence_against_placeholder': 'مثال: "تلقيت ملاحظات إيجابية الأسبوع الماضي" أو "كان رئيسي متوتراً بشأن قضايا أخرى"',
-    'homework.emotions_after_help': 'بعد النظر في جميع الأدلة وفكرتك المتوازنة، كيف تشعر الآن؟',
-    'homework.emotions_after_placeholder': 'مثال: "القلق 40%، الثقة 60%" (لاحظ الانخفاض)',
-    'homework.emotions_help': 'قيم كل عاطفة من 0-100% شدة',
-    'homework.emotions_placeholder': 'مثال: "القلق 80%، الحزن 60%، الغضب 40%"',
-                 'homework.exposure_situation': 'موقف التعرض:',
-    'homework.anxiety_before': 'القلق قبل (0-10):',
-    'homework.duration': 'المدة (دقائق):',
-    'homework.anxiety_peak': 'ذروة القلق (0-10):',
-    'homework.anxiety_after': 'القلق بعد (0-10):',
-    'homework.observations': 'الملاحظات:',
-    'homework.title': 'الواجبات المنزلية العلاجية',
-    'homework.current': 'المهام الحالية:',
-    'homework.refresh': 'تحديث',
-    'homework.no_assignments': 'لا توجد واجبات منزلية بعد',
-    'homework.assigned_by': 'معين من قبل',
-    'homework.due_date': 'الموعد النهائي',
-    'homework.completed': 'مكتمل',
-    'homework.start': 'ابدأ الواجب المنزلي',
-    'homework.submit': 'إرسال الواجب المنزلي',
-    'homework.submitted_success': 'تم إرسال الواجب المنزلي بنجاح!',
-    'homework.situation': 'الموقف:',
-    'homework.thoughts': 'الأفكار التلقائية:',
-    'homework.emotions': 'المشاعر (قيّم 0-100%):',
-    'homework.evidence_for': 'الأدلة المؤيدة:',
-    'homework.evidence_against': 'الأدلة المعارضة:',
-    'homework.balanced_thought': 'الفكرة المتوازنة:',
-    'homework.emotions_after': 'المشاعر الآن (قيّم 0-100%):',
-    'homework.distress_level': 'مستوى الضيق (0-10):',
-    'homework.skill_used': 'أي مهارة TIPP استخدمت؟',
-    'homework.skill_details': 'كيف طبقتها؟',
-    'homework.distress_after': 'مستوى الضيق بعد (0-10):',
+                     'task.evidence_for_help': 'ما هي الحقائق التي تدعم فكرتك التلقائية؟ كن محدداً.',
+    'task.evidence_for_placeholder': 'مثال: "عبس رئيسي عندما قدمت" أو "ارتكبت 3 أخطاء"',
+    'task.balanced_thought_help': 'طريقة أكثر واقعية للتفكير في الموقف.',
+    'task.balanced_thought_placeholder': 'مثال: "ارتكبت بعض الأخطاء ولكنني أيضاً قمت بأشياء كثيرة بشكل جيد"',
+    'task.instructions_title': 'ℹ️ كيفية ملء هذا النموذج',
+    'task.instructions_text': 'سيكون معالجك قد شرح هذا في الجلسة. كتذكير: الأدلة المؤيدة: الحقائق التي تدعم فكرتك السلبية. الأدلة المعارضة: الحقائق التي تناقضها. الفكرة المتوازنة: منظور أكثر واقعية مع الأخذ في الاعتبار جميع الأدلة.',
+    'task.evidence_against_placeholder': 'مثال: "تلقيت ملاحظات إيجابية الأسبوع الماضي" أو "كان رئيسي متوتراً بشأن قضايا أخرى"',
+    'task.emotions_after_help': 'بعد النظر في جميع الأدلة وفكرتك المتوازنة، كيف تشعر الآن؟',
+    'task.emotions_after_placeholder': 'مثال: "القلق 40%، الثقة 60%" (لاحظ الانخفاض)',
+    'task.emotions_help': 'قيم كل عاطفة من 0-100% شدة',
+    'task.emotions_placeholder': 'مثال: "القلق 80%، الحزن 60%، الغضب 40%"',
+                 'task.exposure_situation': 'موقف التعرض:',
+    'task.anxiety_before': 'القلق قبل (0-10):',
+    'task.duration': 'المدة (دقائق):',
+    'task.anxiety_peak': 'ذروة القلق (0-10):',
+    'task.anxiety_after': 'القلق بعد (0-10):',
+    'task.observations': 'الملاحظات:',
+    'task.refresh': 'تحديث',
+    'task.assigned_by': 'معين من قبل',
+    'task.due_date': 'الموعد النهائي',
+    'task.completed': 'مكتمل',
+   'task.title': 'المهمة العلاجية',
+'task.current': 'المهمة الحالية:',
+'task.no_assignments': 'لا توجد مهام بعد',
+'task.start': 'ابدأ المهمة',
+'task.submit': 'إرسال المهمة',
+'task.submitted_success': 'تم إرسال المهمة بنجاح!',
+    'task.situation': 'الموقف:',
+    'task.thoughts': 'الأفكار التلقائية:',
+    'task.emotions': 'المشاعر (قيّم 0-100%):',
+    'task.evidence_for': 'الأدلة المؤيدة:',
+    'task.evidence_against': 'الأدلة المعارضة:',
+    'task.balanced_thought': 'الفكرة المتوازنة:',
+    'task.emotions_after': 'المشاعر الآن (قيّم 0-100%):',
+    'task.distress_level': 'مستوى الضيق (0-10):',
+    'task.skill_used': 'أي مهارة TIPP استخدمت؟',
+    'task.skill_details': 'كيف طبقتها؟',
+    'task.distress_after': 'مستوى الضيق بعد (0-10):',
 
     // Crisis translations
     'crisis.support_title': 'نحن هنا للمساعدة',
@@ -2581,8 +2581,8 @@ window.addEventListener('load', function() {
         loadProgressWithRetry();
     } else if (tabName === 'goals') {
         loadWeeklyGoals();
-    } else if (tabName === 'homework') {
-        loadHomework();
+    } else if (tabName === 'task') {
+        loadtask();
     } else if (tabName === 'settings') {
         loadReminderSettings();
     } else if (tabName === 'consent') {
@@ -2597,26 +2597,26 @@ window.addEventListener('load', function() {
 
 
 
-         // Therapy Homework Functions - XSS Safe Version
-        async function loadHomework() {
+         // Therapy task Functions - XSS Safe Version
+        async function loadtask() {
             try {
-                const response = await fetch('/api/client/homework', {
+                const response = await fetch('/api/client/task', {
                     headers: { 'Accept-Language': i18n.currentLang },
                     credentials: 'include'
                 });
 
-                if (!response.ok) throw new Error('Failed to load homework');
+                if (!response.ok) throw new Error('Failed to load task');
 
                 const data = await response.json();
-                displayHomework(data.assignments);
+                displaytask(data.assignments);
 
             } catch (error) {
                 showMessage(i18n.t('msg.error'), 'error');
             }
         }
 
-        function displayHomework(assignments) {
-            const content = document.getElementById('homeworkContent');
+        function displaytask(assignments) {
+            const content = document.getElementById('taskContent');
             content.innerHTML = ''; // Clear safely
 
             if (!assignments || assignments.length === 0) {
@@ -2624,7 +2624,7 @@ window.addEventListener('load', function() {
                 card.className = 'card';
                 const p = document.createElement('p');
                 p.style.cssText = 'color: #666; text-align: center;';
-                p.textContent = i18n.t('homework.no_assignments', 'No homework assignments yet');
+                p.textContent = i18n.t('task.no_assignments', 'No task assignments yet');
                 card.appendChild(p);
                 content.appendChild(card);
                 return;
@@ -2642,7 +2642,7 @@ window.addEventListener('load', function() {
                 info.style.cssText = 'color: #666; margin-bottom: 1rem;';
 
                 const assignedBy = document.createElement('span');
-                assignedBy.textContent = i18n.t('homework.assigned_by', 'Assigned by') + ': ';
+                assignedBy.textContent = i18n.t('task.assigned_by', 'Assigned by') + ': ';
                 info.appendChild(assignedBy);
 
                 const therapistName = document.createElement('span');
@@ -2652,7 +2652,7 @@ window.addEventListener('load', function() {
                 info.appendChild(document.createElement('br'));
 
                 const dueLabel = document.createElement('span');
-                dueLabel.textContent = i18n.t('homework.due_date', 'Due') + ': ';
+                dueLabel.textContent = i18n.t('task.due_date', 'Due') + ': ';
                 info.appendChild(dueLabel);
 
                 const dueDate = document.createElement('span');
@@ -2668,13 +2668,13 @@ window.addEventListener('load', function() {
                 if (assignment.completed) {
                     const completed = document.createElement('div');
                     completed.style.cssText = 'color: #4caf50; font-weight: bold;';
-                    completed.textContent = '✓ ' + i18n.t('homework.completed', 'Completed');
+                    completed.textContent = '✓ ' + i18n.t('task.completed', 'Completed');
                     card.appendChild(completed);
                 } else {
                     const btn = document.createElement('button');
                     btn.className = 'btn btn-primary';
-                    btn.textContent = i18n.t('homework.start', 'Start Homework');
-                    btn.onclick = () => startHomework(assignment.type, assignment.id);
+                    btn.textContent = i18n.t('task.start', 'Start task');
+                    btn.onclick = () => starttask(assignment.type, assignment.id);
                     card.appendChild(btn);
                 }
 
@@ -2682,8 +2682,8 @@ window.addEventListener('load', function() {
             });
         }
 
-        function startHomework(type, assignmentId) {
-    const content = document.getElementById('homeworkContent');
+        function starttask(type, assignmentId) {
+    const content = document.getElementById('taskContent');
 
     // Convert snake_case to camelCase
     const camelCaseType = type.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
@@ -2701,7 +2701,7 @@ window.addEventListener('load', function() {
         content.innerHTML = '';
         content.appendChild(clone);
     } else {
-        showMessage(`Homework type '${type}' not supported yet`, 'error');
+        showMessage(`task type '${type}' not supported yet`, 'error');
     }
 }
 
@@ -2724,7 +2724,7 @@ window.addEventListener('load', function() {
             };
 
             try {
-                const response = await fetch('/api/client/submit-homework', {
+                const response = await fetch('/api/client/submit-task', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2735,8 +2735,8 @@ window.addEventListener('load', function() {
                 });
 
                 if (response.ok) {
-                    showMessage(i18n.t('homework.submitted_success', 'Homework submitted successfully!'), 'success');
-                    loadHomework();
+                    showMessage(i18n.t('task.submitted_success', 'task submitted successfully!'), 'success');
+                    loadtask();
                 }
             } catch (error) {
                 showMessage(i18n.t('msg.error'), 'error');
@@ -2748,16 +2748,16 @@ window.addEventListener('load', function() {
 
              // Check if backend is available first
     try {
-        const checkResponse = await fetch('/api/client/homework', {
+        const checkResponse = await fetch('/api/client/task', {
             method: 'GET',  // Changed from HEAD to GET
             credentials: 'include'
         });
         if (checkResponse.status === 404 || checkResponse.status === 500) {
-            showMessage(i18n.t('homework.not_available', 'Homework submission is not available yet'), 'error');
+            showMessage(i18n.t('task.not_available', 'task submission is not available yet'), 'error');
             return;
         }
     } catch (error) {
-        showMessage(i18n.t('homework.not_available', 'Homework submission is not available yet'), 'error');
+        showMessage(i18n.t('task.not_available', 'task submission is not available yet'), 'error');
         return;
     }
 
@@ -2776,7 +2776,7 @@ window.addEventListener('load', function() {
             };
 
             try {
-                const response = await fetch('/api/client/submit-homework', {
+                const response = await fetch('/api/client/submit-task', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2787,8 +2787,8 @@ window.addEventListener('load', function() {
                 });
 
                 if (response.ok) {
-                    showMessage(i18n.t('homework.submitted_success', 'Homework submitted successfully!'), 'success');
-                    loadHomework();
+                    showMessage(i18n.t('task.submitted_success', 'task submitted successfully!'), 'success');
+                    loadtask();
                 }
             } catch (error) {
                 showMessage(i18n.t('msg.error'), 'error');
@@ -6218,7 +6218,7 @@ async function submitExposureLog(event) {
     };
 
     try {
-        const response = await fetch('/api/client/submit-homework', {
+        const response = await fetch('/api/client/submit-task', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -6229,8 +6229,8 @@ async function submitExposureLog(event) {
         });
 
         if (response.ok) {
-            showMessage(i18n.t('homework.submitted_success', 'Homework submitted successfully!'), 'success');
-            loadHomework();
+            showMessage(i18n.t('task.submitted_success', 'task submitted successfully!'), 'success');
+            loadtask();
         }
     } catch (error) {
         showMessage(i18n.t('msg.error'), 'error');

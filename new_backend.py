@@ -1854,13 +1854,13 @@ class EmailBounceHandler:
 email_bounce_handler = EmailBounceHandler()
 
 
-class HomeworkAssignment(db.Model):
-    __tablename__ = 'homework_assignments'
+class taskAssignment(db.Model):
+    __tablename__ = 'task_assignments'
 
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=False)
     therapist_id = db.Column(db.Integer, db.ForeignKey('therapists.id'), nullable=False)
-    homework_type = db.Column(db.String(50), nullable=False)  # 'thoughtRecord', 'distressTolerance', etc.
+    task_type = db.Column(db.String(50), nullable=False)  # 'thoughtRecord', 'distressTolerance', etc.
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
     due_date = db.Column(db.DateTime)
@@ -1870,22 +1870,22 @@ class HomeworkAssignment(db.Model):
     is_active = db.Column(db.Boolean, default=True)
 
     # Relationships
-    client = db.relationship('Client', backref='homework_assignments')
-    therapist = db.relationship('Therapist', backref='assigned_homework')
+    client = db.relationship('Client', backref='task_assignments')
+    therapist = db.relationship('Therapist', backref='assigned_task')
 
 
-class HomeworkSubmission(db.Model):
-    __tablename__ = 'homework_submissions'
+class taskSubmission(db.Model):
+    __tablename__ = 'task_submissions'
 
     id = db.Column(db.Integer, primary_key=True)
-    assignment_id = db.Column(db.Integer, db.ForeignKey('homework_assignments.id'), nullable=False)
+    assignment_id = db.Column(db.Integer, db.ForeignKey('task_assignments.id'), nullable=False)
     client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=False)
     responses = db.Column(db.Text)  # JSON string of responses
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
-    assignment = db.relationship('HomeworkAssignment', backref='submissions')
-    client = db.relationship('Client', backref='homework_submissions')
+    assignment = db.relationship('taskAssignment', backref='submissions')
+    client = db.relationship('Client', backref='task_submissions')
 
 
 class SafetyPlan(db.Model):
@@ -10565,23 +10565,23 @@ def client_queue_status():
 
 
 # Client endpoints
-@app.route('/api/client/homework', methods=['GET'])
+@app.route('/api/client/task', methods=['GET'])
 @require_auth(['client'])
-def get_client_homework():
-    """Get homework assignments for current client"""
+def get_client_task():
+    """Get task assignments for current client"""
     try:
         client = request.current_user.client
 
         # Get assignments for this client
-        assignments = db.session.query(HomeworkAssignment).filter_by(
+        assignments = db.session.query(taskAssignment).filter_by(
             client_id=client.id,
             is_active=True
-        ).order_by(HomeworkAssignment.due_date.asc()).all()
+        ).order_by(taskAssignment.due_date.asc()).all()
 
         return jsonify({
             'assignments': [{
                 'id': a.id,
-                'type': a.homework_type,
+                'type': a.task_type,
                 'title': a.title,
                 'description': a.description,
                 'therapist_name': a.therapist.name if a.therapist else 'Your Therapist',
@@ -10592,14 +10592,14 @@ def get_client_homework():
             } for a in assignments]
         })
     except Exception as e:
-        logger.error(f"Error getting homework: {str(e)}")
-        return jsonify({'error': 'Failed to load homework'}), 500
+        logger.error(f"Error getting task: {str(e)}")
+        return jsonify({'error': 'Failed to load task'}), 500
 
 
-@app.route('/api/client/submit-homework', methods=['POST'])
+@app.route('/api/client/submit-task', methods=['POST'])
 @require_auth(['client'])
-def submit_homework():
-    """Submit completed homework"""
+def submit_task():
+    """Submit completed task"""
     try:
         client = request.current_user.client
         data = request.get_json()
@@ -10607,7 +10607,7 @@ def submit_homework():
         responses = data.get('responses', {})
 
         # Find the assignment
-        assignment = HomeworkAssignment.query.filter_by(
+        assignment = taskAssignment.query.filter_by(
             id=assignment_id,
             client_id=client.id
         ).first()
@@ -10616,7 +10616,7 @@ def submit_homework():
             return jsonify({'error': 'Assignment not found'}), 404
 
         # Create submission record
-        submission = HomeworkSubmission(
+        submission = taskSubmission(
             assignment_id=assignment_id,
             client_id=client.id,
             responses=json.dumps(responses),
@@ -10634,9 +10634,9 @@ def submit_homework():
         notification = TherapistNotification(
             therapist_id=assignment.therapist_id,
             client_id=client.id,
-            type='homework_completed',
-            title=f'Homework Completed: {assignment.title}',
-            message=f'{client.client_name or client.client_serial} has completed their {assignment.title} homework.',
+            type='task_completed',
+            title=f'task Completed: {assignment.title}',
+            message=f'{client.client_name or client.client_serial} has completed their {assignment.title} task.',
             created_at=datetime.utcnow()
         )
         db.session.add(notification)
@@ -10644,9 +10644,9 @@ def submit_homework():
 
         return jsonify({'success': True})
     except Exception as e:
-        logger.error(f"Error submitting homework: {str(e)}")
+        logger.error(f"Error submitting task: {str(e)}")
         db.session.rollback()
-        return jsonify({'error': 'Failed to submit homework'}), 500
+        return jsonify({'error': 'Failed to submit task'}), 500
 
 
 @app.route('/api/client/request-urgent-session', methods=['POST'])
@@ -10730,15 +10730,15 @@ def get_client_safety_plan():
 
 
 # Therapist endpoints
-@app.route('/api/therapist/assign-homework', methods=['POST'])
+@app.route('/api/therapist/assign-task', methods=['POST'])
 @require_auth(['therapist'])
-def assign_homework():
-    """Assign homework to a client"""
+def assign_task():
+    """Assign task to a client"""
     try:
         therapist = request.current_user.therapist
         data = request.get_json()
         client_id = data.get('client_id')
-        homework_type = data.get('type')
+        task_type = data.get('type')
         title = data.get('title')
         description = data.get('description')
         due_date = data.get('due_date')
@@ -10753,10 +10753,10 @@ def assign_homework():
             return jsonify({'error': 'Client not found'}), 404
 
         # Create assignment
-        assignment = HomeworkAssignment(
+        assignment = taskAssignment(
             client_id=client_id,
             therapist_id=therapist.id,
-            homework_type=homework_type,
+            task_type=task_type,
             title=title,
             description=description,
             due_date=datetime.fromisoformat(due_date) if due_date else None,
@@ -10767,11 +10767,11 @@ def assign_homework():
         db.session.add(assignment)
         db.session.commit()
 
-        logger.info('homework_assigned', extra={
+        logger.info('task_assigned', extra={
             'extra_data': {
                 'therapist_id': therapist.id,
                 'client_id': client_id,
-                'homework_type': homework_type,
+                'task_type': task_type,
                 'assignment_id': assignment.id
             }
         })
@@ -10781,15 +10781,15 @@ def assign_homework():
             'assignment_id': assignment.id
         })
     except Exception as e:
-        logger.error(f"Error assigning homework: {str(e)}")
+        logger.error(f"Error assigning task: {str(e)}")
         db.session.rollback()
-        return jsonify({'error': 'Failed to assign homework'}), 500
+        return jsonify({'error': 'Failed to assign task'}), 500
 
 
-@app.route('/api/therapist/client/<int:client_id>/homework', methods=['GET'])
+@app.route('/api/therapist/client/<int:client_id>/task', methods=['GET'])
 @require_auth(['therapist'])
-def get_client_homework_status(client_id):
-    """Get homework status for a specific client"""
+def get_client_task_status(client_id):
+    """Get task status for a specific client"""
     try:
         therapist = request.current_user.therapist
 
@@ -10802,14 +10802,14 @@ def get_client_homework_status(client_id):
         if not client:
             return jsonify({'error': 'Client not found'}), 404
 
-        assignments = HomeworkAssignment.query.filter_by(
+        assignments = taskAssignment.query.filter_by(
             client_id=client_id
-        ).order_by(HomeworkAssignment.created_at.desc()).all()
+        ).order_by(taskAssignment.created_at.desc()).all()
 
         return jsonify({
             'assignments': [{
                 'id': a.id,
-                'type': a.homework_type,
+                'type': a.task_type,
                 'title': a.title,
                 'due_date': a.due_date.isoformat() if a.due_date else None,
                 'completed': a.completed,
@@ -10818,19 +10818,19 @@ def get_client_homework_status(client_id):
             } for a in assignments]
         })
     except Exception as e:
-        logger.error(f"Error getting client homework: {str(e)}")
-        return jsonify({'error': 'Failed to load homework'}), 500
+        logger.error(f"Error getting client task: {str(e)}")
+        return jsonify({'error': 'Failed to load task'}), 500
 
 
-@app.route('/api/therapist/homework-submissions/<int:assignment_id>', methods=['GET'])
+@app.route('/api/therapist/task-submissions/<int:assignment_id>', methods=['GET'])
 @require_auth(['therapist'])
-def get_homework_submission(assignment_id):
-    """Get homework submission details"""
+def get_task_submission(assignment_id):
+    """Get task submission details"""
     try:
         therapist = request.current_user.therapist
 
         # Verify the assignment belongs to this therapist's client
-        assignment = HomeworkAssignment.query.filter_by(
+        assignment = taskAssignment.query.filter_by(
             id=assignment_id,
             therapist_id=therapist.id
         ).first()
@@ -10839,7 +10839,7 @@ def get_homework_submission(assignment_id):
             return jsonify({'error': 'Assignment not found'}), 404
 
         # Get the submission
-        submission = HomeworkSubmission.query.filter_by(
+        submission = taskSubmission.query.filter_by(
             assignment_id=assignment_id
         ).first()
 
@@ -10850,7 +10850,7 @@ def get_homework_submission(assignment_id):
             'assignment': {
                 'id': assignment.id,
                 'title': assignment.title,
-                'type': assignment.homework_type,
+                'type': assignment.task_type,
                 'assigned_date': assignment.created_at.isoformat()
             },
             'submission': {
@@ -10863,7 +10863,7 @@ def get_homework_submission(assignment_id):
         })
 
     except Exception as e:
-        logger.error(f"Error getting homework submission: {str(e)}")
+        logger.error(f"Error getting task submission: {str(e)}")
         return jsonify({'error': 'Failed to load submission'}), 500
 
 
