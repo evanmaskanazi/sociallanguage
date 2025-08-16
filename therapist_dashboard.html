@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-      <!-- DOMPurify for XSS protection -->
 
 
-  
+
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
      <meta name="google" content="notranslate">
     <meta name="format-detection" content="telephone=no">
@@ -826,6 +826,7 @@
         <div class="nav-tab active" onclick="showTab('overview', event)" data-i18n="nav.overview">Overview</div>
         <div class="nav-tab" onclick="showTab('clients', event)" data-i18n="nav.clients">Clients</div>
         <div class="nav-tab" onclick="showTab('add-client', event)" data-i18n="nav.add_client">Add Client</div>
+        <div class="nav-tab" onclick="showTab('homework', event)" data-i18n="nav.reports">Homework</div>
         <div class="nav-tab" onclick="showTab('reports', event)" data-i18n="nav.reports">Reports</div>
     </nav>
 
@@ -1137,6 +1138,74 @@
             </div>
         </div>
 
+
+
+
+
+        <!-- Homework Tab -->
+<div id="homework" class="tab-content">
+    <h2 data-i18n="therapist.homework_title">Homework Management</h2>
+
+    <div class="card">
+        <h3 data-i18n="therapist.assign_homework">Assign Homework</h3>
+
+        <div class="form-group">
+            <label for="homeworkClientSelect" data-i18n="therapist.select_client">Select Client:</label>
+            <select id="homeworkClientSelect" class="form-input" onchange="loadClientHomeworkStatus()">
+                <option value="">Choose a client...</option>
+            </select>
+        </div>
+
+        <div id="homeworkAssignmentForm" style="display: none;">
+            <div class="form-group">
+                <label for="homeworkType" data-i18n="therapist.homework_type">Homework Type:</label>
+                <select id="homeworkType" class="form-input" onchange="updateHomeworkTemplate()">
+                    <option value="">Select type...</option>
+                    <option value="thoughtRecord">CBT Thought Record</option>
+                    <option value="distressTolerance">DBT Distress Tolerance</option>
+                    <option value="behavioralActivation">Behavioral Activation</option>
+                    <option value="exposureLog">Exposure Log</option>
+                    <option value="customAssignment">Custom Assignment</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="homeworkTitle" data-i18n="therapist.homework_title_label">Title:</label>
+                <input type="text" id="homeworkTitle" class="form-input" placeholder="e.g., Week 3 Thought Records">
+            </div>
+
+            <div class="form-group">
+                <label for="homeworkDescription" data-i18n="therapist.homework_description">Description/Instructions:</label>
+                <textarea id="homeworkDescription" class="notes-textarea" rows="4"
+                    placeholder="Provide specific instructions for the client..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="homeworkDueDate" data-i18n="therapist.due_date">Due Date:</label>
+                <input type="date" id="homeworkDueDate" class="form-input">
+            </div>
+
+            <button class="btn btn-primary" onclick="assignHomework()">
+                <span data-i18n="therapist.assign_btn">Assign Homework</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Client Homework Status -->
+    <div class="card" style="margin-top: 2rem;">
+        <h3 data-i18n="therapist.homework_status">Client Homework Status</h3>
+        <div id="clientHomeworkStatus">
+            <p style="color: #666;" data-i18n="therapist.select_client_status">Select a client to view their homework status</p>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
         <!-- Reports Tab -->
         <div id="reports" class="tab-content">
             <h2 data-i18n="therapist.client_reports">Client Reports</h2>
@@ -1273,6 +1342,17 @@
             Object.assign(window.i18n.translations.en, {
                 // Category translations
                 'category.emotion_level': 'Emotion Level',
+                'nav.homework': 'Homework',
+'therapist.homework_title': 'Homework Management',
+'therapist.assign_homework': 'Assign Homework',
+'therapist.select_client': 'Select Client:',
+'therapist.homework_type': 'Homework Type:',
+'therapist.homework_title_label': 'Title:',
+'therapist.homework_description': 'Description/Instructions:',
+'therapist.due_date': 'Due Date:',
+'therapist.assign_btn': 'Assign Homework',
+'therapist.homework_status': 'Client Homework Status',
+'therapist.select_client_status': 'Select a client to view their homework status',
                 'category.emotion_level_desc': 'Overall emotional state',
                 'category.energy': 'Energy',
                 'category.energy_desc': 'Physical and mental energy levels',
@@ -1481,6 +1561,17 @@
             Object.assign(window.i18n.translations.he, {
                 // Category translations
                 'category.emotion_level': 'רמה רגשית',
+                'nav.homework': 'שיעורי בית',
+'therapist.homework_title': 'ניהול שיעורי בית',
+'therapist.assign_homework': 'הקצה שיעורי בית',
+'therapist.select_client': 'בחר מטופל:',
+'therapist.homework_type': 'סוג שיעורי בית:',
+'therapist.homework_title_label': 'כותרת:',
+'therapist.homework_description': 'תיאור/הוראות:',
+'therapist.due_date': 'תאריך יעד:',
+'therapist.assign_btn': 'הקצה שיעורי בית',
+'therapist.homework_status': 'סטטוס שיעורי בית של המטופל',
+'therapist.select_client_status': 'בחר מטופל כדי לראות את סטטוס שיעורי הבית',
                 'category.emotion_level_desc': 'מצב רגשי כללי',
                 'category.energy': 'אנרגיה',
                 'category.energy_desc': 'רמות אנרגיה פיזית ומנטלית',
@@ -1689,6 +1780,17 @@
             Object.assign(window.i18n.translations.ru, {
                 // Category translations
                 'category.emotion_level': 'Эмоциональный уровень',
+                'nav.homework': 'Домашние задания',
+'therapist.homework_title': 'Управление домашними заданиями',
+'therapist.assign_homework': 'Назначить домашнее задание',
+'therapist.select_client': 'Выбрать клиента:',
+'therapist.homework_type': 'Тип домашнего задания:',
+'therapist.homework_title_label': 'Название:',
+'therapist.homework_description': 'Описание/Инструкции:',
+'therapist.due_date': 'Срок выполнения:',
+'therapist.assign_btn': 'Назначить домашнее задание',
+'therapist.homework_status': 'Статус домашних заданий клиента',
+'therapist.select_client_status': 'Выберите клиента для просмотра статуса домашних заданий',
                 'category.emotion_level_desc': 'Общее эмоциональное состояние',
                 'category.energy': 'Энергия',
                 'category.energy_desc': 'Уровни физической и умственной энергии',
@@ -1899,6 +2001,17 @@
             Object.assign(window.i18n.translations.ar, {
                 // Category translations
                 'category.emotion_level': 'المستوى العاطفي',
+                'nav.homework': 'الواجبات المنزلية',
+'therapist.homework_title': 'إدارة الواجبات المنزلية',
+'therapist.assign_homework': 'تعيين واجب منزلي',
+'therapist.select_client': 'اختر العميل:',
+'therapist.homework_type': 'نوع الواجب المنزلي:',
+'therapist.homework_title_label': 'العنوان:',
+'therapist.homework_description': 'الوصف/التعليمات:',
+'therapist.due_date': 'تاريخ الاستحقاق:',
+'therapist.assign_btn': 'تعيين الواجب المنزلي',
+'therapist.homework_status': 'حالة الواجبات المنزلية للعميل',
+'therapist.select_client_status': 'اختر عميلاً لعرض حالة واجباته المنزلية',
                 'category.emotion_level_desc': 'الحالة العاطفية العامة',
                 'category.energy': 'الطاقة',
                 'category.energy_desc': 'مستويات الطاقة الجسدية والعقلية',
@@ -4741,6 +4854,158 @@ console.log('Jerusalem offset:', timezoneOffset);
         }
 
 
+
+        // Homework Management Functions
+async function loadHomeworkClients() {
+    try {
+        const response = await fetch('/api/therapist/clients', {
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const select = document.getElementById('homeworkClientSelect');
+            select.innerHTML = '<option value="">Choose a client...</option>';
+
+            data.clients.forEach(client => {
+                const option = document.createElement('option');
+                option.value = client.id;
+                option.textContent = client.client_name || `Client ${client.serial}`;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading clients:', error);
+    }
+}
+
+function updateHomeworkTemplate() {
+    const type = document.getElementById('homeworkType').value;
+    const titleInput = document.getElementById('homeworkTitle');
+    const descInput = document.getElementById('homeworkDescription');
+
+    const templates = {
+        thoughtRecord: {
+            title: 'Weekly Thought Records',
+            description: 'Complete at least 3 thought records this week when you notice strong emotions or distressing thoughts.\n\nFor each situation:\n1. Describe what happened\n2. Identify automatic thoughts\n3. Rate emotions (0-100%)\n4. Find evidence for and against\n5. Create a balanced thought\n6. Re-rate emotions'
+        },
+        distressTolerance: {
+            title: 'TIPP Skills Practice',
+            description: 'Practice TIPP skills when distress level reaches 7/10 or higher:\n\n• Temperature: Cold water on face or ice pack\n• Intense Exercise: 20 jumping jacks or quick walk\n• Paced Breathing: 4-7-8 breathing pattern\n• Paired Muscle Relaxation: Tense and release\n\nLog each use in your homework.'
+        },
+        behavioralActivation: {
+            title: 'Pleasant Activity Scheduling',
+            description: 'Schedule and complete 3 pleasant activities this week:\n\n1. One solo activity you enjoy\n2. One social activity\n3. One mastery/accomplishment activity\n\nRate mood before and after each activity (0-10).'
+        },
+        exposureLog: {
+            title: 'Exposure Practice Log',
+            description: 'Complete planned exposure exercises:\n\n• Before: Rate anxiety (0-10)\n• During: Stay in situation until anxiety decreases by half\n• After: Rate anxiety and note what you learned\n\nRemember: Anxiety will decrease with practice!'
+        }
+    };
+
+    if (templates[type]) {
+        titleInput.value = templates[type].title;
+        descInput.value = templates[type].description;
+    }
+}
+
+async function assignHomework() {
+    const clientId = document.getElementById('homeworkClientSelect').value;
+    const type = document.getElementById('homeworkType').value;
+    const title = document.getElementById('homeworkTitle').value.trim();
+    const description = document.getElementById('homeworkDescription').value.trim();
+    const dueDate = document.getElementById('homeworkDueDate').value;
+
+    if (!clientId || !type || !title) {
+        showMessage('Please fill in all required fields', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/therapist/assign-homework', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                client_id: parseInt(clientId),
+                type: type,
+                title: title,
+                description: description,
+                due_date: dueDate
+            })
+        });
+
+        if (response.ok) {
+            showMessage('Homework assigned successfully!', 'success');
+            // Clear form
+            document.getElementById('homeworkType').value = '';
+            document.getElementById('homeworkTitle').value = '';
+            document.getElementById('homeworkDescription').value = '';
+            document.getElementById('homeworkDueDate').value = '';
+            // Reload status
+            loadClientHomeworkStatus();
+        } else {
+            showMessage('Failed to assign homework', 'error');
+        }
+    } catch (error) {
+        console.error('Error assigning homework:', error);
+        showMessage('Error assigning homework', 'error');
+    }
+}
+
+async function loadClientHomeworkStatus() {
+    const clientId = document.getElementById('homeworkClientSelect').value;
+    const statusDiv = document.getElementById('clientHomeworkStatus');
+
+    if (!clientId) {
+        statusDiv.innerHTML = '<p style="color: #666;">Select a client to view their homework status</p>';
+        document.getElementById('homeworkAssignmentForm').style.display = 'none';
+        return;
+    }
+
+    document.getElementById('homeworkAssignmentForm').style.display = 'block';
+
+    try {
+        const response = await fetch(`/api/therapist/client/${clientId}/homework`, {
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+
+            if (data.assignments.length === 0) {
+                statusDiv.innerHTML = '<p style="color: #666;">No homework assigned yet</p>';
+            } else {
+                statusDiv.innerHTML = data.assignments.map(hw => `
+                    <div style="padding: 1rem; background: ${hw.completed ? '#e8f5e9' : '#f5f5f5'}; border-radius: 8px; margin-bottom: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${hw.title}</strong>
+                                ${hw.completed ? '<span style="color: #4caf50; margin-left: 1rem;">✓ Completed</span>' : ''}
+                            </div>
+                            <small style="color: #666;">Due: ${hw.due_date ? new Date(hw.due_date).toLocaleDateString() : 'No due date'}</small>
+                        </div>
+                        ${hw.completed ? `<small style="color: #666;">Completed on: ${new Date(hw.completed_at).toLocaleString()}</small>` : ''}
+                    </div>
+                `).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Error loading homework status:', error);
+        statusDiv.innerHTML = '<p style="color: #f44336;">Error loading homework status</p>';
+    }
+}
+
+// Update showTab to load homework clients
+const originalShowTab = window.showTab;
+window.showTab = function(tabName) {
+    originalShowTab(tabName);
+    if (tabName === 'homework') {
+        loadHomeworkClients();
+    }
+};
 
 
     </script>

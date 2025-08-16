@@ -1834,6 +1834,45 @@ class EmailBounceHandler:
 email_bounce_handler = EmailBounceHandler()
 
 
+class HomeworkAssignment(db.Model):
+    __tablename__ = 'homework_assignments'
+
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=False)
+    therapist_id = db.Column(db.Integer, db.ForeignKey('therapists.id'), nullable=False)
+    homework_type = db.Column(db.String(50), nullable=False)  # 'thoughtRecord', 'distressTolerance', etc.
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    due_date = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    completed = db.Column(db.Boolean, default=False)
+    completed_at = db.Column(db.DateTime)
+    is_active = db.Column(db.Boolean, default=True)
+
+    # Relationships
+    client = db.relationship('Client', backref='homework_assignments')
+    therapist = db.relationship('Therapist', backref='assigned_homework')
+
+
+class HomeworkSubmission(db.Model):
+    __tablename__ = 'homework_submissions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    assignment_id = db.Column(db.Integer, db.ForeignKey('homework_assignments.id'), nullable=False)
+    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=False)
+    responses = db.Column(db.Text)  # JSON string of responses
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    assignment = db.relationship('HomeworkAssignment', backref='submissions')
+    client = db.relationship('Client', backref='homework_submissions')
+
+
+
+
+
+
+
 def send_email_async(app, to_email, subject, body, html_body=None):
     """Send email asynchronously in app context with circuit breaker"""
     with app.app_context():
@@ -10492,6 +10531,170 @@ def client_queue_status():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@app.route('/api/client/homework', methods=['GET'])
+@login_required
+@role_required('client')
+def get_client_homework():
+    """Get homework assignments for current client"""
+    try:
+        # Get assignments for this client
+        assignments = db.session.query(HomeworkAssignment).filter_by(
+            client_id=current_user.id,
+            is_active=True
+        ).order_by(HomeworkAssignment.due_date.asc()).all()
+
+        return jsonify({
+            'assignments': [{
+                'id': a.id,
+                'type': a.homework_type,
+                'title': a.title,
+                'description': a.description,
+                'therapist_name': a.therapist.username if a.therapist else 'Your Therapist',
+                'due_date': a.due_date.isoformat() if a.due_date else None,
+                'completed': a.completed,
+                'created_at': a.created_at.isoformat()
+            } for a in assignments]
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting homework: {str(e)}")
+        return jsonify({'error': 'Failed to load homework'}), 500
+
+
+@app.route('/api/client/submit-homework', methods=['POST'])
+@login_required
+@role_required('client')
+def submit_homework():
+    """Submit completed homework"""
+    try:
+        data = request.get_json()
+        assignment_id = data.get('assignment_id')
+        responses = data.get('responses', {})
+
+        # Find the assignment
+        assignment = HomeworkAssignment.query.filter_by(
+            id=assignment_id,
+            client_id=current_user.id
+        ).first()
+
+        if not assignment:
+            return jsonify({'error': 'Assignment not found'}), 404
+
+        # Create submission record
+        submission = HomeworkSubmission(
+            assignment_id=assignment_id,
+            client_id=current_user.id,
+            responses=json.dumps(responses),
+            submitted_at=datetime.utcnow()
+        )
+
+        # Mark assignment as completed
+        assignment.completed = True
+        assignment.completed_at = datetime.utcnow()
+
+        db.session.add(submission)
+        db.session.commit()
+
+        # Notify therapist
+        notification = TherapistNotification(
+            therapist_id=assignment.therapist_id,
+            client_id=current_user.id,
+            type='homework_completed',
+            title=f'Homework Completed: {assignment.title}',
+            message=f'{current_user.username} has completed their {assignment.title} homework.',
+            created_at=datetime.utcnow()
+        )
+        db.session.add(notification)
+        db.session.commit()
+
+        return jsonify({'success': True})
+    except Exception as e:
+        app.logger.error(f"Error submitting homework: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': 'Failed to submit homework'}), 500
+
+
+# Therapist endpoints for assigning homework
+@app.route('/api/therapist/assign-homework', methods=['POST'])
+@login_required
+@role_required('therapist')
+def assign_homework():
+    """Assign homework to a client"""
+    try:
+        data = request.get_json()
+        client_id = data.get('client_id')
+        homework_type = data.get('type')
+        title = data.get('title')
+        description = data.get('description')
+        due_date = data.get('due_date')
+
+        # Verify therapist has access to this client
+        client = Client.query.filter_by(
+            id=client_id,
+            therapist_id=current_user.id
+        ).first()
+
+        if not client:
+            return jsonify({'error': 'Client not found'}), 404
+
+        # Create assignment
+        assignment = HomeworkAssignment(
+            client_id=client_id,
+            therapist_id=current_user.id,
+            homework_type=homework_type,
+            title=title,
+            description=description,
+            due_date=datetime.fromisoformat(due_date) if due_date else None,
+            created_at=datetime.utcnow(),
+            is_active=True
+        )
+
+        db.session.add(assignment)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'assignment_id': assignment.id
+        })
+    except Exception as e:
+        app.logger.error(f"Error assigning homework: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': 'Failed to assign homework'}), 500
+
+
+@app.route('/api/therapist/client/<int:client_id>/homework', methods=['GET'])
+@login_required
+@role_required('therapist')
+def get_client_homework_status(client_id):
+    """Get homework status for a specific client"""
+    try:
+        # Verify access
+        client = Client.query.filter_by(
+            id=client_id,
+            therapist_id=current_user.id
+        ).first()
+
+        if not client:
+            return jsonify({'error': 'Client not found'}), 404
+
+        assignments = HomeworkAssignment.query.filter_by(
+            client_id=client_id
+        ).order_by(HomeworkAssignment.created_at.desc()).all()
+
+        return jsonify({
+            'assignments': [{
+                'id': a.id,
+                'type': a.homework_type,
+                'title': a.title,
+                'due_date': a.due_date.isoformat() if a.due_date else None,
+                'completed': a.completed,
+                'completed_at': a.completed_at.isoformat() if a.completed_at else None,
+                'created_at': a.created_at.isoformat()
+            } for a in assignments]
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting client homework: {str(e)}")
+        return jsonify({'error': 'Failed to load homework'}), 500
 
 
 
