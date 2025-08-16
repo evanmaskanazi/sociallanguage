@@ -1936,6 +1936,59 @@
         let selectedDate = new Date();
 
 
+        // Error logging system
+        const errorLog = {
+            errors: [],
+            maxErrors: 50,
+
+            log: function(error, context) {
+                this.errors.push({
+                    time: new Date().toISOString(),
+                    error: error.toString(),
+                    stack: error.stack,
+                    context: context,
+                    url: window.location.href,
+                    userAgent: navigator.userAgent
+                });
+
+                // Keep only last 50 errors
+                if (this.errors.length > this.maxErrors) {
+                    this.errors.shift();
+                }
+
+                // Send to server if critical
+                if (context === 'critical') {
+                    this.sendToServer();
+                }
+            },
+
+            sendToServer: async function() {
+                try {
+                    await fetch('/api/client/log-error', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            errors: this.errors.slice(-10) // Last 10 errors
+                        })
+                    });
+                } catch (e) {
+                    console.error('Failed to send error log:', e);
+                }
+            },
+
+            getReport: function() {
+                return this.errors;
+            }
+        };
+
+        // Replace console.error with this
+        window.addEventListener('error', function(event) {
+            errorLog.log(event.error, 'uncaught');
+        });
+
 
 
 
@@ -2951,7 +3004,7 @@ const chartData = prepareChartData(data.progress.checkins);
             `;
         }
     }
-
+}
 
 
 async function loadProgressWithRetry(retryCount = 0) {
@@ -2963,6 +3016,7 @@ async function loadProgressWithRetry(retryCount = 0) {
             setTimeout(() => loadProgressWithRetry(retryCount + 1), 1000 * (retryCount + 1));
         }
     }
+}
 
 // Session keep-alive
 let sessionInterval = null;
