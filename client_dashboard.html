@@ -1205,6 +1205,47 @@ window.addEventListener('load', function() {
                     <button type="submit" class="btn btn-primary" data-i18n="homework.submit">Submit Homework</button>
                 </form>
             </div>
+
+<!-- Exposure Log Template -->
+<div id="exposureLogTemplate" class="homework-template">
+    <h3>Exposure Therapy Log</h3>
+    <form class="homework-form" onsubmit="submitExposureLog(event)">
+        <div class="form-group">
+            <label data-i18n="homework.exposure_situation">Exposure Situation:</label>
+            <textarea class="notes-textarea" name="situation" required
+                placeholder="What situation did you expose yourself to?"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label data-i18n="homework.anxiety_before">Anxiety Before (0-10):</label>
+            <input type="number" class="form-input" name="anxiety_before" min="0" max="10" required>
+        </div>
+
+        <div class="form-group">
+            <label data-i18n="homework.duration">Duration (minutes):</label>
+            <input type="number" class="form-input" name="duration" min="1" required>
+        </div>
+
+        <div class="form-group">
+            <label data-i18n="homework.anxiety_peak">Peak Anxiety (0-10):</label>
+            <input type="number" class="form-input" name="anxiety_peak" min="0" max="10" required>
+        </div>
+
+        <div class="form-group">
+            <label data-i18n="homework.anxiety_after">Anxiety After (0-10):</label>
+            <input type="number" class="form-input" name="anxiety_after" min="0" max="10" required>
+        </div>
+
+        <div class="form-group">
+            <label data-i18n="homework.observations">Observations:</label>
+            <textarea class="notes-textarea" name="observations" required
+                placeholder="What did you notice? What did you learn?"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary" data-i18n="homework.submit">Submit Homework</button>
+    </form>
+</div>
+
         </div>
     </div>
 
@@ -5863,7 +5904,42 @@ function calculateAchievements() {
     document.head.appendChild(style);
 }
 
+async function submitExposureLog(event) {
+    event.preventDefault();
+    const form = event.target;
+    const assignmentId = form.dataset.assignmentId;
 
+    const data = {
+        assignment_id: assignmentId,
+        responses: {
+            situation: SecurityHelpers.sanitizeInput(form.situation.value),
+            anxiety_before: parseInt(form.anxiety_before.value),
+            duration: parseInt(form.duration.value),
+            anxiety_peak: parseInt(form.anxiety_peak.value),
+            anxiety_after: parseInt(form.anxiety_after.value),
+            observations: SecurityHelpers.sanitizeInput(form.observations.value)
+        }
+    };
+
+    try {
+        const response = await fetch('/api/client/submit-homework', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept-Language': i18n.currentLang
+            },
+            credentials: 'include',
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            showMessage(i18n.t('homework.submitted_success', 'Homework submitted successfully!'), 'success');
+            loadHomework();
+        }
+    } catch (error) {
+        showMessage(i18n.t('msg.error'), 'error');
+    }
+}
 
 
 
