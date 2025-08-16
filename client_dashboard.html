@@ -1488,6 +1488,14 @@ window.addEventListener('load', function() {
     'homework.emotions_after_placeholder': 'Example: "Anxious 40%, Confident 60%" (notice the reduction)',
 
     // Emotions (original)
+     'crisis.call_someone_trust': 'Call Someone You Trust',
+    'crisis.reach_out_message': 'Reach out to someone who cares about you. This could be:',
+    'crisis.family_member': 'A family member',
+    'crisis.close_friend': 'A close friend',
+    'crisis.your_therapist': 'Your therapist',
+    'crisis.support_group': 'A support group member',
+    'crisis.use_phone_now': 'Use your phone to call or text them now.',
+    'crisis.ok_call_someone': 'OK, I\'ll Call Someone',
     'homework.emotions_help': 'Rate each emotion from 0-100% intensity',
         'homework.evidence_for_help': 'What facts support your automatic thought? Be specific.',
     'homework.evidence_for_placeholder': 'Example: "My boss frowned when I presented" or "I made 3 mistakes"',
@@ -1690,6 +1698,14 @@ window.addEventListener('load', function() {
 
              'nav.homework': 'שיעורי בית',
              'homework.exposure_situation': 'מצב החשיפה:',
+                 'crisis.call_someone_trust': 'התקשר למישהו שאתה סומך עליו',
+    'crisis.reach_out_message': 'פנה למישהו שאכפת לו ממך. זה יכול להיות:',
+    'crisis.family_member': 'בן משפחה',
+    'crisis.close_friend': 'חבר קרוב',
+    'crisis.your_therapist': 'המטפל שלך',
+    'crisis.support_group': 'חבר בקבוצת תמיכה',
+    'crisis.use_phone_now': 'השתמש בטלפון שלך כדי להתקשר או לשלוח הודעה עכשיו.',
+    'crisis.ok_call_someone': 'בסדר, אתקשר למישהו',
                'homework.evidence_against_help': 'אילו עובדות סותרות את המחשבה השלילית שלך? חפש חריגים או הסברים חלופיים.',
                    'homework.evidence_for_help': 'אילו עובדות תומכות במחשבה האוטומטית שלך? היה ספציפי.',
     'homework.evidence_for_placeholder': 'דוגמה: "הבוס שלי זעף כשהצגתי" או "עשיתי 3 טעויות"',
@@ -1899,6 +1915,14 @@ window.addEventListener('load', function() {
 
               'nav.homework': 'Домашние задания',
                'homework.evidence_against_help': 'Какие факты противоречат вашей негативной мысли? Ищите исключения или альтернативные объяснения.',
+               'crisis.call_someone_trust': 'Позвоните тому, кому доверяете',
+    'crisis.reach_out_message': 'Обратитесь к тому, кто о вас заботится. Это может быть:',
+    'crisis.family_member': 'Член семьи',
+    'crisis.close_friend': 'Близкий друг',
+    'crisis.your_therapist': 'Ваш терапевт',
+    'crisis.support_group': 'Участник группы поддержки',
+    'crisis.use_phone_now': 'Используйте свой телефон, чтобы позвонить или написать им сейчас.',
+    'crisis.ok_call_someone': 'Хорошо, я позвоню кому-нибудь',
                    'homework.evidence_for_help': 'Какие факты подтверждают вашу автоматическую мысль? Будьте конкретны.',
     'homework.evidence_for_placeholder': 'Пример: "Мой босс нахмурился, когда я презентовал" или "Я сделал 3 ошибки"',
     'homework.balanced_thought_help': 'Более реалистичный способ думать о ситуации.',
@@ -2106,6 +2130,14 @@ window.addEventListener('load', function() {
 
                 'nav.homework': 'الواجبات المنزلية',
                  'homework.evidence_against_help': 'ما هي الحقائق التي تتعارض مع فكرتك السلبية؟ ابحث عن الاستثناءات أو التفسيرات البديلة.',
+                  'crisis.call_someone_trust': 'اتصل بشخص تثق به',
+    'crisis.reach_out_message': 'تواصل مع شخص يهتم بك. يمكن أن يكون:',
+    'crisis.family_member': 'أحد أفراد العائلة',
+    'crisis.close_friend': 'صديق مقرب',
+    'crisis.your_therapist': 'معالجك النفسي',
+    'crisis.support_group': 'عضو في مجموعة الدعم',
+    'crisis.use_phone_now': 'استخدم هاتفك للاتصال أو إرسال رسالة نصية الآن.',
+    'crisis.ok_call_someone': 'حسناً، سأتصل بشخص ما',
                      'homework.evidence_for_help': 'ما هي الحقائق التي تدعم فكرتك التلقائية؟ كن محدداً.',
     'homework.evidence_for_placeholder': 'مثال: "عبس رئيسي عندما قدمت" أو "ارتكبت 3 أخطاء"',
     'homework.balanced_thought_help': 'طريقة أكثر واقعية للتفكير في الموقف.',
@@ -2795,8 +2827,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         setCurrentWeek();
         setToday();
 
+        // Make sure categories are loaded first
+        await setupAllCategories();  // Add await if this is async
+
+
         // Add this line to check crisis patterns on page load
-        checkHistoricalCrisisPatterns();
+        // THEN check crisis patterns
+        setTimeout(() => {
+            checkHistoricalCrisisPatterns();
+        }, 1000); // Give a small delay to ensure everything is loaded
 
         // Start session keep-alive
         startSessionKeepAlive();
@@ -3441,7 +3480,14 @@ async function checkHistoricalCrisisPatterns() {
         const data = await response.json();
         const checkins = data.progress?.checkins || [];
 
-        console.log('Checking crisis patterns. Checkins:', checkins); // Debug log
+        console.log('=== CRISIS PATTERN DEBUG ===');
+        console.log('Total checkins found:', checkins.length);
+
+        // Debug: Show the structure of the first checkin
+        if (checkins.length > 0) {
+            console.log('First checkin structure:', JSON.stringify(checkins[0], null, 2));
+            console.log('All keys in first checkin:', Object.keys(checkins[0]));
+        }
 
         // Count low mood days
         let lowMoodCount = 0;
@@ -3451,31 +3497,47 @@ async function checkHistoricalCrisisPatterns() {
         // Sort by date (oldest first)
         checkins.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        checkins.forEach(checkin => {
+        checkins.forEach((checkin, index) => {
             let hasLowMood = false;
+            let debugInfo = { date: checkin.date, values: {} };
 
             // Check all possible emotional/mood fields
-            // The field might be named differently in the API response
-            if (checkin.emotion_level !== undefined && checkin.emotion_level <= 2) {
-                hasLowMood = true;
-            } else if (checkin.emotional !== undefined && checkin.emotional <= 2) {
-                hasLowMood = true;
-            } else if (checkin['Emotion Level'] !== undefined && checkin['Emotion Level'] <= 2) {
-                hasLowMood = true;
+            if (checkin.emotion_level !== undefined) {
+                debugInfo.values.emotion_level = checkin.emotion_level;
+                if (checkin.emotion_level <= 2) hasLowMood = true;
             }
 
-            // Also check if there are category responses
-            if (checkin.category_responses) {
-                // Find emotion category
-                trackingCategories.forEach(cat => {
-                    if (cat.original_name?.toLowerCase().includes('emotion')) {
-                        const value = checkin.category_responses[cat.id];
-                        if (value !== undefined && value <= 2) {
-                            hasLowMood = true;
-                        }
-                    }
-                });
+            if (checkin.emotional !== undefined) {
+                debugInfo.values.emotional = checkin.emotional;
+                if (checkin.emotional <= 2) hasLowMood = true;
             }
+
+            if (checkin['Emotion Level'] !== undefined) {
+                debugInfo.values['Emotion Level'] = checkin['Emotion Level'];
+                if (checkin['Emotion Level'] <= 2) hasLowMood = true;
+            }
+
+            // Check category_responses
+            if (checkin.category_responses) {
+                debugInfo.category_responses = checkin.category_responses;
+
+                // Make sure trackingCategories is defined and loaded
+                if (typeof trackingCategories !== 'undefined' && Array.isArray(trackingCategories)) {
+                    trackingCategories.forEach(cat => {
+                        if (cat.original_name?.toLowerCase().includes('emotion')) {
+                            const value = checkin.category_responses[cat.id];
+                            debugInfo.values[`category_${cat.id}_${cat.original_name}`] = value;
+                            if (value !== undefined && value <= 2) {
+                                hasLowMood = true;
+                            }
+                        }
+                    });
+                } else {
+                    console.log('Warning: trackingCategories not defined or not an array');
+                }
+            }
+
+            console.log(`Checkin ${index}:`, debugInfo, 'hasLowMood:', hasLowMood);
 
             if (hasLowMood) {
                 lowMoodCount++;
@@ -3486,17 +3548,18 @@ async function checkHistoricalCrisisPatterns() {
             }
         });
 
-        console.log('Crisis check results:', { lowMoodCount, maxConsecutive }); // Debug log
+        console.log('=== FINAL RESULTS ===');
+        console.log('Low mood count:', lowMoodCount);
+        console.log('Max consecutive:', maxConsecutive);
+        console.log('Should show crisis support:', (maxConsecutive >= 3 || lowMoodCount >= 5));
 
-        // Show crisis support if:
-        // - 3+ consecutive days of low ratings
-        // - OR 5+ total days in the past 2 weeks
+        // Show crisis support if conditions are met
         if (maxConsecutive >= 3 || lowMoodCount >= 5) {
-            console.log('Showing crisis support based on historical data');
+            console.log('SHOWING crisis support based on historical data');
             document.getElementById('crisisSupport').style.display = 'block';
             loadCrisisResources();
         } else {
-            // Make sure it's hidden if conditions aren't met
+            console.log('HIDING crisis support - conditions not met');
             document.getElementById('crisisSupport').style.display = 'none';
         }
 
@@ -3800,7 +3863,7 @@ async function checkHistoricalCrisisPatterns() {
             }
         }
 
-    function callTrustedContact() {
+   function callTrustedContact() {
     const modal = document.createElement('div');
     modal.style.cssText = `
         position: fixed;
@@ -3819,24 +3882,50 @@ async function checkHistoricalCrisisPatterns() {
     const content = document.createElement('div');
     content.style.cssText = 'background: white; padding: 2rem; border-radius: 16px; max-width: 400px; text-align: center;';
 
-    content.innerHTML = `
-        <h3 style="margin-bottom: 1rem;">📞 Call Someone You Trust</h3>
-        <p style="color: #666; margin-bottom: 1.5rem; line-height: 1.6;">
-            Reach out to someone who cares about you. This could be:
-        </p>
-        <ul style="text-align: left; color: #666; margin-bottom: 1.5rem;">
-            <li>A family member</li>
-            <li>A close friend</li>
-            <li>Your therapist</li>
-            <li>A support group member</li>
-        </ul>
-        <p style="color: #666; margin-bottom: 1.5rem;">
-            Use your phone to call or text them now.
-        </p>
-        <button class="btn btn-primary" onclick="this.closest('div[style*=fixed]').remove();">
-            OK, I'll Call Someone
-        </button>
-    `;
+    // Build content with proper elements for RTL support
+    const h3 = document.createElement('h3');
+    h3.style.marginBottom = '1rem';
+    h3.textContent = '📞 ' + i18n.t('crisis.call_someone_trust');
+    content.appendChild(h3);
+
+    const p1 = document.createElement('p');
+    p1.style.cssText = 'color: #666; margin-bottom: 1.5rem; line-height: 1.6;';
+    p1.textContent = i18n.t('crisis.reach_out_message');
+    content.appendChild(p1);
+
+    const ul = document.createElement('ul');
+    ul.style.cssText = 'text-align: left; color: #666; margin-bottom: 1.5rem;';
+
+    // Add RTL support for Arabic and Hebrew
+    if (i18n.currentLang === 'ar' || i18n.currentLang === 'he') {
+        ul.style.textAlign = 'right';
+        ul.style.direction = 'rtl';
+    }
+
+    const listItems = [
+        i18n.t('crisis.family_member'),
+        i18n.t('crisis.close_friend'),
+        i18n.t('crisis.your_therapist'),
+        i18n.t('crisis.support_group')
+    ];
+
+    listItems.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        ul.appendChild(li);
+    });
+    content.appendChild(ul);
+
+    const p2 = document.createElement('p');
+    p2.style.cssText = 'color: #666; margin-bottom: 1.5rem;';
+    p2.textContent = i18n.t('crisis.use_phone_now');
+    content.appendChild(p2);
+
+    const button = document.createElement('button');
+    button.className = 'btn btn-primary';
+    button.textContent = i18n.t('crisis.ok_call_someone');
+    button.onclick = () => modal.remove();
+    content.appendChild(button);
 
     modal.appendChild(content);
     document.body.appendChild(modal);
