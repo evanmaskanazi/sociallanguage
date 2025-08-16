@@ -1258,6 +1258,9 @@ class DailyCheckin(db.Model):
 
     __table_args__ = (db.UniqueConstraint('client_id', 'checkin_date'),)
 
+
+
+
     @property
     def emotional_notes(self):
         return decrypt_field(self.emotional_notes_encrypted)
@@ -1472,6 +1475,24 @@ class AuditLog(db.Model):
     )
 
 
+
+class TherapistNotification(db.Model):
+    __tablename__ = 'therapist_notifications'
+
+    id = db.Column(db.Integer, primary_key=True)
+    therapist_id = db.Column(db.Integer, db.ForeignKey('therapists.id'), nullable=False)
+    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=False)
+    type = db.Column(db.String(50), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text)
+    priority = db.Column(db.String(20), default='normal')
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    therapist = db.relationship('Therapist', backref='notifications')
+    client = db.relationship('Client')
+
+
 class ConsentRecord(db.Model):
     __tablename__ = 'consent_records'
 
@@ -1485,7 +1506,6 @@ class ConsentRecord(db.Model):
     withdrawal_date = db.Column(db.DateTime)
 
     client = db.relationship('Client', backref='consents')
-
 
 
 
