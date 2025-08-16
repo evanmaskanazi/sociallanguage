@@ -5077,7 +5077,7 @@ window.showTab = function(tabName) {
         // Format responses based on type
         const responses = data.submission.responses;
 
-        if (data.assignment.type === 'thought_record') {
+        if (data.assignment.type === 'thoughtRecord') {
             responseHTML += `
                 <h3>CBT Thought Record</h3>
                 <p><strong>Situation:</strong><br>${responses.situation || 'N/A'}</p>
@@ -5088,7 +5088,7 @@ window.showTab = function(tabName) {
                 <p><strong>Balanced Thought:</strong><br>${responses.balanced_thought || 'N/A'}</p>
                 <p><strong>Emotions After:</strong><br>${responses.emotions_after || 'N/A'}</p>
             `;
-        } else if (data.assignment.type === 'distress_tolerance') {
+        } else if (data.assignment.type === 'distressTolerance') {
             responseHTML += `
                 <h3>DBT Distress Tolerance</h3>
                 <p><strong>Distress Level Before:</strong> ${responses.distress_level || 'N/A'}/10</p>
@@ -5106,7 +5106,28 @@ window.showTab = function(tabName) {
                 <p><strong>Anxiety After:</strong> ${responses.anxiety_after || 'N/A'}/10</p>
                 <p><strong>Observations:</strong><br>${responses.observations || 'N/A'}</p>
             `;
-        }
+        } else if (data.assignment.type === 'behavioralActivation') {
+    responseHTML += `
+        <h3>Behavioral Activation</h3>
+        <p><strong>Activities:</strong><br>${responses.activities || 'N/A'}</p>
+        <p><strong>Mood Before:</strong> ${responses.mood_before || 'N/A'}/10</p>
+        <p><strong>Mood After:</strong> ${responses.mood_after || 'N/A'}/10</p>
+        <p><strong>Notes:</strong><br>${responses.notes || 'N/A'}</p>
+    `;
+} else if (data.assignment.type === 'customAssignment') {
+    responseHTML += `
+        <h3>Custom Assignment</h3>
+        <p><strong>Response:</strong><br>${responses.response || responses.notes || 'N/A'}</p>
+    `;
+} else {
+    // Fallback - show raw data for debugging
+    responseHTML += `
+        <h3>Submission Details (Type: ${data.assignment.type})</h3>
+        <pre>${JSON.stringify(responses, null, 2)}</pre>
+    `;
+}
+
+
 
         responseHTML += `
             <button class="btn btn-primary" style="margin-top: 1rem;" onclick="this.closest('.modal').remove()">
