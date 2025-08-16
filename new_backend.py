@@ -407,6 +407,17 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
 ).replace('postgres://', 'postgresql://')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# In your Flask app configuration
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)  # Extend session
+app.config['SESSION_REFRESH_EACH_REQUEST'] = True  # Refresh on each request
+
+# Add this endpoint to check session status
+@app.route('/api/session/check')
+@login_required
+def check_session():
+    return jsonify({'valid': True, 'expires_in': 3600})
+
+
 # Email configuration
 app.config['MAIL_SERVER'] = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
 app.config['MAIL_PORT'] = int(os.environ.get('SMTP_PORT', 587))
@@ -533,6 +544,21 @@ def validate_inputs():
 
         if not check_dict(request.json):
             return jsonify({'error': 'Invalid input detected'}), 400
+
+
+
+@app.before_request
+def log_progress_requests():
+    if request.path == '/api/client/progress':
+        logger.info('progress_request', extra={
+            'extra_data': {
+                'user_id': request.current_user.id if hasattr(request, 'current_user') and request.current_user.is_authenticated else 'anonymous',
+                'path': request.path,
+                'method': request.method
+            }
+        })
+
+
 
 
 @app.after_request
@@ -8129,32 +8155,45 @@ def get_client_progress():
         ).order_by(DailyCheckin.checkin_date.desc())
 
         pagination = checkins_query.paginate(page=page, per_page=per_page, error_out=False)
-        checkins = pagination.items
+        checkins = pagination.items if pagination else []
 
         checkin_data = []
         for checkin in checkins:
+            # Ensure all values are present and valid
             checkin_data.append({
                 'date': checkin.checkin_date.isoformat(),
-                'emotional': checkin.emotional_value,
-                'medication': checkin.medication_value,
-                'activity': checkin.activity_value
+                'time': checkin.created_at.strftime('%H:%M') if checkin.created_at else '00:00',
+                'emotional': checkin.emotional_value if checkin.emotional_value is not None else 0,
+                'medication': checkin.medication_value if checkin.medication_value is not None else 0,
+                'activity': checkin.activity_value if checkin.activity_value is not None else 0
             })
 
         # Get category responses (also paginated if needed)
         category_data = {}
-        for plan in client.tracking_plans.filter_by(is_active=True):
-            responses = CategoryResponse.query.filter(
-                CategoryResponse.client_id == client.id,
-                CategoryResponse.category_id == plan.category_id,
-                CategoryResponse.response_date.between(start_date, end_date)
-            ).order_by(CategoryResponse.response_date.desc()).limit(per_page).all()
+        try:
+            for plan in client.tracking_plans.filter_by(is_active=True):
+                responses = CategoryResponse.query.filter(
+                    CategoryResponse.client_id == client.id,
+                    CategoryResponse.category_id == plan.category_id,
+                    CategoryResponse.response_date.between(start_date, end_date)
+                ).order_by(CategoryResponse.response_date.desc()).limit(per_page).all()
 
-            category_data[plan.category.name] = [
-                {
-                    'date': resp.response_date.isoformat(),
-                    'value': resp.value
-                } for resp in responses
-            ]
+                category_data[plan.category.name] = [
+                    {
+                        'date': resp.response_date.isoformat(),
+                        'value': resp.value if resp.value is not None else 0
+                    } for resp in responses
+                ]
+        except Exception as cat_error:
+            # Log but don't fail the whole request
+            logger.warning('get_progress_category_error', extra={
+                'extra_data': {
+                    'error': str(cat_error),
+                    'client_id': client.id,
+                    'request_id': g.request_id
+                }
+            })
+            category_data = {}
 
         # Log success
         logger.info('get_progress_success', extra={
@@ -8176,10 +8215,10 @@ def get_client_progress():
             'pagination': {
                 'page': page,
                 'per_page': per_page,
-                'total': pagination.total,
-                'pages': pagination.pages,
-                'has_prev': pagination.has_prev,
-                'has_next': pagination.has_next
+                'total': pagination.total if pagination else 0,
+                'pages': pagination.pages if pagination else 1,
+                'has_prev': pagination.has_prev if pagination else False,
+                'has_next': pagination.has_next if pagination else False
             }
         })
 
@@ -8187,13 +8226,31 @@ def get_client_progress():
         logger.error('get_progress_error', extra={
             'extra_data': {
                 'error': str(e),
-                'client_id': client.id if client else None,
-                'request_id': g.request_id
+                'client_id': getattr(request.current_user, 'client', {}).get('id', None) if hasattr(request,
+                                                                                                    'current_user') else None,
+                'request_id': g.request_id if hasattr(g, 'request_id') else None
             },
-            'request_id': g.request_id,
-            'user_id': request.current_user.id
+            'request_id': g.request_id if hasattr(g, 'request_id') else None,
+            'user_id': request.current_user.id if hasattr(request, 'current_user') else None
         }, exc_info=True)
-        return jsonify({'error': str(e)}), 500
+
+        # Return valid empty structure with 200 status to prevent frontend errors
+        return jsonify({
+            'success': False,
+            'error': 'Unable to load progress data',
+            'progress': {
+                'checkins': [],
+                'categories': {}
+            },
+            'pagination': {
+                'page': 1,
+                'per_page': 50,
+                'total': 0,
+                'pages': 1,
+                'has_prev': False,
+                'has_next': False
+            }
+        }), 200
 
 
 @app.route('/api/client/change-password', methods=['POST'])
@@ -8452,6 +8509,37 @@ def get_brief_goals():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/client/log-error', methods=['POST'])
+@require_auth(['client'])  # Use your auth decorator
+def log_client_error():
+    try:
+        data = request.json
+        errors = data.get('errors', [])
+
+        for error in errors:
+            logger.error('client_frontend_error', extra={
+                'extra_data': {
+                    'client_id': request.current_user.client.id,
+                    'error': error,
+                    'request_id': g.request_id
+                },
+                'request_id': g.request_id,
+                'user_id': request.current_user.id
+            })
+
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error('log_client_error_failed', extra={
+            'extra_data': {
+                'error': str(e),
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id
+        })
+        return jsonify({'success': False}), 200
+
 
 
 # ============= TRACKING CATEGORY MANAGEMENT =============

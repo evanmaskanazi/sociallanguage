@@ -1018,7 +1018,7 @@
             <option value="30" data-i18n="client.last_30_days">Last 30 days</option>
             <option value="90" data-i18n="client.last_90_days">Last 90 days</option>
         </select>
-        <button class="btn btn-secondary btn-small" onclick="loadProgress()" data-i18n="client.update">Update</button>
+        <button class="btn btn-secondary btn-small" onclick="loadProgressWithRetry()" data-i18n="client.update">Update</button>
     </div>
 
     <!-- New: Progress Charts Section -->
@@ -1913,6 +1913,68 @@
         let currentWeekOffset = 0;
         let selectedDate = new Date();
 
+
+ let clientData = null;
+        let trackingCategories = [];
+        let weeklyGoals = [];
+        let currentWeekOffset = 0;
+        let selectedDate = new Date();
+
+        // Error logging system
+        const errorLog = {
+            errors: [],
+            maxErrors: 50,
+
+            log: function(error, context) {
+                this.errors.push({
+                    time: new Date().toISOString(),
+                    error: error.toString(),
+                    stack: error.stack,
+                    context: context,
+                    url: window.location.href,
+                    userAgent: navigator.userAgent
+                });
+
+                // Keep only last 50 errors
+                if (this.errors.length > this.maxErrors) {
+                    this.errors.shift();
+                }
+
+                // Send to server if critical
+                if (context === 'critical') {
+                    this.sendToServer();
+                }
+            },
+
+            sendToServer: async function() {
+                try {
+                    await fetch('/api/client/log-error', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            errors: this.errors.slice(-10) // Last 10 errors
+                        })
+                    });
+                } catch (e) {
+                    console.error('Failed to send error log:', e);
+                }
+            },
+
+            getReport: function() {
+                return this.errors;
+            }
+        };
+
+        // Replace console.error with this
+        window.addEventListener('error', function(event) {
+            errorLog.log(event.error, 'uncaught');
+        });
+
+
+
         // Translation helper functions
         function translateCategoryName(categoryName) {
             const key = 'category.' + categoryName.toLowerCase().replace(/\s+/g, '_');
@@ -1956,7 +2018,7 @@
 
             // Load tab-specific content
             if (tabName === 'progress') {
-                loadProgress();
+                loadProgressWithRetry();
             } else if (tabName === 'goals') {
                 loadWeeklyGoals();
             } else if (tabName === 'settings') {
@@ -1974,6 +2036,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         await loadDashboard();
         setCurrentWeek();
         setToday();
+        // Start session keep-alive
+        startSessionKeepAlive();
 
         window.addEventListener('languageChanged', function() {
             console.log('Language changed in client dashboard');
@@ -2794,7 +2858,22 @@ async function loadBriefGoalsForCurrentWeek() {
         const progressContent = document.getElementById('progressContent');
         const insightsDiv = document.getElementById('progressInsights');
 
+        // Check if elements exist
+        if (!progressContent) {
+            console.error('Progress content div not found');
+            return;
+        }
+
+        // Prevent multiple simultaneous loads
+        if (progressContent.dataset.loading === 'true') {
+            return;
+        }
+        progressContent.dataset.loading = 'true';
+
         progressContent.innerHTML = `<div class="loading"><div class="spinner"></div><p>${i18n.t('client.loading_progress')}</p></div>`;
+
+
+
         insightsDiv.innerHTML = `<div class="loading"><div class="spinner"></div></div>`;
 
         const response = await fetch('/api/client/progress', {
@@ -2810,8 +2889,14 @@ async function loadBriefGoalsForCurrentWeek() {
 
         const data = await response.json();
 
-        // Create chart data
-        const chartData = prepareChartData(data.progress.checkins);
+// Validate data structure
+if (!data || !data.progress || !Array.isArray(data.progress.checkins)) {
+    console.error('Invalid data structure:', data);
+    data.progress = { checkins: [] };  // Provide default
+}
+
+// Create chart data
+const chartData = prepareChartData(data.progress.checkins);
         renderProgressChart(chartData);
 
         // Generate insights
@@ -2851,24 +2936,89 @@ async function loadBriefGoalsForCurrentWeek() {
         if (window.i18n) {
             i18n.translatePage();
         }
+// Clear loading state
+        progressContent.dataset.loading = 'false';
 
-    } catch (error) {
+     } catch (error) {
+        console.error('Progress loading error:', error);
+
         const progressContent = document.getElementById('progressContent');
         progressContent.innerHTML = '';
-        const errorP = document.createElement('p');
-        errorP.style.color = '#f44336';
-        errorP.textContent = i18n.t('client.error_progress');
-        progressContent.appendChild(errorP);
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'card';
+        errorDiv.style.padding = '2rem';
+        errorDiv.style.textAlign = 'center';
 
+        let errorMessage = i18n.t('client.error_progress');
+        let errorIcon = '❌';
+
+        // Specific error messages
+        if (error.message.includes('Failed to fetch')) {
+            errorMessage = i18n.t('client.error_network', 'Connection error. Please check your internet and try again.');
+            errorIcon = '📡';
+        } else if (error.message.includes('401')) {
+            errorMessage = i18n.t('client.error_session', 'Your session has expired. Please log in again.');
+            errorIcon = '🔒';
+            // Redirect to login after 2 seconds
+            setTimeout(() => { window.location.href = '/login.html'; }, 2000);
+        } else if (error.message.includes('Failed to load progress')) {
+            errorMessage = i18n.t('client.error_server', 'Unable to load progress data. Please try again later.');
+            errorIcon = '🔧';
+        }
+
+        errorDiv.innerHTML = `
+            <div style="font-size: 3rem; margin-bottom: 1rem;">${errorIcon}</div>
+            <p style="color: #f44336; font-weight: 500; margin-bottom: 1rem;">${errorMessage}</p>
+            <button class="btn btn-secondary btn-small" onclick="loadProgress()">
+                ${i18n.t('client.try_again', 'Try Again')}
+            </button>
+        `;
+
+        progressContent.appendChild(errorDiv);
+
+        // Handle insights div
         const insightsDiv = document.getElementById('progressInsights');
-        insightsDiv.innerHTML = '';
-        const errorP2 = document.createElement('p');
-        errorP2.style.color = '#f44336';
-        errorP2.textContent = 'Unable to generate insights';
-        insightsDiv.appendChild(errorP2);
+        if (insightsDiv) {
+            insightsDiv.innerHTML = `
+                <p style="color: #666; text-align: center;">
+                    <span style="font-size: 2rem;">📊</span><br>
+                    ${i18n.t('client.insights_unavailable', 'Insights will appear once progress data loads')}
+                </p>
+            `;
+        }
     }
-}
 
+
+
+async function loadProgressWithRetry(retryCount = 0) {
+    try {
+        await loadProgress();
+    } catch (error) {
+        if (retryCount < 2 && !error.message.includes('401')) {
+            console.log(`Retrying progress load (attempt ${retryCount + 1})...`);
+            setTimeout(() => loadProgressWithRetry(retryCount + 1), 1000 * (retryCount + 1));
+        }
+    }
+
+// Session keep-alive
+let sessionInterval = null;
+
+function startSessionKeepAlive() {
+    // Check session every 10 minutes
+    sessionInterval = setInterval(async () => {
+        try {
+            const response = await fetch('/api/session/check', {
+                credentials: 'include'
+            });
+            if (!response.ok) {
+                clearInterval(sessionInterval);
+                window.location.href = '/login.html';
+            }
+        } catch (error) {
+            console.error('Session check failed:', error);
+        }
+    }, 600000); // 10 minutes
+}
 
 
 function prepareChartData(checkins) {
