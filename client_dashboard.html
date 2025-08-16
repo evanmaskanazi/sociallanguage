@@ -2849,25 +2849,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 
 
-        setCurrentWeek();
-        setToday();
-        // Start session keep-alive
-        startSessionKeepAlive();
-
-        window.addEventListener('languageChanged', function() {
-            console.log('Language changed in client dashboard');
-            // Reload the week view to update day names
-            loadWeekView();
-            // Re-setup categories with new translations
-            setupAllCategories();
-            // Update any other dynamic content
-            updateUI();
-        });
-    } catch (error) {
-        console.error('Initialization error:', error);
-        showMessage('Error loading dashboard', 'error');
-    }
-});
 
 
         // Load dashboard data
