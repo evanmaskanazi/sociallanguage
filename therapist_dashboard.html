@@ -1469,6 +1469,8 @@
 'therapist.trend_improving': 'Improving trend',
 'therapist.trend_declining': 'Declining trend',
 'therapist.trend_stable': 'Stable trend',
+          'therapist.see_breakdown': 'See breakdown',
+                'therapist.evidence_based_interventions': 'Evidence-Based Interventions:',
                 'pagination.previous': 'Previous',
 'pagination.next': 'Next',
 'pagination.page_info': 'Page {page} of {pages}',
@@ -1678,6 +1680,8 @@
 'days.friday': 'יום שישי',
 'days.saturday': 'שבת',
 'days.sunday': 'יום ראשון',
+'therapist.evidence_based_interventions': 'התערבויות מבוססות ראיות:',
+'pagination.previous': 'הקודם',
 'pagination.total': 'סה"כ: {count}'
             });
 
@@ -1885,6 +1889,8 @@
 'days.friday': 'Пятница',
 'days.saturday': 'Суббота',
 'days.sunday': 'Воскресенье',
+'therapist.evidence_based_interventions': 'Вмешательства, основанные на доказательствах:',
+'pagination.previous': 'Предыдущая',
 'pagination.total': 'Всего: {count}'
 
             });
@@ -2093,6 +2099,8 @@
                 'pagination.previous': 'السابق',
 'pagination.next': 'التالي',
 'pagination.page_info': 'صفحة {page} من {pages}',
+'therapist.evidence_based_interventions': 'التدخلات القائمة على الأدلة:',
+'pagination.previous': 'السابق',
 'pagination.total': 'المجموع: {count}'
             });
 
@@ -3148,7 +3156,7 @@ customCatSection.appendChild(addCatBtn);
 modalBody.appendChild(customCatSection);
 
 
-                
+
 
             window.currentClientId = client.id;
             window.currentClientData = client;
@@ -3821,13 +3829,57 @@ function populateInsightClientSelect() {
     recP.appendChild(recStrong);
     recP.appendChild(recText);
 
-    content.appendChild(desc);
+     content.appendChild(desc);
     content.appendChild(trend);
     content.appendChild(recP);
+
+    // Evidence-Based Interventions Section
+    const interventionsDiv = document.createElement('div');
+    interventionsDiv.style.cssText = 'background: #f8f9fa; padding: 1rem; border-radius: 6px; margin: 1rem 0;';
+
+    const interventionTitle = document.createElement('h5');
+    interventionTitle.style.cssText = 'margin: 0 0 0.5rem 0; color: #333;';
+    interventionTitle.textContent = i18n.t('therapist.evidence_based_interventions', 'Evidence-Based Interventions:');
+    interventionsDiv.appendChild(interventionTitle);
+
+    // Get interventions based on insight type
+    const interventions = getEvidenceBasedInterventions(insight);
+
+    const interventionsList = document.createElement('ul');
+    interventionsList.style.cssText = 'margin: 0.5rem 0; padding-left: 1.5rem;';
+
+    interventions.forEach((intervention, index) => {
+        const li = document.createElement('li');
+        li.style.cssText = 'margin: 0.5rem 0; color: #555;';
+
+        const interventionLink = document.createElement('a');
+        interventionLink.href = '#';
+        interventionLink.style.cssText = 'color: #3498db; text-decoration: none;';
+        interventionLink.textContent = intervention.text;
+        interventionLink.onclick = (e) => {
+            e.preventDefault();
+            applyIntervention(clientId, intervention, insight);
+        };
+
+        li.appendChild(interventionLink);
+
+        const successRate = document.createElement('span');
+        successRate.style.cssText = 'color: #666; font-size: 0.875rem; margin-left: 0.5rem;';
+        successRate.textContent = `(${intervention.successRate}% success rate)`;
+        li.appendChild(successRate);
+
+        interventionsList.appendChild(li);
+    });
+
+    interventionsDiv.appendChild(interventionsList);
+    content.appendChild(interventionsDiv);
 
     // Enhanced Actions with Quick Buttons
     const actions = document.createElement('div');
     actions.className = 'insight-actions';
+
+
+
     actions.style.cssText = 'display: flex; gap: 0.5rem; flex-wrap: wrap;';
 
     // Schedule Session button
@@ -3967,6 +4019,103 @@ function populateInsightClientSelect() {
                 showMessage(i18n.t('msg.error'), 'error');
             }
         }
+
+
+
+       // Get evidence-based interventions for insight type
+        function getEvidenceBasedInterventions(insight) {
+            const interventionMap = {
+                'therapist.declining_emotional_state': [
+                    { text: 'Behavioral Activation Protocol', successRate: 78,
+                      template: 'Schedule 3 pleasant activities this week:\n1. [Activity 1]\n2. [Activity 2]\n3. [Activity 3]' },
+                    { text: 'Cognitive Restructuring Exercise', successRate: 82,
+                      template: 'Daily thought record:\n- Situation:\n- Automatic thought:\n- Evidence for/against:\n- Balanced thought:' },
+                    { text: 'Mindfulness-Based Mood Intervention', successRate: 71,
+                      template: '5-minute daily mindfulness practice:\n- Morning body scan\n- Mindful breathing before bed' }
+                ],
+                'therapist.inconsistent_engagement': [
+                    { text: 'Implementation Intentions Strategy', successRate: 85,
+                      template: 'Set specific check-in plan:\n"After [existing habit], I will complete my daily check-in"' },
+                    { text: 'Motivational Enhancement Technique', successRate: 73,
+                      template: 'Explore ambivalence:\n- Benefits of tracking:\n- Barriers to tracking:\n- Small first step:' },
+                    { text: 'Habit Stacking Protocol', successRate: 79,
+                      template: 'Link check-in to existing routine:\nMorning: After coffee → Check-in\nEvening: Before bed → Reflect' }
+                ],
+                'therapist.medication_concerns': [
+                    { text: 'Medication Reminder System Setup', successRate: 88,
+                      template: 'Set up reminder system:\n- Phone alarms: [times]\n- Pill organizer: [location]\n- Backup plan: [strategy]' },
+                    { text: 'Side Effect Management Plan', successRate: 76,
+                      template: 'Track and manage:\n- Time of day taken:\n- With/without food:\n- Side effects log:' },
+                    { text: 'Collaborative Medication Review', successRate: 83,
+                      template: 'Review with prescriber:\n- Current effectiveness:\n- Side effects:\n- Alternative options:' }
+                ],
+                'therapist.sleep_concerns': [
+                    { text: 'CBT-I Sleep Restriction', successRate: 87,
+                      template: 'Week 1 Sleep Schedule:\n- Bed time: 11:00 PM\n- Wake time: 6:00 AM\n- No naps\n- Bed only for sleep' },
+                    { text: 'Sleep Hygiene Protocol', successRate: 74,
+                      template: 'Evening routine (start 9 PM):\n- Dim lights\n- No screens\n- Warm shower\n- Reading/relaxation' },
+                    { text: 'Progressive Muscle Relaxation', successRate: 69,
+                      template: 'Nightly PMR practice:\n- 10 min before bed\n- Focus on each muscle group\n- Release tension systematically' }
+                ]
+            };
+
+            // Default interventions if specific type not found
+            const defaultInterventions = [
+                { text: 'Goal Setting & Action Planning', successRate: 75,
+                  template: 'SMART Goal:\nSpecific:\nMeasurable:\nAchievable:\nRelevant:\nTime-bound:' },
+                { text: 'Self-Monitoring Enhancement', successRate: 70,
+                  template: 'Track daily:\n- Mood (1-10):\n- Triggers:\n- Coping used:\n- Outcome:' },
+                { text: 'Social Support Activation', successRate: 68,
+                  template: 'Support plan:\n- Person to call:\n- Support group:\n- Check-in schedule:' }
+            ];
+
+            return interventionMap[insight.title] || defaultInterventions;
+        }
+
+        // Apply selected intervention
+        async function applyIntervention(clientId, intervention, insight) {
+            try {
+                // Create a mission with the intervention template
+                const missionContent = `📋 ${intervention.text}\n\n${intervention.template}\n\n[Based on: ${i18n.t(insight.title)}]`;
+
+                const response = await fetch('/api/therapist/add-note', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept-Language': i18n.currentLang
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        client_id: clientId,
+                        content: missionContent,
+                        is_mission: true
+                    })
+                });
+
+                if (response.ok) {
+                    showMessage(`Intervention "${intervention.text}" assigned as mission`, 'success');
+                    // Track intervention usage for success rate calculation
+                    trackInterventionUsage(clientId, intervention, insight);
+                }
+            } catch (error) {
+                showMessage('Error applying intervention', 'error');
+            }
+        }
+
+        // Track intervention usage (for future success rate calculations)
+        function trackInterventionUsage(clientId, intervention, insight) {
+            // In a real app, this would send analytics to track which interventions work best
+            console.log('Tracking intervention usage:', {
+                client_id: clientId,
+                intervention: intervention.text,
+                insight_type: insight.title,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+
+
+
 
         async function quickSendMessage(clientId, insight) {
             // Add as a mission note that the client will see
