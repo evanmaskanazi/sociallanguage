@@ -1333,6 +1333,12 @@
                 'client.select_client_week': 'Please select a week',
                 'client.report_generated': 'Report generated and downloaded successfully!',
                 'client.error_progress': 'Error loading progress data',
+                'client.error_progress': 'Error loading progress data',
+'client.error_network': 'Connection error. Please check your internet and try again.',
+'client.error_session': 'Your session has expired. Please log in again.',
+'client.error_server': 'Unable to load progress data. Please try again later.',
+'client.try_again': 'Try Again',
+'client.insights_unavailable': 'Insights will appear once progress data loads',
                 'client.account_deletion': 'Account Deletion',
 'client.deletion_desc': 'Request deletion of your account and all associated data',
 'client.deletion_warning': '⚠️ This action cannot be undone. All your data will be permanently deleted after approval by your therapist.',
@@ -1483,6 +1489,12 @@
                 'client.report_generated': 'הדוח נוצר והורד בהצלחה!',
                 'client.encouragement': 'המסע שלך לבריאות ממשיך. כל צעד נחשב!',
                 'client.error_progress': 'שגיאה בטעינת נתוני התקדמות',
+                'client.error_network': 'שגיאת חיבור. אנא בדוק את החיבור לאינטרנט ונסה שוב.',
+'client.error_session': 'תוקף ההתחברות שלך פג. אנא התחבר מחדש.',
+'client.error_server': 'לא ניתן לטעון את נתוני ההתקדמות. אנא נסה שוב מאוחר יותר.',
+'client.try_again': 'נסה שוב',
+'client.insights_unavailable': 'תובנות יופיעו לאחר טעינת נתוני ההתקדמות',
+
                 'checkin.title': 'צ׳ק-אין יומי',
                 'checkin.medication': 'האם נטלת את התרופות שלך כפי שנרשם?',
                 'checkin.med_na': 'לא רלוונטי',
@@ -1616,6 +1628,11 @@
                 'client.select_client_week': 'Пожалуйста, выберите неделю',
                 'client.report_generated': 'Отчет создан и загружен успешно!',
                 'client.error_progress': 'Ошибка загрузки данных прогресса',
+                'client.error_network': 'Ошибка подключения. Пожалуйста, проверьте подключение к интернету и попробуйте снова.',
+'client.error_session': 'Ваш сеанс истёк. Пожалуйста, войдите снова.',
+'client.error_server': 'Не удалось загрузить данные о прогрессе. Пожалуйста, попробуйте позже.',
+'client.try_again': 'Попробовать снова',
+'client.insights_unavailable': 'Инсайты появятся после загрузки данных о прогрессе',
                 'client.account_deletion': 'Удаление аккаунта',
 'client.deletion_desc': 'Запросить удаление вашего аккаунта и всех связанных данных',
 'client.deletion_warning': '⚠️ Это действие нельзя отменить. Все ваши данные будут удалены навсегда после одобрения вашим терапевтом.',
@@ -1757,6 +1774,11 @@
                 'client.select_client_week': 'يرجى اختيار أسبوع',
                 'client.report_generated': 'تم إنشاء التقرير وتنزيله بنجاح!',
                 'client.error_progress': 'خطأ في تحميل بيانات التقدم',
+                'client.error_network': 'خطأ في الاتصال. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.',
+'client.error_session': 'انتهت صلاحية جلستك. يرجى تسجيل الدخول مرة أخرى.',
+'client.error_server': 'تعذر تحميل بيانات التقدم. يرجى المحاولة مرة أخرى لاحقاً.',
+'client.try_again': 'حاول مرة أخرى',
+'client.insights_unavailable': 'ستظهر الرؤى بمجرد تحميل بيانات التقدم',
                 'checkin.title': 'تسجيل الحضور اليومي',
                 'client.account_deletion': 'حذف الحساب',
 'client.deletion_desc': 'طلب حذف حسابك وجميع البيانات المرتبطة',
@@ -1914,11 +1936,6 @@
         let selectedDate = new Date();
 
 
- let clientData = null;
-        let trackingCategories = [];
-        let weeklyGoals = [];
-        let currentWeekOffset = 0;
-        let selectedDate = new Date();
 
         // Error logging system
         const errorLog = {
