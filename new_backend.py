@@ -6910,7 +6910,10 @@ def create_client():
         db.session.flush()
 
         # ALWAYS ensure we have all 8 categories before adding them
-        all_categories = ensure_default_categories()
+        ensure_default_categories()  # Just ensure they exist, don't use returned objects
+
+        # Query categories fresh in current session
+        all_categories = TrackingCategory.query.all()
 
         # Verify we have exactly 8 categories
         if len(all_categories) != 8:
