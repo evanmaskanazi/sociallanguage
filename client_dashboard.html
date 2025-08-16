@@ -11,7 +11,7 @@
 
     <!-- Add i18n script -->
     <script src="i18n.js"></script>
-     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
       <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" integrity="sha512-H+rglffZ6f5gF7UJgvH4Naa+fGCgjrHKMgoFOGmcPTRwR6oILo5R+gtzNrpDp7iMV3udbymBVjkeZGNz1Em4rQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
@@ -2590,6 +2590,18 @@
         // Initialize
 document.addEventListener('DOMContentLoaded', async function() {
     try {
+
+        let chartLoadAttempts = 0;
+    while (typeof Chart === 'undefined' && chartLoadAttempts < 20) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        chartLoadAttempts++;
+    }
+
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js failed to load after 2 seconds');
+    }
+
+
         const isAuthenticated = await checkAuth();
         if (!isAuthenticated) return;
 
@@ -3912,7 +3924,22 @@ if (!data || !data.progress || !Array.isArray(data.progress.checkins)) {
 
 // Create chart data
 const chartData = prepareChartData(data.progress.checkins);
-        renderProgressChart(chartData);
+
+
+
+
+
+        if (typeof Chart !== 'undefined') {
+    renderProgressChart(chartData);
+} else {
+    console.error('Chart.js not loaded, skipping chart rendering');
+    // Optionally show a message to the user
+    const ctx = document.getElementById('progressChart');
+    if (ctx) {
+        ctx.style.display = 'none';
+        ctx.parentElement.innerHTML += '<p style="text-align: center; color: #666;">Chart visualization temporarily unavailable</p>';
+    }
+}
 
         // Generate insights
         const insights = generateProgressInsights(data.progress.checkins);
@@ -4077,6 +4104,12 @@ function prepareChartData(checkins) {
 function renderProgressChart(data) {
     const ctx = document.getElementById('progressChart');
 
+    // Check if Chart is available
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js is not loaded');
+        return;
+    }
+
     // Destroy existing chart if any
     if (window.progressChartInstance) {
         window.progressChartInstance.destroy();
@@ -4110,6 +4143,9 @@ function renderProgressChart(data) {
         }
     });
 }
+
+
+
 
 function generateProgressInsights(checkins) {
     if (checkins.length < 3) {
