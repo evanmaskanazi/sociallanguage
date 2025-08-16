@@ -411,41 +411,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)  # Extend session
 app.config['SESSION_REFRESH_EACH_REQUEST'] = True  # Refresh on each request
 
-# Add this endpoint to check session status
-@app.route('/api/session/check')
-@require_auth(['client', 'therapist'])  # Allow both client and therapist
-def check_session():
-    """Check if session is still valid"""
-    try:
-        # Get user info
-        user = request.current_user
 
-        # Log the check
-        logger.info('session_check', extra={
-            'extra_data': {
-                'user_id': user.id,
-                'user_type': user.role,
-                'request_id': g.request_id
-            },
-            'request_id': g.request_id,
-            'user_id': user.id
-        })
-
-        return jsonify({
-            'valid': True,
-            'expires_in': 3600,  # You could calculate actual time remaining
-            'user_id': user.id,
-            'role': user.role
-        })
-
-    except Exception as e:
-        logger.error('session_check_error', extra={
-            'extra_data': {
-                'error': str(e),
-                'request_id': g.request_id if hasattr(g, 'request_id') else None
-            }
-        })
-        return jsonify({'valid': False}), 401
 
 
 # Email configuration
@@ -2180,7 +2146,41 @@ def trigger_inactivity_check():
 
 
 
+# Add this endpoint to check session status
+@app.route('/api/session/check')
+@require_auth(['client', 'therapist'])  # Allow both client and therapist
+def check_session():
+    """Check if session is still valid"""
+    try:
+        # Get user info
+        user = request.current_user
 
+        # Log the check
+        logger.info('session_check', extra={
+            'extra_data': {
+                'user_id': user.id,
+                'user_type': user.role,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': user.id
+        })
+
+        return jsonify({
+            'valid': True,
+            'expires_in': 3600,  # You could calculate actual time remaining
+            'user_id': user.id,
+            'role': user.role
+        })
+
+    except Exception as e:
+        logger.error('session_check_error', extra={
+            'extra_data': {
+                'error': str(e),
+                'request_id': g.request_id if hasattr(g, 'request_id') else None
+            }
+        })
+        return jsonify({'valid': False}), 401
 
 
 
