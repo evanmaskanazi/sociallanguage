@@ -2535,6 +2535,23 @@
 
         async function submitDistressTolerance(event) {
             event.preventDefault();
+
+             // Check if backend is available first
+    try {
+        const checkResponse = await fetch('/api/client/homework', {
+            method: 'GET',  // Changed from HEAD to GET
+            credentials: 'include'
+        });
+        if (checkResponse.status === 404 || checkResponse.status === 500) {
+            showMessage(i18n.t('homework.not_available', 'Homework submission is not available yet'), 'error');
+            return;
+        }
+    } catch (error) {
+        showMessage(i18n.t('homework.not_available', 'Homework submission is not available yet'), 'error');
+        return;
+    }
+
+
             const form = event.target;
             const assignmentId = form.dataset.assignmentId;
 

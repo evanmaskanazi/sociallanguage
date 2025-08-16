@@ -10552,7 +10552,8 @@ def get_client_homework():
                 'type': a.homework_type,
                 'title': a.title,
                 'description': a.description,
-                'therapist_name': a.therapist.user.username if a.therapist else 'Your Therapist',
+                'therapist_name': a.therapist.name if a.therapist else 'Your Therapist',
+                # Changed from a.therapist.user.username
                 'due_date': a.due_date.isoformat() if a.due_date else None,
                 'completed': a.completed,
                 'created_at': a.created_at.isoformat()

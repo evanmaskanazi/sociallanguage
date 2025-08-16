@@ -4858,26 +4858,47 @@ console.log('Jerusalem offset:', timezoneOffset);
         // Homework Management Functions
 async function loadHomeworkClients() {
     try {
-        const response = await fetch('/api/therapist/clients', {
-            credentials: 'include'
+        const allClients = await fetchAllClients();
+
+        const select = document.getElementById('homeworkClientSelect');
+        select.innerHTML = '<option value="">Choose a client...</option>';
+
+        allClients.forEach(client => {
+            const option = document.createElement('option');
+            option.value = client.id;
+            option.textContent = client.client_name || `Client ${client.serial}`;
+            select.appendChild(option);
         });
-
-        if (response.ok) {
-            const data = await response.json();
-            const select = document.getElementById('homeworkClientSelect');
-            select.innerHTML = '<option value="">Choose a client...</option>';
-
-            data.clients.forEach(client => {
-                const option = document.createElement('option');
-                option.value = client.id;
-                option.textContent = client.client_name || `Client ${client.serial}`;
-                select.appendChild(option);
-            });
-        }
     } catch (error) {
         console.error('Error loading clients:', error);
     }
 }
+
+// Helper function to fetch all clients across all pages
+async function fetchAllClients(page = 1, accumulated = []) {
+    const response = await fetch(`/api/therapist/clients?page=${page}&per_page=20`, {
+        headers: {
+            'Accept-Language': i18n.currentLang
+        },
+        credentials: 'include'
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch clients');
+
+    const data = await response.json();
+    accumulated = accumulated.concat(data.clients);
+
+    // If there are more pages, fetch them recursively
+    if (data.pagination.has_next) {
+        return fetchAllClients(page + 1, accumulated);
+    }
+
+    return accumulated;
+}
+
+
+
+
 
 function updateHomeworkTemplate() {
     const type = document.getElementById('homeworkType').value;
