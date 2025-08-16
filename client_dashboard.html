@@ -3441,6 +3441,8 @@ async function checkHistoricalCrisisPatterns() {
         const data = await response.json();
         const checkins = data.progress?.checkins || [];
 
+        console.log('Checking crisis patterns. Checkins:', checkins); // Debug log
+
         // Count low mood days
         let lowMoodCount = 0;
         let consecutiveLowDays = 0;
@@ -3450,8 +3452,32 @@ async function checkHistoricalCrisisPatterns() {
         checkins.sort((a, b) => new Date(a.date) - new Date(b.date));
 
         checkins.forEach(checkin => {
-            // Check if emotional rating is low
-            if (checkin.emotional && checkin.emotional <= 2) {
+            let hasLowMood = false;
+
+            // Check all possible emotional/mood fields
+            // The field might be named differently in the API response
+            if (checkin.emotion_level !== undefined && checkin.emotion_level <= 2) {
+                hasLowMood = true;
+            } else if (checkin.emotional !== undefined && checkin.emotional <= 2) {
+                hasLowMood = true;
+            } else if (checkin['Emotion Level'] !== undefined && checkin['Emotion Level'] <= 2) {
+                hasLowMood = true;
+            }
+
+            // Also check if there are category responses
+            if (checkin.category_responses) {
+                // Find emotion category
+                trackingCategories.forEach(cat => {
+                    if (cat.original_name?.toLowerCase().includes('emotion')) {
+                        const value = checkin.category_responses[cat.id];
+                        if (value !== undefined && value <= 2) {
+                            hasLowMood = true;
+                        }
+                    }
+                });
+            }
+
+            if (hasLowMood) {
                 lowMoodCount++;
                 consecutiveLowDays++;
                 maxConsecutive = Math.max(maxConsecutive, consecutiveLowDays);
@@ -3460,12 +3486,18 @@ async function checkHistoricalCrisisPatterns() {
             }
         });
 
+        console.log('Crisis check results:', { lowMoodCount, maxConsecutive }); // Debug log
+
         // Show crisis support if:
         // - 3+ consecutive days of low ratings
         // - OR 5+ total days in the past 2 weeks
         if (maxConsecutive >= 3 || lowMoodCount >= 5) {
+            console.log('Showing crisis support based on historical data');
             document.getElementById('crisisSupport').style.display = 'block';
             loadCrisisResources();
+        } else {
+            // Make sure it's hidden if conditions aren't met
+            document.getElementById('crisisSupport').style.display = 'none';
         }
 
     } catch (error) {
@@ -3768,13 +3800,9 @@ async function checkHistoricalCrisisPatterns() {
             }
         }
 
-        function callTrustedContact() {
-            // Could integrate with phone contacts API or show saved contacts
-            if (confirm('Would you like to call your trusted contact now?')) {
-                // In a real app, this would dial the saved number
-                window.location.href = 'tel:';
-            }
-        }
+     function callTrustedContact() {
+    alert('Please contact your trusted person using your phone. If you don\'t have their number saved, check your safety plan or contact your therapist.');
+}
 
 
 
