@@ -11,7 +11,7 @@
 
     <!-- Add i18n script -->
     <script src="i18n.js"></script>
- //     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+ <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script> -->
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
@@ -2507,19 +2507,27 @@ window.addEventListener('load', function() {
         }
 
         function startHomework(type, assignmentId) {
-            const content = document.getElementById('homeworkContent');
-            const template = document.getElementById(type + 'Template');
+    const content = document.getElementById('homeworkContent');
 
-            if (template) {
-                // Clone template safely
-                const clone = template.cloneNode(true);
-                clone.style.display = 'block';
-                clone.querySelector('form').dataset.assignmentId = assignmentId;
+    // Convert snake_case to camelCase
+    const camelCaseType = type.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
+    const templateId = camelCaseType + 'Template';
 
-                content.innerHTML = '';
-                content.appendChild(clone);
-            }
-        }
+    console.log('Original type:', type, '→ Template ID:', templateId);
+
+    const template = document.getElementById(templateId);
+
+    if (template) {
+        const clone = template.cloneNode(true);
+        clone.style.display = 'block';
+        clone.querySelector('form').dataset.assignmentId = assignmentId;
+
+        content.innerHTML = '';
+        content.appendChild(clone);
+    } else {
+        showMessage(`Homework type '${type}' not supported yet`, 'error');
+    }
+}
 
         async function submitThoughtRecord(event) {
             event.preventDefault();
