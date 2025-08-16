@@ -10617,6 +10617,56 @@ def submit_homework():
         return jsonify({'error': 'Failed to submit homework'}), 500
 
 
+@app.route('/api/client/request-urgent-session', methods=['POST'])
+@require_auth(['client'])
+def request_urgent_session():
+    """Handle urgent session requests from clients"""
+    try:
+        client = request.current_user.client
+        data = request.get_json()
+
+        # Create urgent notification for therapist
+        notification = TherapistNotification(
+            therapist_id=client.therapist_id,
+            client_id=client.id,
+            type='urgent_session_request',
+            title='URGENT: Session Request',
+            message=f'{client.client_name or client.client_serial} has requested an urgent session. Crisis level: {data.get("crisis_level", "unknown")}',
+            priority='high',
+            created_at=datetime.utcnow()
+        )
+        db.session.add(notification)
+
+        # Log the urgent request
+        logger.warning('urgent_session_requested', extra={
+            'extra_data': {
+                'client_id': client.id,
+                'therapist_id': client.therapist_id,
+                'crisis_level': data.get('crisis_level'),
+                'timestamp': data.get('timestamp')
+            }
+        })
+
+        # Optionally send email/SMS to therapist
+        if client.therapist.user.email:
+            # Add your email sending logic here
+            pass
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Your therapist has been notified and will contact you as soon as possible'
+        })
+
+    except Exception as e:
+        logger.error(f"Error requesting urgent session: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': 'Failed to send urgent request'}), 500
+
+
+
+
 # Therapist endpoints
 @app.route('/api/therapist/assign-homework', methods=['POST'])
 @require_auth(['therapist'])

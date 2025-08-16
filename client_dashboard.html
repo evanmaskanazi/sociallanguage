@@ -13,6 +13,29 @@
     <script src="i18n.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
+<script>
+// Fallback for Chart.js loading
+window.addEventListener('load', function() {
+    if (typeof Chart === 'undefined') {
+        console.log('Chart.js failed to load from primary CDN, trying fallback...');
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+        script.onload = function() {
+            console.log('Chart.js loaded from fallback CDN');
+            // Trigger progress reload if on progress tab
+            const progressTab = document.getElementById('progress');
+            if (progressTab && progressTab.classList.contains('active')) {
+                loadProgressWithRetry();
+            }
+        };
+        script.onerror = function() {
+            console.error('Failed to load Chart.js from all CDNs');
+        };
+        document.head.appendChild(script);
+    }
+});
+</script>
+
       <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" integrity="sha512-H+rglffZ6f5gF7UJgvH4Naa+fGCgjrHKMgoFOGmcPTRwR6oILo5R+gtzNrpDp7iMV3udbymBVjkeZGNz1Em4rQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <style>
