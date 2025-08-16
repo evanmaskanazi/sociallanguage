@@ -3800,8 +3800,53 @@ async function checkHistoricalCrisisPatterns() {
             }
         }
 
-     function callTrustedContact() {
-    alert('Please contact your trusted person using your phone. If you don\'t have their number saved, check your safety plan or contact your therapist.');
+    function callTrustedContact() {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 1rem;
+    `;
+
+    const content = document.createElement('div');
+    content.style.cssText = 'background: white; padding: 2rem; border-radius: 16px; max-width: 400px; text-align: center;';
+
+    content.innerHTML = `
+        <h3 style="margin-bottom: 1rem;">📞 Call Someone You Trust</h3>
+        <p style="color: #666; margin-bottom: 1.5rem; line-height: 1.6;">
+            Reach out to someone who cares about you. This could be:
+        </p>
+        <ul style="text-align: left; color: #666; margin-bottom: 1.5rem;">
+            <li>A family member</li>
+            <li>A close friend</li>
+            <li>Your therapist</li>
+            <li>A support group member</li>
+        </ul>
+        <p style="color: #666; margin-bottom: 1.5rem;">
+            Use your phone to call or text them now.
+        </p>
+        <button class="btn btn-primary" onclick="this.closest('div[style*=fixed]').remove();">
+            OK, I'll Call Someone
+        </button>
+    `;
+
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
 }
 
 
