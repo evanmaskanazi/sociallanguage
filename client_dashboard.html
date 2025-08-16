@@ -2800,6 +2800,8 @@ window.addEventListener('load', function() {
        // Initialize
 document.addEventListener('DOMContentLoaded', async function() {
     try {
+       console.log('=== DOMContentLoaded START ===');
+
         let chartLoadAttempts = 0;
         while (typeof Chart === 'undefined' && chartLoadAttempts < 20) {
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -2813,15 +2815,22 @@ document.addEventListener('DOMContentLoaded', async function() {
         const isAuthenticated = await checkAuth();
         if (!isAuthenticated) return;
 
+
+         console.log('About to load dashboard...');
         await loadDashboard();
         setCurrentWeek();
         setToday();
 
         // Make sure categories are loaded first
-        await setupAllCategories();  // Add await if this is async
+       console.log('About to setup categories...');
+        try {
+            await setupAllCategories();
+        } catch (error) {
+            console.error('Error in setupAllCategories:', error);
+        }
 
         console.log('About to call checkHistoricalCrisisPatterns from DOMContentLoaded');
-
+ checkHistoricalCrisisPatterns();
         // THEN check crisis patterns
         setTimeout(() => {
             checkHistoricalCrisisPatterns();
@@ -3439,6 +3448,8 @@ dayCell.appendChild(statusIconDiv);
 
 
 async function checkHistoricalCrisisPatterns() {
+  console.log('=== checkHistoricalCrisisPatterns CALLED ===');
+    console.log('Crisis support element exists?', document.getElementById('crisisSupport'));
     try {
         // Fetch recent checkins
         const response = await fetch('/api/client/progress?days=14', {
