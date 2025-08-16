@@ -593,6 +593,8 @@ def after_request(response):
 
 @app.after_request
 def set_security_headers(response):
+    response.headers[
+        'Content-Security-Policy'] = "default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://therapy-companion.onrender.com; font-src 'self'; object-src 'none'; frame-ancestors 'none';"
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['X-XSS-Protection'] = '1; mode=block'
