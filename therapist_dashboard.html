@@ -5008,7 +5008,14 @@ async function loadClientHomeworkStatus() {
                             </div>
                             <small style="color: #666;">Due: ${hw.due_date ? new Date(hw.due_date).toLocaleDateString() : 'No due date'}</small>
                         </div>
-                        ${hw.completed ? `<small style="color: #666;">Completed on: ${new Date(hw.completed_at).toLocaleString()}</small>` : ''}
+                        ${hw.completed ? `
+                            <div style="margin-top: 0.5rem;">
+                                <small style="color: #666;">Completed on: ${new Date(hw.completed_at).toLocaleString()}</small>
+                                <button class="btn btn-primary btn-small" style="margin-left: 1rem;" onclick="viewHomeworkSubmission(${hw.id})">
+                                    View Submission
+                                </button>
+                            </div>
+                        ` : ''}
                     </div>
                 `).join('');
             }
@@ -5027,6 +5034,103 @@ window.showTab = function(tabName) {
         loadHomeworkClients();
     }
 };
+
+
+        async function viewHomeworkSubmission(assignmentId) {
+    try {
+        const response = await fetch(`/api/therapist/homework-submissions/${assignmentId}`, {
+            headers: { 'Accept-Language': i18n.currentLang },
+            credentials: 'include'
+        });
+
+        if (!response.ok) throw new Error('Failed to load submission');
+
+        const data = await response.json();
+
+        // Create modal to show submission
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        `;
+
+        const content = document.createElement('div');
+        content.style.cssText = 'background: white; padding: 2rem; border-radius: 12px; max-width: 800px; max-height: 80vh; overflow-y: auto;';
+
+        // Build content based on homework type
+        let responseHTML = `
+            <h2>${data.assignment.title}</h2>
+            <p><strong>Client:</strong> ${data.client.name}</p>
+            <p><strong>Submitted:</strong> ${new Date(data.submission.submitted_at).toLocaleString()}</p>
+            <hr style="margin: 1rem 0;">
+        `;
+
+        // Format responses based on type
+        const responses = data.submission.responses;
+
+        if (data.assignment.type === 'thought_record') {
+            responseHTML += `
+                <h3>CBT Thought Record</h3>
+                <p><strong>Situation:</strong><br>${responses.situation || 'N/A'}</p>
+                <p><strong>Automatic Thoughts:</strong><br>${responses.thoughts || 'N/A'}</p>
+                <p><strong>Emotions:</strong><br>${responses.emotions || 'N/A'}</p>
+                <p><strong>Evidence For:</strong><br>${responses.evidence_for || 'N/A'}</p>
+                <p><strong>Evidence Against:</strong><br>${responses.evidence_against || 'N/A'}</p>
+                <p><strong>Balanced Thought:</strong><br>${responses.balanced_thought || 'N/A'}</p>
+                <p><strong>Emotions After:</strong><br>${responses.emotions_after || 'N/A'}</p>
+            `;
+        } else if (data.assignment.type === 'distress_tolerance') {
+            responseHTML += `
+                <h3>DBT Distress Tolerance</h3>
+                <p><strong>Distress Level Before:</strong> ${responses.distress_level || 'N/A'}/10</p>
+                <p><strong>Skill Used:</strong> ${responses.skill_used || 'N/A'}</p>
+                <p><strong>How Applied:</strong><br>${responses.skill_details || 'N/A'}</p>
+                <p><strong>Distress Level After:</strong> ${responses.distress_after || 'N/A'}/10</p>
+            `;
+        } else if (data.assignment.type === 'exposureLog') {
+            responseHTML += `
+                <h3>Exposure Log</h3>
+                <p><strong>Situation:</strong><br>${responses.situation || 'N/A'}</p>
+                <p><strong>Anxiety Before:</strong> ${responses.anxiety_before || 'N/A'}/10</p>
+                <p><strong>Duration:</strong> ${responses.duration || 'N/A'} minutes</p>
+                <p><strong>Peak Anxiety:</strong> ${responses.anxiety_peak || 'N/A'}/10</p>
+                <p><strong>Anxiety After:</strong> ${responses.anxiety_after || 'N/A'}/10</p>
+                <p><strong>Observations:</strong><br>${responses.observations || 'N/A'}</p>
+            `;
+        }
+
+        responseHTML += `
+            <button class="btn btn-primary" style="margin-top: 1rem;" onclick="this.closest('.modal').remove()">
+                Close
+            </button>
+        `;
+
+        content.innerHTML = responseHTML;
+        modal.appendChild(content);
+        modal.className = 'modal';
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+
+        document.body.appendChild(modal);
+
+    } catch (error) {
+        showMessage(i18n.t('msg.error'), 'error');
+    }
+}
+
+
 
 
     </script>

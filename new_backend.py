@@ -10822,6 +10822,52 @@ def get_client_homework_status(client_id):
         return jsonify({'error': 'Failed to load homework'}), 500
 
 
+@app.route('/api/therapist/homework-submissions/<int:assignment_id>', methods=['GET'])
+@require_auth(['therapist'])
+def get_homework_submission(assignment_id):
+    """Get homework submission details"""
+    try:
+        therapist = request.current_user.therapist
+
+        # Verify the assignment belongs to this therapist's client
+        assignment = HomeworkAssignment.query.filter_by(
+            id=assignment_id,
+            therapist_id=therapist.id
+        ).first()
+
+        if not assignment:
+            return jsonify({'error': 'Assignment not found'}), 404
+
+        # Get the submission
+        submission = HomeworkSubmission.query.filter_by(
+            assignment_id=assignment_id
+        ).first()
+
+        if not submission:
+            return jsonify({'error': 'No submission found'}), 404
+
+        return jsonify({
+            'assignment': {
+                'id': assignment.id,
+                'title': assignment.title,
+                'type': assignment.homework_type,
+                'assigned_date': assignment.created_at.isoformat()
+            },
+            'submission': {
+                'submitted_at': submission.submitted_at.isoformat(),
+                'responses': json.loads(submission.responses) if submission.responses else {}
+            },
+            'client': {
+                'name': assignment.client.client_name or f'Client {assignment.client.client_serial}'
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Error getting homework submission: {str(e)}")
+        return jsonify({'error': 'Failed to load submission'}), 500
+
+
+
 
 
 # ============= INITIALIZATION =============

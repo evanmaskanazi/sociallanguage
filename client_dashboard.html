@@ -1149,24 +1149,44 @@ window.addEventListener('load', function() {
                     </div>
 
                     <div class="form-group">
-                        <label data-i18n="homework.evidence_for">Evidence For:</label>
-                        <textarea class="notes-textarea" name="evidence_for" required></textarea>
-                    </div>
+    <label data-i18n="homework.evidence_for">Evidence For:</label>
+    <small style="color: #666; display: block; margin-bottom: 0.5rem;">
+        What facts support your automatic thought? Be specific.
+    </small>
+    <textarea class="notes-textarea" name="evidence_for" required
+        placeholder="Example: 'My boss frowned when I presented' or 'I made 3 mistakes'"></textarea>
+</div>
 
                     <div class="form-group">
-                        <label data-i18n="homework.evidence_against">Evidence Against:</label>
-                        <textarea class="notes-textarea" name="evidence_against" required></textarea>
-                    </div>
+    <label data-i18n="homework.evidence_against">Evidence Against:</label>
+    <small style="color: #666; display: block; margin-bottom: 0.5rem;"
+           data-i18n="homework.evidence_against_help">
+        What facts contradict your negative thought? Look for exceptions or alternative explanations.
+    </small>
+    <textarea class="notes-textarea" name="evidence_against" required
+        data-i18n-placeholder="homework.evidence_against_placeholder"
+        placeholder="Example: 'I got positive feedback last week' or 'My boss was stressed about other issues'"></textarea>
+</div>
 
                     <div class="form-group">
-                        <label data-i18n="homework.balanced_thought">Balanced Thought:</label>
-                        <textarea class="notes-textarea" name="balanced_thought" required></textarea>
-                    </div>
+    <label data-i18n="homework.balanced_thought">Balanced Thought:</label>
+    <small style="color: #666; display: block; margin-bottom: 0.5rem;">
+        A more realistic way to think about the situation.
+    </small>
+    <textarea class="notes-textarea" name="balanced_thought" required
+        placeholder="Example: 'I made some mistakes but also did many things well'"></textarea>
+</div>
 
                     <div class="form-group">
-                        <label data-i18n="homework.emotions_after">Emotions Now (rate 0-100%):</label>
-                        <input type="text" class="form-input" name="emotions_after" required>
-                    </div>
+    <label data-i18n="homework.emotions_after">Emotions Now (rate 0-100%):</label>
+    <small style="color: #666; display: block; margin-bottom: 0.5rem;"
+           data-i18n="homework.emotions_after_help">
+        After considering all evidence and your balanced thought, how do you feel now?
+    </small>
+    <input type="text" class="form-input" name="emotions_after" required
+        data-i18n-placeholder="homework.emotions_after_placeholder"
+        placeholder="Example: 'Anxious 40%, Confident 60%' (notice the reduction)">
+</div>
 
                     <button type="submit" class="btn btn-primary" data-i18n="homework.submit">Submit Homework</button>
                 </form>
@@ -1460,6 +1480,22 @@ window.addEventListener('load', function() {
                 // Category translations
 
                  'nav.homework': 'Homework',
+                     'homework.evidence_against_help': 'What facts contradict your negative thought? Look for exceptions or alternative explanations.',
+    'homework.evidence_against_placeholder': 'Example: "I got positive feedback last week" or "My boss was stressed about other issues"',
+
+    // Emotions After
+    'homework.emotions_after_help': 'After considering all evidence and your balanced thought, how do you feel now?',
+    'homework.emotions_after_placeholder': 'Example: "Anxious 40%, Confident 60%" (notice the reduction)',
+
+    // Emotions (original)
+    'homework.emotions_help': 'Rate each emotion from 0-100% intensity',
+        'homework.evidence_for_help': 'What facts support your automatic thought? Be specific.',
+    'homework.evidence_for_placeholder': 'Example: "My boss frowned when I presented" or "I made 3 mistakes"',
+    'homework.balanced_thought_help': 'A more realistic way to think about the situation.',
+    'homework.balanced_thought_placeholder': 'Example: "I made some mistakes but also did many things well"',
+    'homework.instructions_title': 'ℹ️ How to complete this form',
+    'homework.instructions_text': 'Your therapist will have explained this in session. As a reminder: Evidence For: Facts that support your negative thought. Evidence Against: Facts that contradict it. Balanced Thought: A more realistic perspective considering all evidence.',
+    'homework.emotions_placeholder': 'Example: "Anxious 80%, Sad 60%, Angry 40%"',
                 'homework.title': 'Therapy Homework',
                 'homework.current': 'Current Assignments:',
                 'homework.refresh': 'Refresh',
@@ -1654,6 +1690,18 @@ window.addEventListener('load', function() {
 
              'nav.homework': 'שיעורי בית',
              'homework.exposure_situation': 'מצב החשיפה:',
+               'homework.evidence_against_help': 'אילו עובדות סותרות את המחשבה השלילית שלך? חפש חריגים או הסברים חלופיים.',
+                   'homework.evidence_for_help': 'אילו עובדות תומכות במחשבה האוטומטית שלך? היה ספציפי.',
+    'homework.evidence_for_placeholder': 'דוגמה: "הבוס שלי זעף כשהצגתי" או "עשיתי 3 טעויות"',
+    'homework.balanced_thought_help': 'דרך ריאליסטית יותר לחשוב על הסיטואציה.',
+    'homework.balanced_thought_placeholder': 'דוגמה: "עשיתי כמה טעויות אבל גם עשיתי דברים רבים טוב"',
+    'homework.instructions_title': 'ℹ️ איך למלא את הטופס הזה',
+    'homework.instructions_text': 'המטפל/ת שלך הסביר/ה זאת בפגישה. כתזכורת: ראיות בעד: עובדות שתומכות במחשבה השלילית שלך. ראיות נגד: עובדות שסותרות אותה. מחשבה מאוזנת: פרספקטיבה ריאליסטית יותר בהתחשב בכל הראיות.',
+    'homework.evidence_against_placeholder': 'דוגמה: "קיבלתי משוב חיובי בשבוע שעבר" או "הבוס היה לחוץ מנושאים אחרים"',
+    'homework.emotions_after_help': 'לאחר שקילת כל הראיות והמחשבה המאוזנת, איך אתה מרגיש עכשיו?',
+    'homework.emotions_after_placeholder': 'דוגמה: "חרדה 40%, ביטחון 60%" (שים לב להפחתה)',
+    'homework.emotions_help': 'דרג כל רגש מ-0-100% עוצמה',
+    'homework.emotions_placeholder': 'דוגמה: "חרדה 80%, עצב 60%, כעס 40%"',
     'homework.anxiety_before': 'חרדה לפני (0-10):',
     'homework.duration': 'משך זמן (דקות):',
     'homework.anxiety_peak': 'שיא החרדה (0-10):',
@@ -1850,6 +1898,18 @@ window.addEventListener('load', function() {
 
 
               'nav.homework': 'Домашние задания',
+               'homework.evidence_against_help': 'Какие факты противоречат вашей негативной мысли? Ищите исключения или альтернативные объяснения.',
+                   'homework.evidence_for_help': 'Какие факты подтверждают вашу автоматическую мысль? Будьте конкретны.',
+    'homework.evidence_for_placeholder': 'Пример: "Мой босс нахмурился, когда я презентовал" или "Я сделал 3 ошибки"',
+    'homework.balanced_thought_help': 'Более реалистичный способ думать о ситуации.',
+    'homework.balanced_thought_placeholder': 'Пример: "Я сделал несколько ошибок, но также сделал многое хорошо"',
+    'homework.instructions_title': 'ℹ️ Как заполнить эту форму',
+    'homework.instructions_text': 'Ваш терапевт объяснил это на сеансе. Напоминаем: Доказательства За: Факты, поддерживающие вашу негативную мысль. Доказательства Против: Факты, которые ей противоречат. Сбалансированная Мысль: Более реалистичная перспектива с учётом всех доказательств.',
+    'homework.evidence_against_placeholder': 'Пример: "Я получил положительный отзыв на прошлой неделе" или "Босс был в стрессе из-за других вопросов"',
+    'homework.emotions_after_help': 'После рассмотрения всех доказательств и вашей сбалансированной мысли, как вы себя чувствуете сейчас?',
+    'homework.emotions_after_placeholder': 'Пример: "Тревога 40%, Уверенность 60%" (обратите внимание на снижение)',
+    'homework.emotions_help': 'Оцените каждую эмоцию от 0-100% интенсивности',
+    'homework.emotions_placeholder': 'Пример: "Тревога 80%, Грусть 60%, Злость 40%"',
                  'homework.exposure_situation': 'Ситуация воздействия:',
     'homework.anxiety_before': 'Тревога до (0-10):',
     'homework.duration': 'Продолжительность (минуты):',
@@ -2045,6 +2105,18 @@ window.addEventListener('load', function() {
 
 
                 'nav.homework': 'الواجبات المنزلية',
+                 'homework.evidence_against_help': 'ما هي الحقائق التي تتعارض مع فكرتك السلبية؟ ابحث عن الاستثناءات أو التفسيرات البديلة.',
+                     'homework.evidence_for_help': 'ما هي الحقائق التي تدعم فكرتك التلقائية؟ كن محدداً.',
+    'homework.evidence_for_placeholder': 'مثال: "عبس رئيسي عندما قدمت" أو "ارتكبت 3 أخطاء"',
+    'homework.balanced_thought_help': 'طريقة أكثر واقعية للتفكير في الموقف.',
+    'homework.balanced_thought_placeholder': 'مثال: "ارتكبت بعض الأخطاء ولكنني أيضاً قمت بأشياء كثيرة بشكل جيد"',
+    'homework.instructions_title': 'ℹ️ كيفية ملء هذا النموذج',
+    'homework.instructions_text': 'سيكون معالجك قد شرح هذا في الجلسة. كتذكير: الأدلة المؤيدة: الحقائق التي تدعم فكرتك السلبية. الأدلة المعارضة: الحقائق التي تناقضها. الفكرة المتوازنة: منظور أكثر واقعية مع الأخذ في الاعتبار جميع الأدلة.',
+    'homework.evidence_against_placeholder': 'مثال: "تلقيت ملاحظات إيجابية الأسبوع الماضي" أو "كان رئيسي متوتراً بشأن قضايا أخرى"',
+    'homework.emotions_after_help': 'بعد النظر في جميع الأدلة وفكرتك المتوازنة، كيف تشعر الآن؟',
+    'homework.emotions_after_placeholder': 'مثال: "القلق 40%، الثقة 60%" (لاحظ الانخفاض)',
+    'homework.emotions_help': 'قيم كل عاطفة من 0-100% شدة',
+    'homework.emotions_placeholder': 'مثال: "القلق 80%، الحزن 60%، الغضب 40%"',
                  'homework.exposure_situation': 'موقف التعرض:',
     'homework.anxiety_before': 'القلق قبل (0-10):',
     'homework.duration': 'المدة (دقائق):',
