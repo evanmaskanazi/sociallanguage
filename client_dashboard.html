@@ -3448,8 +3448,8 @@ dayCell.appendChild(statusIconDiv);
 
 
 async function checkHistoricalCrisisPatterns() {
-  console.log('=== checkHistoricalCrisisPatterns CALLED ===');
-    console.log('Crisis support element exists?', document.getElementById('crisisSupport'));
+    console.log('=== checkHistoricalCrisisPatterns CALLED ===');
+
     try {
         // Fetch recent checkins
         const response = await fetch('/api/client/progress?days=14', {
@@ -3472,31 +3472,15 @@ async function checkHistoricalCrisisPatterns() {
         // Sort by date (oldest first)
         checkins.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        checkins.forEach(checkin => {
+        checkins.forEach((checkin) => {
             let hasLowMood = false;
             let emotionValue = null;
 
-            // The emotion data is likely in category_responses
-            if (checkin.category_responses) {
-                // Find the Emotion Level category ID
-                // We need to check each category to find the one for emotions
-                for (const [categoryId, value] of Object.entries(checkin.category_responses)) {
-                    // Check if this category is the emotion one
-                    // You'll need to match this with your trackingCategories
-                    const category = trackingCategories?.find(cat =>
-                        cat.id == categoryId &&
-                        (cat.name === 'Emotion Level' ||
-                         cat.original_name === 'Emotion Level' ||
-                         cat.name.toLowerCase().includes('emotion'))
-                    );
-
-                    if (category) {
-                        emotionValue = value;
-                        if (value <= 2) {
-                            hasLowMood = true;
-                        }
-                        break;
-                    }
+            // The emotion data is stored as 'emotional' directly in the checkin
+            if (checkin.emotional !== undefined) {
+                emotionValue = checkin.emotional;
+                if (emotionValue <= 2) {
+                    hasLowMood = true;
                 }
             }
 
@@ -3515,16 +3499,16 @@ async function checkHistoricalCrisisPatterns() {
 
         // Show crisis support if conditions are met
         if (maxConsecutive >= 3 || lowMoodCount >= 5) {
+            console.log('SHOWING crisis support based on historical data');
             document.getElementById('crisisSupport').style.display = 'block';
             loadCrisisResources();
         } else {
-            // Hide it if conditions aren't met
+            console.log('HIDING crisis support - conditions not met');
             document.getElementById('crisisSupport').style.display = 'none';
         }
 
     } catch (error) {
         console.error('Error checking historical crisis patterns:', error);
-        // On error, hide the crisis support
         document.getElementById('crisisSupport').style.display = 'none';
     }
 }
