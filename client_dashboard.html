@@ -2530,33 +2530,39 @@ window.addEventListener('load', function() {
         }
 
         function showTab(tabName, event) {
-            // Update nav tabs
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            if (event && event.target) {
-                event.target.classList.add('active');
-            }
+    // Update nav tabs
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
 
-            // Update content
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            document.getElementById(tabName).classList.add('active');
+    // Update content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(tabName).classList.add('active');
 
-            // Load tab-specific content
-            if (tabName === 'progress') {
-                loadProgressWithRetry();
-            } else if (tabName === 'goals') {
-                loadWeeklyGoals();
-            } else if (tabName === 'homework') {
-                loadHomework();
-            } else if (tabName === 'settings') {
-                loadReminderSettings();
-            } else if (tabName === 'consent') {
-                loadConsentStatus();
-            }
-        }
+    // Load tab-specific content
+    if (tabName === 'progress') {
+        loadProgressWithRetry();
+    } else if (tabName === 'goals') {
+        loadWeeklyGoals();
+    } else if (tabName === 'homework') {
+        loadHomework();
+    } else if (tabName === 'settings') {
+        loadReminderSettings();
+    } else if (tabName === 'consent') {
+        loadConsentStatus();
+    } else if (tabName === 'checkin') {
+        // Check for crisis patterns when switching to check-in tab
+        checkHistoricalCrisisPatterns();
+    }
+}
+
+
+
 
          // Therapy Homework Functions - XSS Safe Version
         async function loadHomework() {
@@ -2777,6 +2783,43 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!isAuthenticated) return;
 
         await loadDashboard();
+
+
+
+        document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        const isAuthenticated = await checkAuth();
+        if (!isAuthenticated) return;
+
+        await loadDashboard();
+        setCurrentWeek();
+        setToday();
+
+        // Add this line to check crisis patterns on page load
+        checkHistoricalCrisisPatterns();
+
+        // Start session keep-alive
+        startSessionKeepAlive();
+
+        window.addEventListener('languageChanged', function() {
+            console.log('Language changed in client dashboard');
+            // Reload the week view to update day names
+            loadWeekView();
+            // Re-setup categories with new translations
+            setupAllCategories();
+            // Update any other dynamic content
+            updateUI();
+        });
+    } catch (error) {
+        console.error('Initialization error:', error);
+        showMessage('Error loading dashboard', 'error');
+    }
+});
+
+
+
+
+
         setCurrentWeek();
         setToday();
         // Start session keep-alive
@@ -3304,6 +3347,9 @@ dayCell.appendChild(statusIconDiv);
     document.getElementById('checkinDate').value = dateString;
     showTab('checkin');
     checkDateStatus(date);
+// Add this line to check crisis patterns when switching dates
+    checkHistoricalCrisisPatterns();
+
 }
 
         // Check-in Functions
@@ -3380,6 +3426,54 @@ dayCell.appendChild(statusIconDiv);
                 crisisDiv.style.display = 'none';
             }
         }
+
+
+async function checkHistoricalCrisisPatterns() {
+    try {
+        // Fetch recent checkins
+        const response = await fetch('/api/client/progress?days=14', {
+            headers: { 'Accept-Language': i18n.currentLang },
+            credentials: 'include'
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const checkins = data.progress?.checkins || [];
+
+        // Count low mood days
+        let lowMoodCount = 0;
+        let consecutiveLowDays = 0;
+        let maxConsecutive = 0;
+
+        // Sort by date (oldest first)
+        checkins.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        checkins.forEach(checkin => {
+            // Check if emotional rating is low
+            if (checkin.emotional && checkin.emotional <= 2) {
+                lowMoodCount++;
+                consecutiveLowDays++;
+                maxConsecutive = Math.max(maxConsecutive, consecutiveLowDays);
+            } else {
+                consecutiveLowDays = 0;
+            }
+        });
+
+        // Show crisis support if:
+        // - 3+ consecutive days of low ratings
+        // - OR 5+ total days in the past 2 weeks
+        if (maxConsecutive >= 3 || lowMoodCount >= 5) {
+            document.getElementById('crisisSupport').style.display = 'block';
+            loadCrisisResources();
+        }
+
+    } catch (error) {
+        console.error('Error checking historical crisis patterns:', error);
+    }
+}
+
+
 
         // XSS-Safe Crisis Resources Loading
         async function loadCrisisResources() {
