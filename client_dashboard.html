@@ -1494,7 +1494,7 @@ window.addEventListener('load', function() {
 
          </div>
 
-
+</div>
 
 
 
@@ -2886,7 +2886,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
          console.log('About to load dashboard...');
         await loadDashboard();
-        setCurrentWeek();
+//        setCurrentWeek();
         setToday();
 
         // Make sure categories are loaded first
@@ -4219,7 +4219,7 @@ loadDashboard();
             const weekInput = document.getElementById('goalsWeek').value;
 
             if (!weekInput) {
-                setCurrentWeek();
+   //             setCurrentWeek();
                 return;
             }
 
@@ -4849,13 +4849,14 @@ async function generatePDFReport() {
         }
 
         // Utility Functions
-        function setCurrentWeek() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const week = getWeekNumber(now);
-            document.getElementById('reportWeek').value = `${year}-W${week.toString().padStart(2, '0')}`;
-            document.getElementById('goalsWeek').value = `${year}-W${week.toString().padStart(2, '0')}`;
-        }
+       // Comment out or remove this entire function
+// function setCurrentWeek() {
+//     const now = new Date();
+//     const year = now.getFullYear();
+//     const week = getWeekNumber(now);
+//     document.getElementById('reportWeek').value = `${year}-W${week.toString().padStart(2, '0')}`;
+//     document.getElementById('goalsWeek').value = `${year}-W${week.toString().padStart(2, '0')}`;
+// }
 
         function getWeekNumber(date) {
             const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));

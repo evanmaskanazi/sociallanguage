@@ -3813,31 +3813,42 @@ def client_generate_report(week):
         client = request.current_user.client
         lang = get_language_from_header()
 
-        # Parse week
-        import re
-        week_pattern = re.compile(r'^\d{4}-W\d{2}$')
-        if not week_pattern.match(week):
-            return jsonify({'error': 'Invalid week format. Use YYYY-Wnn'}), 400
+        # Check if requesting past 7 days
+        if week == 'past7days':
+            today = date.today()
+            week_end = today - timedelta(days=1)  # Yesterday
+            week_start = week_end - timedelta(days=6)  # 7 days before yesterday
 
-        # Parse week
-        year, week_num = week.split('-W')
-        year = int(year)
-        week_num = int(week_num)
+            # Calculate week number for the middle day
+            middle_day = week_start + timedelta(days=3)
+            year = middle_day.year
+            week_num = middle_day.isocalendar()[1]
+        else:
+            # Parse week format YYYY-Wnn
+            import re
+            week_pattern = re.compile(r'^\d{4}-W\d{2}$')
+            if not week_pattern.match(week):
+                return jsonify({'error': 'Invalid week format. Use YYYY-Wnn'}), 400
 
-        # Validate ranges
-        if year < 2020 or year > 2030:
-            return jsonify({'error': 'Invalid year'}), 400
-        if week_num < 1 or week_num > 53:
-            return jsonify({'error': 'Invalid week number'}), 400
+            # Parse week
+            year, week_num = week.split('-W')
+            year = int(year)
+            week_num = int(week_num)
 
-        # Calculate week dates
-        jan1 = datetime(year, 1, 1)
-        days_to_monday = (7 - jan1.weekday()) % 7
-        if days_to_monday == 0:
-            days_to_monday = 7
-        first_monday = jan1 + timedelta(days=days_to_monday - 7)
-        week_start = first_monday + timedelta(weeks=week_num - 1)
-        week_end = week_start + timedelta(days=6)
+            # Validate ranges
+            if year < 2020 or year > 2030:
+                return jsonify({'error': 'Invalid year'}), 400
+            if week_num < 1 or week_num > 53:
+                return jsonify({'error': 'Invalid week number'}), 400
+
+            # Calculate week dates
+            jan1 = datetime(year, 1, 1)
+            days_to_monday = (7 - jan1.weekday()) % 7
+            if days_to_monday == 0:
+                days_to_monday = 7
+            first_monday = jan1 + timedelta(days=days_to_monday - 7)
+            week_start = first_monday + timedelta(weeks=week_num - 1)
+            week_end = week_start + timedelta(days=6)
 
         # Use shared function to create workbook with language support
         wb = create_weekly_report_excel(client, None, week_start, week_end, week_num, year, lang)
@@ -3848,7 +3859,10 @@ def client_generate_report(week):
         output.seek(0)
 
         # Generate filename
-        filename = f"my_therapy_report_{sanitize_input(client.client_serial)}_week_{week_num}_{year}.xlsx"
+        if week == 'past7days':
+            filename = f"my_therapy_report_{sanitize_input(client.client_serial)}_last_7_days.xlsx"
+        else:
+            filename = f"my_therapy_report_{sanitize_input(client.client_serial)}_week_{week_num}_{year}.xlsx"
 
         return send_file(
             output,
@@ -5907,37 +5921,51 @@ def client_generate_pdf(week):
         client = request.current_user.client
         lang = get_language_from_header()
 
-        # Parse week
-        import re
-        week_pattern = re.compile(r'^\d{4}-W\d{2}$')
-        if not week_pattern.match(week):
-            return jsonify({'error': 'Invalid week format. Use YYYY-Wnn'}), 400
+        # Check if requesting past 7 days
+        if week == 'past7days':
+            today = date.today()
+            week_end = today - timedelta(days=1)  # Yesterday
+            week_start = week_end - timedelta(days=6)  # 7 days before yesterday
 
-        # Parse week
-        year, week_num = week.split('-W')
-        year = int(year)
-        week_num = int(week_num)
+            # Calculate week number for the middle day
+            middle_day = week_start + timedelta(days=3)
+            year = middle_day.year
+            week_num = middle_day.isocalendar()[1]
+        else:
+            # Parse week format YYYY-Wnn
+            import re
+            week_pattern = re.compile(r'^\d{4}-W\d{2}$')
+            if not week_pattern.match(week):
+                return jsonify({'error': 'Invalid week format. Use YYYY-Wnn'}), 400
 
-        # Validate ranges
-        if year < 2020 or year > 2030:
-            return jsonify({'error': 'Invalid year'}), 400
-        if week_num < 1 or week_num > 53:
-            return jsonify({'error': 'Invalid week number'}), 400
+            # Parse week
+            year, week_num = week.split('-W')
+            year = int(year)
+            week_num = int(week_num)
 
-        # Calculate week dates
-        jan1 = datetime(year, 1, 1)
-        days_to_monday = (7 - jan1.weekday()) % 7
-        if days_to_monday == 0:
-            days_to_monday = 7
-        first_monday = jan1 + timedelta(days=days_to_monday - 7)
-        week_start = first_monday + timedelta(weeks=week_num - 1)
-        week_end = week_start + timedelta(days=6)
+            # Validate ranges
+            if year < 2020 or year > 2030:
+                return jsonify({'error': 'Invalid year'}), 400
+            if week_num < 1 or week_num > 53:
+                return jsonify({'error': 'Invalid week number'}), 400
+
+            # Calculate week dates
+            jan1 = datetime(year, 1, 1)
+            days_to_monday = (7 - jan1.weekday()) % 7
+            if days_to_monday == 0:
+                days_to_monday = 7
+            first_monday = jan1 + timedelta(days=days_to_monday - 7)
+            week_start = first_monday + timedelta(weeks=week_num - 1)
+            week_end = week_start + timedelta(days=6)
 
         # Create PDF
         pdf_buffer = create_weekly_report_pdf(client, None, week_start, week_end, week_num, year, lang)
 
         # Generate filename
-        filename = f"my_therapy_report_{sanitize_input(client.client_serial)}_week_{week_num}_{year}.pdf"
+        if week == 'past7days':
+            filename = f"my_therapy_report_{sanitize_input(client.client_serial)}_last_7_days.pdf"
+        else:
+            filename = f"my_therapy_report_{sanitize_input(client.client_serial)}_week_{week_num}_{year}.pdf"
 
         return send_file(
             pdf_buffer,
