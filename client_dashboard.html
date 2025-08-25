@@ -891,7 +891,19 @@ window.addEventListener('load', function() {
     }
 }
 
+   /* ADD THIS NEW CSS HERE - before the closing style tag */
+        /* Ensure deletion card only shows in settings */
+        .tab-content:not(#settings) .card {
+            display: block; /* default */
+        }
 
+        .tab-content:not(#settings) .card[data-deletion-card="true"] {
+            display: none !important;
+        }
+
+        #settings .card[data-deletion-card="true"] {
+            display: block !important;
+        }
 
 
 
@@ -1017,6 +1029,17 @@ window.addEventListener('load', function() {
             <button class="btn btn-secondary btn-small" onclick="setToday()" data-i18n="dashboard.today">Today</button>
             <span id="checkinDateStatus" style="margin-left: 1rem;"></span>
         </div>
+
+ <!-- Previous Check-in Display -->
+    <div id="previousCheckinDisplay" class="card" style="display: none; margin: 2rem 0; padding: 1.5rem; background: #f8f9fa;">
+        <h3 style="margin-bottom: 1rem;" data-i18n="client.previous_checkin">Previous Check-in Data</h3>
+        <div id="previousCheckinContent">
+            <!-- Content will be loaded here -->
+        </div>
+        <button class="btn btn-secondary btn-small" onclick="closePreviousCheckin()" style="margin-top: 1rem;" data-i18n="btn.close">Close</button>
+    </div>
+
+
 
         <div id="checkinForm" class="checkin-form">
             <p style="color: #666; margin-bottom: 2rem;" data-i18n="client.checkin_intro">Take a moment to reflect on your day. Your responses help track your progress.</p>
@@ -1429,7 +1452,7 @@ window.addEventListener('load', function() {
     </div>
 
 
-        <div class="card" style="margin-top: 2rem;">
+         <div class="card" style="margin-top: 2rem;" data-deletion-card="true">
     <h3 data-i18n="client.account_deletion">Account Deletion</h3>
     <p style="color: #666; margin-bottom: 1rem;" data-i18n="client.deletion_desc">
         Request deletion of your account and all associated data
@@ -1560,6 +1583,11 @@ window.addEventListener('load', function() {
 'client.brief_goals_placeholder': 'Brief goals (20 words max)',
 'client.save_goals': 'Save Goals',
 'client.characters': 'characters',
+'client.load_checkin': 'Load Check-in',
+'client.previous_checkin': 'Previous Check-in Data',
+'client.no_checkin_found': 'No check-in found for this date',
+'client.notes': 'Notes:',
+'btn.close': 'Close',
   'task.exposure_situation': 'Exposure Situation:',
     'task.anxiety_before': 'Anxiety Before (0-10):',
     'task.duration': 'Duration (minutes):',
@@ -1711,6 +1739,11 @@ window.addEventListener('load', function() {
     'task.evidence_for_placeholder': 'דוגמה: "הבוס שלי זעף כשהצגתי" או "עשיתי 3 טעויות"',
     'task.balanced_thought_help': 'דרך ריאליסטית יותר לחשוב על הסיטואציה.',
     'task.balanced_thought_placeholder': 'דוגמה: "עשיתי כמה טעויות אבל גם עשיתי דברים רבים טוב"',
+    'client.load_checkin': 'טען צ\'ק-אין',
+'client.previous_checkin': 'נתוני צ\'ק-אין קודם',
+'client.no_checkin_found': 'לא נמצא צ\'ק-אין לתאריך זה',
+'client.notes': 'הערות:',
+'btn.close': 'סגור',
     'task.instructions_title': 'ℹ️ איך למלא את הטופס הזה',
     'task.instructions_text': 'המטפל/ת שלך הסביר/ה זאת בפגישה. כתזכורת: ראיות בעד: עובדות שתומכות במחשבה השלילית שלך. ראיות נגד: עובדות שסותרות אותה. מחשבה מאוזנת: פרספקטיבה ריאליסטית יותר בהתחשב בכל הראיות.',
     'task.evidence_against_placeholder': 'דוגמה: "קיבלתי משוב חיובי בשבוע שעבר" או "הבוס היה לחוץ מנושאים אחרים"',
@@ -1921,6 +1954,11 @@ window.addEventListener('load', function() {
     'crisis.close_friend': 'Близкий друг',
     'crisis.your_therapist': 'Ваш терапевт',
     'crisis.support_group': 'Участник группы поддержки',
+    'client.load_checkin': 'Загрузить отметку',
+'client.previous_checkin': 'Данные предыдущей отметки',
+'client.no_checkin_found': 'Отметка не найдена для этой даты',
+'client.notes': 'Заметки:',
+'btn.close': 'Закрыть',
     'crisis.use_phone_now': 'Используйте свой телефон, чтобы позвонить или написать им сейчас.',
     'crisis.ok_call_someone': 'Хорошо, я позвоню кому-нибудь',
                    'task.evidence_for_help': 'Какие факты подтверждают вашу автоматическую мысль? Будьте конкретны.',
@@ -2135,6 +2173,11 @@ window.addEventListener('load', function() {
     'crisis.family_member': 'أحد أفراد العائلة',
     'crisis.close_friend': 'صديق مقرب',
     'crisis.your_therapist': 'معالجك النفسي',
+    'client.load_checkin': 'تحميل تسجيل الحضور',
+'client.previous_checkin': 'بيانات تسجيل الحضور السابق',
+'client.no_checkin_found': 'لم يتم العثور على تسجيل حضور لهذا التاريخ',
+'client.notes': 'ملاحظات:',
+'btn.close': 'إغلاق',
     'crisis.support_group': 'عضو في مجموعة الدعم',
     'crisis.use_phone_now': 'استخدم هاتفك للاتصال أو إرسال رسالة نصية الآن.',
     'crisis.ok_call_someone': 'حسناً، سأتصل بشخص ما',
@@ -4647,58 +4690,6 @@ function displayInsights(insights) {
 
         // Report Functions
         async function generateReport() {
-            const week = document.getElementById('reportWeek').value;
-
-            if (!week) {
-                showMessage(i18n.t('client.select_client_week'), 'error');
-                return;
-            }
-
-
- // ADD THIS VALIDATION
-    if (!InputValidation.validateWeek(week)) {
-        showMessage('Invalid week format', 'error');
-        return;
-    }
-
-
-            try {
-                const response = await fetch(`/api/client/generate-report/${week}`, {
-                    headers: {
-
-    'Accept-Language': i18n.currentLang
-},
-                credentials: 'include'
-                });
-
-                if (response.ok) {
-                    // Get filename from response headers
-                    const contentDisposition = response.headers.get('content-disposition');
-                    const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
-                    const filename = filenameMatch ? filenameMatch[1] : `my_therapy_report_${week}.xlsx`;
-
-                    // Download file
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    a.download = filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-
-                    showReportStatus('success', i18n.t('client.report_generated'));
-                } else {
-                    const error = await response.json();
-                    showMessage(error.error || i18n.t('msg.error'), 'error');
-                }
-            } catch (error) {
-                showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
-            }
-        }
-
-        async function generatePDFReport() {
     const week = document.getElementById('reportWeek').value;
 
     if (!week) {
@@ -4706,21 +4697,69 @@ function displayInsights(insights) {
         return;
     }
 
-
- // ADD THIS VALIDATION
     if (!InputValidation.validateWeek(week)) {
         showMessage('Invalid week format', 'error');
         return;
     }
 
+    try {
+        // The URL was using just 'week' - need to ensure it's properly formatted
+        const response = await fetch(`/api/client/generate-report?week=${encodeURIComponent(week)}`, {
+            method: 'GET',  // Change to GET to match the endpoint
+            headers: {
+                'Accept-Language': i18n.currentLang
+            },
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            // Get filename from response headers
+            const contentDisposition = response.headers.get('content-disposition');
+            const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
+            const filename = filenameMatch ? filenameMatch[1] : `my_therapy_report_${week}.xlsx`;
+
+            // Download file
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            showMessage(i18n.t('client.report_generated'), 'success');
+        } else {
+            const error = await response.json();
+            showMessage(error.error || i18n.t('msg.error'), 'error');
+        }
+    } catch (error) {
+        showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
+    }
+}
+
+       async function generatePDFReport() {
+    const week = document.getElementById('reportWeek').value;
+
+    if (!week) {
+        showMessage(i18n.t('client.select_client_week'), 'error');
+        return;
+    }
+
+    if (!InputValidation.validateWeek(week)) {
+        showMessage('Invalid week format', 'error');
+        return;
+    }
 
     try {
-        const response = await fetch(`/api/client/generate-pdf/${week}`, {
+        // Change URL structure to match backend endpoint
+        const response = await fetch(`/api/client/generate-pdf?week=${encodeURIComponent(week)}`, {
+            method: 'GET',  // Change to GET
             headers: {
-
-    'Accept-Language': i18n.currentLang
-},
-credentials: 'include'
+                'Accept-Language': i18n.currentLang
+            },
+            credentials: 'include'
         });
 
         if (response.ok) {
@@ -4729,7 +4768,7 @@ credentials: 'include'
             const a = document.createElement('a');
             a.style.display = 'none';
             a.href = url;
-            a.download = `my_therapy_report_week_${week}.pdf`;
+            a.download = `my_therapy_report_${week}.pdf`;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
@@ -6238,7 +6277,138 @@ async function submitExposureLog(event) {
 }
 
 
+async function loadPreviousCheckin() {
+    const selectedDate = document.getElementById('checkinDate').value;
 
+    if (!selectedDate) {
+        showMessage(i18n.t('client.select_date'), 'error');
+        return;
+    }
+
+    if (!InputValidation.validateDate(selectedDate)) {
+        showMessage('Invalid date format', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/client/checkin/${selectedDate}`, {
+            headers: {
+                'Accept-Language': i18n.currentLang
+            },
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+
+            if (data.checkin) {
+                displayPreviousCheckin(data.checkin, selectedDate);
+            } else {
+                showMessage(i18n.t('client.no_checkin_found', 'No check-in found for this date'), 'info');
+            }
+        } else if (response.status === 404) {
+            showMessage(i18n.t('client.no_checkin_found', 'No check-in found for this date'), 'info');
+        } else {
+            throw new Error('Failed to load check-in');
+        }
+    } catch (error) {
+        showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
+    }
+}
+
+function displayPreviousCheckin(checkinData, date) {
+    const container = document.getElementById('previousCheckinContent');
+    const displayDiv = document.getElementById('previousCheckinDisplay');
+
+    // Clear existing content
+    container.innerHTML = '';
+
+    // Create date header
+    const dateHeader = document.createElement('h4');
+    dateHeader.style.marginBottom = '1rem';
+    dateHeader.textContent = new Date(date).toLocaleDateString(i18n.currentLang, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    container.appendChild(dateHeader);
+
+    // Display each category response
+    if (checkinData.responses) {
+        const responsesDiv = document.createElement('div');
+        responsesDiv.style.marginBottom = '1rem';
+
+        for (const [categoryId, value] of Object.entries(checkinData.responses)) {
+            const category = trackingCategories.find(cat => cat.id == categoryId);
+            if (category) {
+                const itemDiv = document.createElement('div');
+                itemDiv.style.cssText = 'margin-bottom: 0.75rem; padding: 0.5rem; background: white; border-radius: 4px;';
+
+                const label = document.createElement('strong');
+                label.textContent = translateCategoryName(category.original_name || category.name) + ': ';
+                itemDiv.appendChild(label);
+
+                const valueSpan = document.createElement('span');
+
+                // Special handling for medication
+                if (category.original_name?.toLowerCase().includes('medication')) {
+                    const medLabels = {
+                        0: i18n.t('checkin.med_na'),
+                        1: i18n.t('checkin.med_no'),
+                        3: i18n.t('checkin.med_partial'),
+                        5: i18n.t('checkin.med_yes')
+                    };
+                    valueSpan.textContent = medLabels[value] || value;
+                } else {
+                    valueSpan.textContent = `${value}/5`;
+                }
+
+                itemDiv.appendChild(valueSpan);
+                responsesDiv.appendChild(itemDiv);
+            }
+        }
+        container.appendChild(responsesDiv);
+    }
+
+    // Display notes if any
+    if (checkinData.notes && Object.keys(checkinData.notes).length > 0) {
+        const notesHeader = document.createElement('h5');
+        notesHeader.style.cssText = 'margin-top: 1rem; margin-bottom: 0.5rem;';
+        notesHeader.textContent = i18n.t('client.notes', 'Notes:');
+        container.appendChild(notesHeader);
+
+        const notesDiv = document.createElement('div');
+        for (const [categoryId, note] of Object.entries(checkinData.notes)) {
+            if (note) {
+                const category = trackingCategories.find(cat => cat.id == categoryId);
+                if (category) {
+                    const noteDiv = document.createElement('div');
+                    noteDiv.style.cssText = 'margin-bottom: 0.5rem; padding: 0.5rem; background: white; border-radius: 4px;';
+
+                    const catName = document.createElement('strong');
+                    catName.textContent = translateCategoryName(category.original_name || category.name) + ': ';
+                    noteDiv.appendChild(catName);
+
+                    const noteText = document.createElement('span');
+                    SecurityHelpers.safeText(noteText, note);
+                    noteDiv.appendChild(noteText);
+
+                    notesDiv.appendChild(noteDiv);
+                }
+            }
+        }
+        container.appendChild(notesDiv);
+    }
+
+    // Show the display
+    displayDiv.style.display = 'block';
+    displayDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closePreviousCheckin() {
+    document.getElementById('previousCheckinDisplay').style.display = 'none';
+}
 
 </script>
 <script>
