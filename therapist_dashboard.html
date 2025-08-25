@@ -1207,47 +1207,39 @@
 
 
         <!-- Reports Tab -->
-        <div id="reports" class="tab-content">
-            <h2 data-i18n="therapist.client_reports">Client Reports</h2>
+<div id="reports" class="tab-content">
+    <h2 data-i18n="therapist.client_reports">Client Reports</h2>
 
-            <div class="form-section">
-                <h3 data-i18n="therapist.generate_weekly_report">Generate Weekly Report</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="form-group">
-                        <label for="reportClient" data-i18n="reports.select_client">Select Client</label>
-                        <select id="reportClient" class="form-input">
-                            <option value="" data-i18n="therapist.select_client_option">Select a client...</option>
-                        </select>
-                    </div>
+    <div class="form-section">
+        <h3 data-i18n="therapist.generate_weekly_report">Generate Weekly Report</h3>
+        <div class="form-group">
+            <label for="reportClient" data-i18n="reports.select_client">Select Client</label>
+            <select id="reportClient" class="form-input">
+                <option value="" data-i18n="therapist.select_client_option">Select a client...</option>
+            </select>
+            <small style="display: block; color: #666; margin-top: 0.5rem;" data-i18n="reports.past_seven_days">
+                Report will show the past 7 days
+            </small>
+        </div>
 
-                    <div class="form-group">
-    <label for="reportWeek" data-i18n="reports.select_week">Select Week</label>
-    <input type="week" id="reportWeek" class="form-input">
-    <small style="display: block; color: #666; margin-top: 0.5rem;" data-i18n="reports.week_note">
-        Report will show the 7 days prior to the end of this week
-    </small>
-</div>
-                </div>
-
-                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-    <button class="btn btn-primary" onclick="generateReport()">
-        <span>📊</span> <span data-i18n="therapist.generate_excel">Generate Excel Report</span>
-    </button>
-    <button class="btn btn-primary" onclick="generatePDFReport()">
-        <span>📄</span> <span data-i18n="therapist.generate_pdf">Generate PDF Report</span>
-    </button>
-    <button class="btn btn-secondary" onclick="prepareEmailReport()">
-        <span>📧</span> <span data-i18n="therapist.prepare_email">Prepare Email Report</span>
-    </button>
-            </div>
-            </div>
-
-            <div id="reportStatus" style="display: none;">
-                <h4 data-i18n="therapist.report_status">Report Status</h4>
-                <div id="reportStatusContent"></div>
-            </div>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem;">
+            <button class="btn btn-primary" onclick="generateReport()">
+                <span>📊</span> <span data-i18n="therapist.generate_excel">Generate Excel Report</span>
+            </button>
+            <button class="btn btn-primary" onclick="generatePDFReport()">
+                <span>📄</span> <span data-i18n="therapist.generate_pdf">Generate PDF Report</span>
+            </button>
+            <button class="btn btn-secondary" onclick="prepareEmailReport()">
+                <span>📧</span> <span data-i18n="therapist.prepare_email">Prepare Email Report</span>
+            </button>
         </div>
     </div>
+
+    <div id="reportStatus" style="display: none;">
+        <h4 data-i18n="therapist.report_status">Report Status</h4>
+        <div id="reportStatusContent"></div>
+    </div>
+</div>
 
 
 
@@ -1384,6 +1376,8 @@
                 'therapist.inactive_only': 'Inactive Only',
                 'therapist.add_new_client': 'Add New Client',
                 'reports.week_note': 'Report will show the 7 days prior to the end of this week',
+                'reports.past_seven_days': 'Report will show the past 7 days',
+                'therapist.please_select_client': 'Please select a client',
                 'therapist.week_completion': 'Week Completion',
                 'therapist.loading_clients': 'Loading clients...',
                 'therapist.client_account_info': 'Client Account Information',
@@ -1573,6 +1567,8 @@
 'therapist.task_type': 'סוג משימה:',
 'therapist.task_title_label': 'כותרת:',
 'therapist.task_description': 'תיאור/הוראות:',
+'reports.past_seven_days': 'הדוח יציג את 7 הימים האחרונים',
+'therapist.please_select_client': 'אנא בחר מטופל',
 'therapist.due_date': 'תאריך יעד:',
 'therapist.assign_btn': 'הקצה משימה',
 'therapist.task_status': 'סטטוס משימות המטופל',
@@ -1796,6 +1792,8 @@
 'therapist.due_date': 'Срок выполнения:',
 'therapist.assign_btn': 'Назначить задание',
 'therapist.task_status': 'Статус заданий клиента',
+'reports.past_seven_days': 'В отчете будут показаны последние 7 дней',
+'therapist.please_select_client': 'Пожалуйста, выберите клиента',
 'therapist.select_client_status': 'Выберите клиента для просмотра статуса его заданий',
                 'category.emotion_level_desc': 'Общее эмоциональное состояние',
                 'category.energy': 'Энергия',
@@ -2018,6 +2016,8 @@
 'therapist.due_date': 'تاريخ الاستحقاق:',
 'therapist.assign_btn': 'تعيين المهمة',
 'therapist.task_status': 'حالة مهام العميل',
+'reports.past_seven_days': 'سيعرض التقرير الأيام السبعة الماضية',
+'therapist.please_select_client': 'يرجى اختيار العميل',
 'therapist.select_client_status': 'اختر عميلاً لعرض حالة مهامه',
                 'category.emotion_level_desc': 'الحالة العاطفية العامة',
                 'category.energy': 'الطاقة',
@@ -2375,7 +2375,7 @@ window.fetch = async function(...args) {
             console.log('i18n is ready, loading dashboard components...');
             await loadDashboard();
             await loadTrackingCategories();
-            setCurrentWeek();
+          //  setCurrentWeek();
             updatePlaceholders();
             loadWeeklyReportSettings();
         } else {
@@ -2385,7 +2385,7 @@ window.fetch = async function(...args) {
                 console.log('After timeout - window.i18n.currentLang:', window.i18n?.currentLang);
                 await loadDashboard();
                 await loadTrackingCategories();
-                setCurrentWeek();
+          //      setCurrentWeek();
                 updatePlaceholders();
                 loadWeeklyReportSettings();
             }, 100);
@@ -4269,18 +4269,18 @@ function populateInsightClientSelect() {
 
         // Generate Excel report
         async function generateReport() {
-            const clientId = document.getElementById('reportClient').value;
-            const week = document.getElementById('reportWeek').value;
+    const clientId = document.getElementById('reportClient').value;
 
-            if (!clientId || !week) {
-                showMessage(i18n.t('therapist.select_both'), 'error');
-                return;
-            }
+    if (!clientId) {
+        showMessage(i18n.t('therapist.please_select_client'), 'error');
+        return;
+    }
 
-            try {
-                showMessage(i18n.t('therapist.generating_report'), 'success');
+    try {
+        showMessage(i18n.t('therapist.generating_report'), 'success');
 
-                const response = await fetch(`/api/reports/generate/${clientId}/${week}`, {
+        // Send "past7days" as a special week value
+        const response = await fetch(`/api/reports/generate/${clientId}/past7days`, {
                     headers: {
     'Accept-Language': i18n.currentLang
 },
@@ -4318,17 +4318,16 @@ credentials: 'include'
 
         async function generatePDFReport() {
     const clientId = document.getElementById('reportClient').value;
-    const week = document.getElementById('reportWeek').value;
 
-    if (!clientId || !week) {
-        showMessage(i18n.t('therapist.select_both'), 'error');
+    if (!clientId) {
+        showMessage(i18n.t('therapist.please_select_client'), 'error');
         return;
     }
 
     try {
         showMessage(i18n.t('therapist.generating_report'), 'success');
 
-        const response = await fetch(`/api/reports/generate-pdf/${clientId}/${week}`, {
+        const response = await fetch(`/api/reports/generate-pdf/${clientId}/past7days`, {
             headers: {
     'Accept-Language': i18n.currentLang
 },
@@ -4361,15 +4360,14 @@ credentials: 'include'
 
         // Prepare email report - FIXED
         async function prepareEmailReport() {
-            console.log('prepareEmailReport called'); // ADD THIS
-            const clientId = document.getElementById('reportClient').value;
-            const week = document.getElementById('reportWeek').value;
-            console.log('Client ID:', clientId, 'Week:', week); // ADD THIS TOO
+    console.log('prepareEmailReport called');
+    const clientId = document.getElementById('reportClient').value;
+    console.log('Client ID:', clientId);
 
-            if (!clientId || !week) {
-                showMessage(i18n.t('therapist.select_both'), 'error');
-                return;
-            }
+    if (!clientId) {
+        showMessage(i18n.t('therapist.please_select_client'), 'error');
+        return;
+    }
 
             try {
                 showMessage(i18n.t('therapist.preparing_email'), 'info');
@@ -4383,7 +4381,7 @@ credentials: 'include'
                     credentials: 'include',
                     body: JSON.stringify({
                         client_id: parseInt(clientId),
-                        week: week
+                        week: 'past7days'
                     })
                 });
 
