@@ -908,11 +908,25 @@ window.addEventListener('load', function() {
 /* Hide deletion card in all tabs except settings */
 .tab-content:not(#settings) [data-deletion-card="true"] {
     display: none !important;
+    visibility: hidden !important;
 }
 
 /* Ensure it's visible only in settings tab */
 #settings [data-deletion-card="true"] {
     display: block !important;
+    visibility: visible !important;
+}
+
+/* Additional safety - hide in non-settings containers */
+#overview [data-deletion-card="true"],
+#checkin [data-deletion-card="true"],
+#progress [data-deletion-card="true"],
+#goals [data-deletion-card="true"],
+#task [data-deletion-card="true"],
+#reports [data-deletion-card="true"],
+#consent [data-deletion-card="true"] {
+    display: none !important;
+    visibility: hidden !important;
 }
 
     </style>
@@ -1031,17 +1045,18 @@ window.addEventListener('load', function() {
         <h2 data-i18n="checkin.title">Daily Check-in</h2>
 
         <!-- Date Selection -->
-        <div class="date-selection">
+          <div class="date-selection">
             <label for="checkinDate"><strong data-i18n="client.select_date">Select Date:</strong></label>
             <input type="date" id="checkinDate" class="date-input">
             <button class="btn btn-secondary btn-small" onclick="setToday()" data-i18n="dashboard.today">Today</button>
+            <button class="btn btn-secondary btn-small" onclick="loadPreviousCheckin()" data-i18n="client.load_checkin">Load Check-in</button>
             <span id="checkinDateStatus" style="margin-left: 1rem;"></span>
         </div>
 
- <!-- Previous Check-in Display -->
-    <div id="previousCheckinDisplay" class="card" style="display: none; margin: 2rem 0; padding: 1.5rem; background: #f8f9fa;">
-        <h3 style="margin-bottom: 1rem;" data-i18n="client.previous_checkin">Previous Check-in Data</h3>
-        <div id="previousCheckinContent">
+  <!-- Previous Check-in Display -->
+    <div id="previousCheckinDisplay" class="card" style="display: none; margin: 2rem 0; padding: 1.5rem; background: #f0f8ff; border: 2px solid #667eea;">
+        <h3 style="margin-bottom: 1rem; color: #667eea;" data-i18n="client.previous_checkin">Previous Check-in Data</h3>
+        <div id="previousCheckinContent" style="max-height: 400px; overflow-y: auto;">
             <!-- Content will be loaded here -->
         </div>
         <button class="btn btn-secondary btn-small" onclick="closePreviousCheckin()" style="margin-top: 1rem;" data-i18n="btn.close">Close</button>
@@ -1362,8 +1377,8 @@ window.addEventListener('load', function() {
             </div>
 
             <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                <button class="btn btn-primary" onclick="generateReport()" data-i18n="client.generate_excel">Generate Excel Report</button>
-                <button class="btn btn-primary" onclick="generatePDFReport()" data-i18n="client.generate_pdf">Generate PDF Report</button>
+                <button class="btn btn-primary" onclick="generateReport()" data-i18n="client.generate_excel">Generate Excel Report (Last 7 Days)</button>
+<button class="btn btn-primary" onclick="generatePDFReport()" data-i18n="client.generate_pdf">Generate PDF Report (Last 7 Days)</button>
                 <button class="btn btn-secondary" onclick="prepareEmailReport()" data-i18n="client.prepare_email">Prepare Email Report</button>
             </div>
 
@@ -1478,21 +1493,7 @@ window.addEventListener('load', function() {
 
 
 
-<!-- Find this section around line 1879 and add the data-deletion-card attribute -->
-<div class="card border-danger" data-deletion-card="true">
-    <div class="card-header bg-danger text-white">
-        <h5 class="mb-0">
-            <i class="fas fa-exclamation-triangle"></i> ${i18n.t('client.danger_zone')}
-        </h5>
-    </div>
-    <div class="card-body">
-        <h6>${i18n.t('client.delete_account')}</h6>
-        <p class="text-muted">${i18n.t('client.delete_account_warning')}</p>
-        <button class="btn btn-danger" onclick="showDeleteAccountModal()">
-            <i class="fas fa-trash"></i> ${i18n.t('client.delete_account')}
-        </button>
-    </div>
-</div>
+
 
 
          </div>
@@ -4745,54 +4746,9 @@ function displayInsights(insights) {
 
         // Report Functions
     async function generateReport() {
-    const week = document.getElementById('reportWeek').value;
-
-    // Changed: Allow empty week to default to past7days
-    if (!week) {
-        // Generate for past 7 days by default
-        try {
-            const response = await fetch(`/api/client/generate-report/past7days`, {
-                method: 'GET',
-                headers: {
-                    'Accept-Language': i18n.currentLang
-                },
-                credentials: 'include'
-            });
-
-            if (response.ok) {
-                const contentDisposition = response.headers.get('content-disposition');
-                const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
-                const filename = filenameMatch ? filenameMatch[1] : 'my_therapy_report_past_7_days.xlsx';
-
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-
-                showMessage(i18n.t('client.report_generated'), 'success');
-            } else {
-                const error = await response.json();
-                showMessage(error.error || i18n.t('msg.error'), 'error');
-            }
-        } catch (error) {
-            showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
-        }
-        return;
-    }
-
-    // Keep all original validation for when week IS selected
-    if (!InputValidation.validateWeek(week)) {
-        showMessage('Invalid week format', 'error');
-        return;
-    }
-
+    // Always generate for past 7 days
     try {
-        const response = await fetch(`/api/client/generate-report/${week}`, {
+        const response = await fetch(`/api/client/generate-report/past7days`, {
             method: 'GET',
             headers: {
                 'Accept-Language': i18n.currentLang
@@ -4803,7 +4759,7 @@ function displayInsights(insights) {
         if (response.ok) {
             const contentDisposition = response.headers.get('content-disposition');
             const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
-            const filename = filenameMatch ? filenameMatch[1] : `my_therapy_report_${week}.xlsx`;
+            const filename = filenameMatch ? filenameMatch[1] : 'my_therapy_report_past_7_days.xlsx';
 
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
@@ -4829,54 +4785,9 @@ function displayInsights(insights) {
 
 
 async function generatePDFReport() {
-    const week = document.getElementById('reportWeek').value;
-
-    // Changed: Allow empty week to default to past7days
-    if (!week) {
-        // Generate for past 7 days by default
-        try {
-            const response = await fetch(`/api/client/generate-pdf/past7days`, {
-                method: 'GET',
-                headers: {
-                    'Accept-Language': i18n.currentLang
-                },
-                credentials: 'include'
-            });
-
-            if (response.ok) {
-                const contentDisposition = response.headers.get('content-disposition');
-                const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
-                const filename = filenameMatch ? filenameMatch[1] : 'my_therapy_report_past_7_days.pdf';
-
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-
-                showMessage(i18n.t('client.report_generated'), 'success');
-            } else {
-                const error = await response.json();
-                showMessage(error.error || i18n.t('msg.error'), 'error');
-            }
-        } catch (error) {
-            showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
-        }
-        return;
-    }
-
-    // Keep all original validation for when week IS selected
-    if (!InputValidation.validateWeek(week)) {
-        showMessage('Invalid week format', 'error');
-        return;
-    }
-
+    // Always generate for past 7 days
     try {
-        const response = await fetch(`/api/client/generate-pdf/${week}`, {
+        const response = await fetch(`/api/client/generate-pdf/past7days`, {
             method: 'GET',
             headers: {
                 'Accept-Language': i18n.currentLang
@@ -4887,7 +4798,7 @@ async function generatePDFReport() {
         if (response.ok) {
             const contentDisposition = response.headers.get('content-disposition');
             const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
-            const filename = filenameMatch ? filenameMatch[1] : `my_therapy_report_${week}.pdf`;
+            const filename = filenameMatch ? filenameMatch[1] : 'my_therapy_report_past_7_days.pdf';
 
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
@@ -6405,9 +6316,15 @@ async function loadPreviousCheckin() {
     const selectedDate = document.getElementById('checkinDate').value;
 
     if (!selectedDate) {
-        showMessage(i18n.t('client.select_date'), 'error');
+        showMessage(i18n.t('client.select_date', 'Please select a date'), 'error');
         return;
     }
+
+    // Show loading state
+    const displayDiv = document.getElementById('previousCheckinDisplay');
+    const contentDiv = document.getElementById('previousCheckinContent');
+    displayDiv.style.display = 'block';
+    contentDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>' + i18n.t('msg.loading', 'Loading...') + '</p></div>';
 
     if (!InputValidation.validateDate(selectedDate)) {
         showMessage('Invalid date format', 'error');
@@ -6447,15 +6364,17 @@ function displayPreviousCheckin(checkinData, date) {
     // Clear existing content
     container.innerHTML = '';
 
-    // Create date header
+    // Create date header with time
     const dateHeader = document.createElement('h4');
     dateHeader.style.marginBottom = '1rem';
-    dateHeader.textContent = new Date(date).toLocaleDateString(i18n.currentLang, {
+    const dateStr = new Date(date).toLocaleDateString(i18n.currentLang, {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
         day: 'numeric'
     });
+    const timeStr = checkinData.time || '';
+    dateHeader.textContent = dateStr + (timeStr ? ` - ${i18n.t('reports.checkin_time')}: ${timeStr}` : '');
     container.appendChild(dateHeader);
 
     // Display each category response
