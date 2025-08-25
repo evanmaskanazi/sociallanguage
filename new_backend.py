@@ -3866,9 +3866,9 @@ def create_weekly_report_excel(client, therapist, week_start, week_end, week_num
     from datetime import datetime, date
 
     if isinstance(week_start, datetime):
-        week_start = week_start.date()
+        week_start = week_start
     if isinstance(week_end, datetime):
-        week_end = week_end.date()
+        week_end = week_end
     # Create Excel workbook
     wb = openpyxl.Workbook()
 
@@ -4581,7 +4581,7 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
 
         # Get weekly goals
         weekly_goals = client.goals.filter_by(
-            week_start=week_start.date(),
+            week_start=week_start,
             is_active=True
         ).all()
 
@@ -4591,12 +4591,12 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
 
             # Get completions for each day
             completions = goal.completions.filter(
-                GoalCompletion.completion_date.between(week_start.date(), week_end.date())
+                GoalCompletion.completion_date.between(week_start, week_end)
             ).all()
 
             completed_days = 0
             for day_idx in range(7):
-                current_date = week_start.date() + timedelta(days=day_idx)
+                current_date = week_start + timedelta(days=day_idx)
                 completion = next((c for c in completions if c.completion_date == current_date), None)
 
                 cell = ws_goals.cell(row=row, column=day_idx + 2)
@@ -4654,8 +4654,8 @@ def create_weekly_report_excel_streaming(client, therapist, week_start, week_end
                 cell.border = cell_border
 
             # Get therapist notes for the week
-            week_start_datetime = datetime.combine(week_start.date(), datetime.min.time())
-            week_end_datetime = datetime.combine(week_end.date(), datetime.max.time())
+            week_start_datetime = datetime.combine(week_start, datetime.min.time())
+            week_end_datetime = datetime.combine(week_end, datetime.max.time())
 
             notes = TherapistNote.query.filter(
                 TherapistNote.client_id == client.id,
@@ -4883,9 +4883,9 @@ def create_weekly_report_pdf(client, therapist, week_start, week_end, week_num, 
     """Create PDF report with proper Unicode support via WeasyPrint"""
     # DEBUG: Check what types we're receiving
     if hasattr(week_start, 'date'):
-        week_start = week_start.date()
+        week_start = week_start
     if hasattr(week_end, 'date'):
-        week_end = week_end.date()
+        week_end = week_end
     print(f"DEBUG PDF Generation:")
     print(f"  week_start type: {type(week_start)}, value: {week_start}")
     print(f"  week_end type: {type(week_end)}, value: {week_end}")
@@ -6291,6 +6291,7 @@ def email_therapy_report():
 
             # Format for display
             week_display = f"{week_start.strftime('%b %d')} - {week_end.strftime('%b %d, %Y')}"
+            week = f"{year}-W{week_num:02d}"
         else:
             # Parse week
             # Validate week format
@@ -9775,12 +9776,12 @@ DAILY CHECK-IN SUMMARY:
             content += f"- {trans('completion_rate')}: {total_checkins}/7 {trans('days')} ({(total_checkins / 7) * 100:.0f}%)\n"
 
         # Add goals if any
-        weekly_goals = client.goals.filter_by(week_start=week_start.date()).all()
+        weekly_goals = client.goals.filter_by(week_start=week_start).all()
         if weekly_goals:
             content += f"\n{trans('weekly_goals').upper()}:\n"
             for goal in weekly_goals:
                 completions = goal.completions.filter(
-                    GoalCompletion.completion_date.between(week_start.date(), week_end.date())
+                    GoalCompletion.completion_date.between(week_start, week_end)
                 ).all()
                 completed_days = sum(1 for c in completions if c.completed)
                 content += f"- {escape(goal.goal_text)}: {trans('completed')} {completed_days}/7 {trans('days')}\n"
@@ -9861,8 +9862,8 @@ def get_client_week_checkins(week):
 
         return jsonify({
             'success': True,
-            'week_start': week_start.date().isoformat(),
-            'week_end': week_end.date().isoformat(),
+            'week_start': week_start.isoformat(),
+            'week_end': week_end.isoformat(),
             'checkins': checkin_data
         })
 
@@ -9904,7 +9905,7 @@ def get_client_week_goals(week):
 
         # Get goals for the week
         goals = client.goals.filter_by(
-            week_start=week_start.date(),
+            week_start=week_start,
             is_active=True
         ).all()
 
@@ -9914,7 +9915,7 @@ def get_client_week_goals(week):
             # Get completions for the week
             completions = {}
             for i in range(7):
-                day = week_start.date() + timedelta(days=i)
+                day = week_start + timedelta(days=i)
                 completion = goal.completions.filter_by(completion_date=day).first()
                 completions[day.isoformat()] = completion.completed if completion else None
 
