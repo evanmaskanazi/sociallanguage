@@ -2882,6 +2882,33 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Start session keep-alive
         startSessionKeepAlive();
 
+        // Fix account deletion visibility
+function hideAccountDeletion() {
+    // Find all cards
+    document.querySelectorAll('.card').forEach(card => {
+        // Check if this card contains account deletion
+        const h3 = card.querySelector('h3');
+        if (h3 && (h3.textContent.includes('Account Deletion') ||
+                   h3.getAttribute('data-i18n') === 'client.account_deletion')) {
+            // Check if it's NOT in the settings tab
+            const parentTab = card.closest('.tab-content');
+            if (parentTab && parentTab.id !== 'settings') {
+                card.style.display = 'none';
+            }
+        }
+    });
+}
+
+// Run immediately and on tab changes
+hideAccountDeletion();
+
+// Override showTab to ensure it runs on tab change
+const originalShowTab = window.showTab;
+window.showTab = function(tabName, event) {
+    originalShowTab(tabName, event);
+    setTimeout(hideAccountDeletion, 100);
+};
+
         window.addEventListener('languageChanged', function() {
             console.log('Language changed in client dashboard');
             // Reload the week view to update day names
@@ -4689,7 +4716,7 @@ function displayInsights(insights) {
         }
 
         // Report Functions
-        async function generateReport() {
+       async function generateReport() {
     const week = document.getElementById('reportWeek').value;
 
     if (!week) {
@@ -4703,9 +4730,9 @@ function displayInsights(insights) {
     }
 
     try {
-        // The URL was using just 'week' - need to ensure it's properly formatted
-        const response = await fetch(`/api/client/generate-report?week=${encodeURIComponent(week)}`, {
-            method: 'GET',  // Change to GET to match the endpoint
+        // Use path parameter
+        const response = await fetch(`/api/client/generate-report/${week}`, {
+            method: 'GET',
             headers: {
                 'Accept-Language': i18n.currentLang
             },
@@ -4713,12 +4740,10 @@ function displayInsights(insights) {
         });
 
         if (response.ok) {
-            // Get filename from response headers
             const contentDisposition = response.headers.get('content-disposition');
             const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
             const filename = filenameMatch ? filenameMatch[1] : `my_therapy_report_${week}.xlsx`;
 
-            // Download file
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -4739,7 +4764,7 @@ function displayInsights(insights) {
     }
 }
 
-       async function generatePDFReport() {
+   async function generatePDFReport() {
     const week = document.getElementById('reportWeek').value;
 
     if (!week) {
@@ -4753,9 +4778,9 @@ function displayInsights(insights) {
     }
 
     try {
-        // Change URL structure to match backend endpoint
-        const response = await fetch(`/api/client/generate-pdf?week=${encodeURIComponent(week)}`, {
-            method: 'GET',  // Change to GET
+        // Change to path parameter instead of query parameter
+        const response = await fetch(`/api/client/generate-pdf/${week}`, {
+            method: 'GET',
             headers: {
                 'Accept-Language': i18n.currentLang
             },

@@ -8252,6 +8252,103 @@ def submit_checkin():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/client/checkin/<date_str>', methods=['GET'])
+@require_auth(['client'])
+def get_client_checkin(date_str):
+    """Get client's check-in data for a specific date including all category responses"""
+    try:
+        client = request.current_user.client
+        lang = get_language_from_header()
+
+        # Validate date format
+        try:
+            checkin_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+
+        # Get check-in for this date
+        checkin = client.checkins.filter_by(checkin_date=checkin_date).first()
+
+        if not checkin:
+            return jsonify({'checkin': None}), 404
+
+        # Get all category responses for this date
+        responses = {}
+        notes = {}
+
+        # Get standard category responses
+        category_responses = CategoryResponse.query.filter(
+            CategoryResponse.client_id == client.id,
+            CategoryResponse.response_date == checkin_date
+        ).all()
+
+        for resp in category_responses:
+            if resp.category_id:
+                # Use category ID as key for standard categories
+                responses[str(resp.category_id)] = resp.value
+                if resp.notes:
+                    notes[str(resp.category_id)] = resp.notes
+            elif resp.custom_category_id:
+                # Use custom_X format for custom categories
+                responses[f'custom_{resp.custom_category_id}'] = resp.value
+                if resp.notes:
+                    notes[f'custom_{resp.custom_category_id}'] = resp.notes
+
+        # Also include the legacy fields for backward compatibility
+        if checkin.emotional_value is not None:
+            # Find emotion category ID
+            emotion_cat = TrackingCategory.query.filter(
+                TrackingCategory.name.ilike('%emotion%')
+            ).first()
+            if emotion_cat and str(emotion_cat.id) not in responses:
+                responses[str(emotion_cat.id)] = checkin.emotional_value
+                if checkin.emotional_notes:
+                    notes[str(emotion_cat.id)] = checkin.emotional_notes
+
+        if checkin.medication_value is not None:
+            # Find medication category ID
+            med_cat = TrackingCategory.query.filter(
+                TrackingCategory.name.ilike('%medication%')
+            ).first()
+            if med_cat and str(med_cat.id) not in responses:
+                responses[str(med_cat.id)] = checkin.medication_value
+                if checkin.medication_notes:
+                    notes[str(med_cat.id)] = checkin.medication_notes
+
+        if checkin.activity_value is not None:
+            # Find activity category ID
+            activity_cat = TrackingCategory.query.filter(
+                TrackingCategory.name.ilike('%activity%')
+            ).first()
+            if activity_cat and str(activity_cat.id) not in responses:
+                responses[str(activity_cat.id)] = checkin.activity_value
+                if checkin.activity_notes:
+                    notes[str(activity_cat.id)] = checkin.activity_notes
+
+        return jsonify({
+            'checkin': {
+                'date': checkin.checkin_date.isoformat(),
+                'time': checkin.checkin_time.strftime('%H:%M'),
+                'responses': responses,  # This contains all category values
+                'notes': notes  # This contains all category notes
+            }
+        })
+
+    except Exception as e:
+        logger.error('get_client_checkin_error', extra={
+            'extra_data': {
+                'error': str(e),
+                'client_id': client.id if 'client' in locals() else None,
+                'date': date_str,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        }, exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+
 @app.route('/api/client/progress', methods=['GET'])
 @require_auth(['client'])
 def get_client_progress():
