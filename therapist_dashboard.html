@@ -4291,7 +4291,7 @@ credentials: 'include'
                     // Get filename from response headers
                     const contentDisposition = response.headers.get('content-disposition');
                     const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
-                    const filename = filenameMatch ? filenameMatch[1] : `therapy_report_${week}.xlsx`;
+                    const filename = filenameMatch ? filenameMatch[1] : 'therapy_report.xlsx';
 
                     // Download file
                     const blob = await response.blob();
@@ -4340,7 +4340,10 @@ credentials: 'include'
             const a = document.createElement('a');
             a.style.display = 'none';
             a.href = url;
-            a.download = `therapy_report_${week}.pdf`;
+            const contentDisposition = response.headers.get('content-disposition');
+const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
+const filename = filenameMatch ? filenameMatch[1] : 'therapy_report.pdf';
+a.download = filename;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
