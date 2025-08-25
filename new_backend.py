@@ -6110,10 +6110,13 @@ def test_weekly_report():
         # Get current week
         import datetime
         today = datetime.date.today()
-        week_start = today - datetime.timedelta(days=today.weekday())
-        week_end = week_start + datetime.timedelta(days=6)
-        year = today.year
-        week_num = today.isocalendar()[1]
+        week_end = today - datetime.timedelta(days=1)  # Yesterday
+        week_start = week_end - datetime.timedelta(days=6)  # 7 days before yesterday
+
+        # For the week number, use the week of the middle day of the period
+        middle_day = week_start + datetime.timedelta(days=3)
+        year = middle_day.year
+        week_num = middle_day.isocalendar()[1]
 
         # Create email
         msg = MIMEMultipart()
@@ -6125,10 +6128,10 @@ def test_weekly_report():
 
         # Translated subjects
         subjects = {
-            'en': f"Weekly Therapy Report - Week {week_num}, {year}",
-            'he': f"דוח טיפולי שבועי - שבוע {week_num}, {year}",
-            'ru': f"Еженедельный терапевтический отчет - Неделя {week_num}, {year}",
-            'ar': f"التقرير العلاجي الأسبوعي - الأسبوع {week_num}, {year}"
+            'en': f"Weekly Therapy Report - Past 7 Days ({week_start.strftime('%b %d')} - {week_end.strftime('%b %d, %Y')})",
+            'he': f"דוח טיפולי - 7 הימים האחרונים ({week_start.strftime('%d/%m')} - {week_end.strftime('%d/%m/%Y')})",
+            'ru': f"Терапевтический отчет - Последние 7 дней ({week_start.strftime('%d.%m')} - {week_end.strftime('%d.%m.%Y')})",
+            'ar': f"التقرير العلاجي - آخر 7 أيام ({week_start.strftime('%d/%m')} - {week_end.strftime('%d/%m/%Y')})"
         }
         msg['Subject'] = subjects.get(lang, subjects['en'])
 
@@ -6159,7 +6162,7 @@ def test_weekly_report():
                 safe_name = client.client_name.replace(' ', '_').replace('/', '_').replace('\\','_') if client.client_name else client.client_serial
                 pdf_attachment.add_header(
                     'Content-Disposition',
-                    f'attachment; filename=report_{safe_name}_week_{week_num}_{year}.pdf'
+                    f'attachment; filename=report_{safe_name}_{week_start.strftime("%Y%m%d")}_{week_end.strftime("%Y%m%d")}.pdf'
                 )
                 msg.attach(pdf_attachment)
                 attachment_count += 1
@@ -6467,7 +6470,7 @@ Best regards,
             safe_name = client.client_name.replace(' ', '_').replace('/', '_').replace('\\','_') if client.client_name else client.client_serial
             pdf_attachment.add_header(
                 'Content-Disposition',
-                f'attachment; filename=report_{safe_name}_week_{week_num}_{year}.pdf'
+                f'attachment; filename=report_{safe_name}_{week_start.strftime("%Y%m%d")}_{week_end.strftime("%Y%m%d")}.pdf'
             )
             msg.attach(pdf_attachment)
 

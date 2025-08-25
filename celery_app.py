@@ -516,11 +516,15 @@ def send_weekly_reports():
                         continue
 
                     # Calculate week dates
+                    # Get previous 7 days
                     today = date.today()
-                    week_start = today - timedelta(days=today.weekday())
-                    week_end = week_start + timedelta(days=6)
-                    year = today.year
-                    week_num = today.isocalendar()[1]
+                    week_end = today - timedelta(days=1)  # Yesterday
+                    week_start = week_end - timedelta(days=6)  # 7 days before yesterday
+
+                    # For the week number, use the week of the middle day of the period
+                    middle_day = week_start + timedelta(days=3)
+                    year = middle_day.year
+                    week_num = middle_day.isocalendar()[1]
 
                     # Determine email
                     email_to_use = reminder.reminder_email if reminder.reminder_email else therapist.user.email
@@ -532,10 +536,10 @@ def send_weekly_reports():
 
                     # Translated subjects
                     subjects = {
-                        'en': f"Weekly Therapy Report - Week {week_num}, {year}",
-                        'he': f"דוח טיפולי שבועי - שבוע {week_num}, {year}",
-                        'ru': f"Еженедельный терапевтический отчет - Неделя {week_num}, {year}",
-                        'ar': f"التقرير العلاجي الأسبوعي - الأسبوع {week_num}, {year}"
+                        'en': f"Weekly Therapy Report - Past 7 Days ({week_start.strftime('%b %d')} - {week_end.strftime('%b %d, %Y')})",
+                        'he': f"דוח טיפולי - 7 הימים האחרונים ({week_start.strftime('%d/%m')} - {week_end.strftime('%d/%m/%Y')})",
+                        'ru': f"Терапевтический отчет - Последние 7 дней ({week_start.strftime('%d.%m')} - {week_end.strftime('%d.%m.%Y')})",
+                        'ar': f"التقرير العلاجي - آخر 7 أيام ({week_start.strftime('%d/%m')} - {week_end.strftime('%d/%m/%Y')})"
                     }
                     lang = reminder.reminder_language or 'en'
                     msg['Subject'] = subjects.get(lang, subjects['en'])
@@ -568,7 +572,7 @@ def send_weekly_reports():
                                                                                                        '_') if client.client_name else client.client_serial
                             pdf_attachment.add_header(
                                 'Content-Disposition',
-                                f'attachment; filename=report_{safe_name}_week_{week_num}_{year}.pdf'
+                                f'attachment; filename=report_{safe_name}_{week_start.strftime("%Y%m%d")}_{week_end.strftime("%Y%m%d")}.pdf'
                             )
                             msg.attach(pdf_attachment)
                             attachment_count += 1
@@ -644,10 +648,13 @@ def send_weekly_report_batch_task(self, therapist_id, batch_size=10):
 
             # Get current week
             today = date.today()
-            week_start = today - timedelta(days=today.weekday())
-            week_end = week_start + timedelta(days=6)
-            year = today.year
-            week_num = today.isocalendar()[1]
+            week_end = today - timedelta(days=1)  # Yesterday
+            week_start = week_end - timedelta(days=6)  # 7 days before yesterday
+
+            # For the week number, use the week of the middle day of the period
+            middle_day = week_start + timedelta(days=3)
+            year = middle_day.year
+            week_num = middle_day.isocalendar()[1]
 
             lang = settings.reminder_language if settings else 'en'
             total_sent = 0
@@ -665,10 +672,10 @@ def send_weekly_report_batch_task(self, therapist_id, batch_size=10):
 
                 # Subject with batch info
                 subjects = {
-                    'en': f"Weekly Therapy Report - Week {week_num}, {year} - Part {batch_num} of {total_batches}",
-                    'he': f"דוח טיפולי שבועי - שבוע {week_num}, {year} - חלק {batch_num} מתוך {total_batches}",
-                    'ru': f"Еженедельный отчет - Неделя {week_num}, {year} - Часть {batch_num} из {total_batches}",
-                    'ar': f"التقرير الأسبوعي - الأسبوع {week_num}, {year} - الجزء {batch_num} من {total_batches}"
+                    'en': f"Weekly Therapy Report - Past 7 Days ({week_start.strftime('%b %d')} - {week_end.strftime('%b %d, %Y')}) - Part {batch_num} of {total_batches}",
+                    'he': f"דוח טיפולי - 7 הימים האחרונים ({week_start.strftime('%d/%m')} - {week_end.strftime('%d/%m/%Y')}) - חלק {batch_num} מתוך {total_batches}",
+                    'ru': f"Терапевтический отчет - Последние 7 дней ({week_start.strftime('%d.%m')} - {week_end.strftime('%d.%m.%Y')}) - Часть {batch_num} из {total_batches}",
+                    'ar': f"التقرير العلاجي - آخر 7 أيام ({week_start.strftime('%d/%m')} - {week_end.strftime('%d/%m/%Y')}) - الجزء {batch_num} من {total_batches}"
                 }
                 msg['Subject'] = subjects.get(lang, subjects['en'])
 
@@ -702,7 +709,7 @@ def send_weekly_report_batch_task(self, therapist_id, batch_size=10):
                                                                                                    '_') if client.client_name else client.client_serial
                         pdf_attachment.add_header(
                             'Content-Disposition',
-                            f'attachment; filename=report_{safe_name}_week_{week_num}_{year}.pdf'
+                            f'attachment; filename=report_{safe_name}_{week_start.strftime("%Y%m%d")}_{week_end.strftime("%Y%m%d")}.pdf'
                         )
                         msg.attach(pdf_attachment)
                         attachment_count += 1

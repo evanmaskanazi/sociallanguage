@@ -1221,9 +1221,12 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="reportWeek" data-i18n="reports.select_week">Select Week</label>
-                        <input type="week" id="reportWeek" class="form-input">
-                    </div>
+    <label for="reportWeek" data-i18n="reports.select_week">Select Week</label>
+    <input type="week" id="reportWeek" class="form-input">
+    <small style="display: block; color: #666; margin-top: 0.5rem;" data-i18n="reports.week_note">
+        Report will show the 7 days prior to the end of this week
+    </small>
+</div>
                 </div>
 
                 <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
@@ -1380,6 +1383,7 @@
                 'therapist.active_only': 'Active Only',
                 'therapist.inactive_only': 'Inactive Only',
                 'therapist.add_new_client': 'Add New Client',
+                'reports.week_note': 'Report will show the 7 days prior to the end of this week',
                 'therapist.week_completion': 'Week Completion',
                 'therapist.loading_clients': 'Loading clients...',
                 'therapist.client_account_info': 'Client Account Information',
@@ -1561,6 +1565,7 @@
             Object.assign(window.i18n.translations.he, {
                 // Category translations
                 'category.emotion_level': 'רמה רגשית',
+                'reports.week_note': 'הדוח יציג את 7 הימים שלפני סוף השבוע הנבחר',
                'nav.task': 'משימות',
 'therapist.task_title': 'ניהול משימות',
 'therapist.assign_task': 'הקצה משימה',
@@ -1786,6 +1791,7 @@
 'therapist.select_client': 'Выберите клиента:',
 'therapist.task_type': 'Тип задания:',
 'therapist.task_title_label': 'Название:',
+'reports.week_note': 'В отчете будут показаны 7 дней до конца выбранной недели',
 'therapist.task_description': 'Описание/Инструкции:',
 'therapist.due_date': 'Срок выполнения:',
 'therapist.assign_btn': 'Назначить задание',
@@ -2001,6 +2007,7 @@
             Object.assign(window.i18n.translations.ar, {
                 // Category translations
                 'category.emotion_level': 'المستوى العاطفي',
+                'reports.week_note': 'سيعرض التقرير الأيام السبعة السابقة لنهاية هذا الأسبوع',
                'nav.task': 'المهام',
 'therapist.task_title': 'إدارة المهام',
 'therapist.assign_task': 'تعيين مهمة',
