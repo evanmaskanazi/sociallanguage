@@ -1364,23 +1364,19 @@ window.addEventListener('load', function() {
 </div>
 
     <!-- Reports Tab -->
-    <div id="reports" class="tab-content">
-        <h2 data-i18n="reports.generate">Generate Reports</h2>
+    <!-- Reports Tab -->
+<div id="reports" class="tab-content">
+    <h2 data-i18n="reports.generate">Generate Reports</h2>
 
-        <div class="card">
-            <h3 data-i18n="reports.weekly">Weekly Report</h3>
-            <p style="color: #666; margin-bottom: 1rem;" data-i18n="client.report_desc">Generate a comprehensive report of your check-ins for any week.</p>
+    <div class="card">
+        <h3>Daily Check-in Reports (Last 7 Days)</h3>
+        <p style="color: #666; margin-bottom: 1rem;">Generate a comprehensive report of your check-ins for the past 7 days.</p>
 
-            <div class="form-group">
-                <label for="reportWeek" data-i18n="reports.select_week">Select Week:</label>
-                <input type="week" id="reportWeek" class="form-input">
-            </div>
-
-            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                <button class="btn btn-primary" onclick="generateReport()" data-i18n="client.generate_excel">Generate Excel Report (Last 7 Days)</button>
-<button class="btn btn-primary" onclick="generatePDFReport()" data-i18n="client.generate_pdf">Generate PDF Report (Last 7 Days)</button>
-                <button class="btn btn-secondary" onclick="prepareEmailReport()" data-i18n="client.prepare_email">Prepare Email Report</button>
-            </div>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <button class="btn btn-primary" onclick="generateReport()" data-i18n="client.generate_excel">Generate Excel Report</button>
+            <button class="btn btn-primary" onclick="generatePDFReport()" data-i18n="client.generate_pdf">Generate PDF Report</button>
+            <button class="btn btn-secondary" onclick="prepareEmailReport()" data-i18n="client.prepare_email">Prepare Email Report</button>
+        </div>
 
             <div id="reportStatus" style="margin-top: 2rem; display: none;">
                 <h4 data-i18n="client.report_status">Report Status</h4>
@@ -2912,31 +2908,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         startSessionKeepAlive();
 
         // Fix account deletion visibility
-function hideAccountDeletion() {
-    // Find all cards
-    document.querySelectorAll('.card').forEach(card => {
-        // Check if this card contains account deletion
-        const h3 = card.querySelector('h3');
-        if (h3 && (h3.textContent.includes('Account Deletion') ||
-                   h3.getAttribute('data-i18n') === 'client.account_deletion')) {
-            // Check if it's NOT in the settings tab
-            const parentTab = card.closest('.tab-content');
-            if (parentTab && parentTab.id !== 'settings') {
-                card.style.display = 'none';
-            }
-        }
-    });
-}
 
-// Run immediately and on tab changes
-hideAccountDeletion();
-
-// Override showTab to ensure it runs on tab change
-const originalShowTab = window.showTab;
-window.showTab = function(tabName, event) {
-    originalShowTab(tabName, event);
-    setTimeout(hideAccountDeletion, 100);
-};
 
         window.addEventListener('languageChanged', function() {
             console.log('Language changed in client dashboard');
@@ -4745,10 +4717,10 @@ function displayInsights(insights) {
         }
 
         // Report Functions
-    async function generateReport() {
-    // Always generate for past 7 days
+   async function generateReport() {
     try {
-        const response = await fetch(`/api/client/generate-report/past7days`, {
+        // Use 'past7days' which the backend already supports
+        const response = await fetch('/api/client/generate-report/past7days', {
             method: 'GET',
             headers: {
                 'Accept-Language': i18n.currentLang
@@ -4759,7 +4731,7 @@ function displayInsights(insights) {
         if (response.ok) {
             const contentDisposition = response.headers.get('content-disposition');
             const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
-            const filename = filenameMatch ? filenameMatch[1] : 'my_therapy_report_past_7_days.xlsx';
+            const filename = filenameMatch ? filenameMatch[1] : 'therapy_report_last_7_days.xlsx';
 
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
@@ -4785,9 +4757,9 @@ function displayInsights(insights) {
 
 
 async function generatePDFReport() {
-    // Always generate for past 7 days
     try {
-        const response = await fetch(`/api/client/generate-pdf/past7days`, {
+        // Use 'past7days' which the backend already supports
+        const response = await fetch('/api/client/generate-pdf/past7days', {
             method: 'GET',
             headers: {
                 'Accept-Language': i18n.currentLang
@@ -4798,7 +4770,7 @@ async function generatePDFReport() {
         if (response.ok) {
             const contentDisposition = response.headers.get('content-disposition');
             const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
-            const filename = filenameMatch ? filenameMatch[1] : 'my_therapy_report_past_7_days.pdf';
+            const filename = filenameMatch ? filenameMatch[1] : 'therapy_report_last_7_days.pdf';
 
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
@@ -4820,177 +4792,39 @@ async function generatePDFReport() {
     }
 }
 
-        async function prepareEmailReport() {
-    const week = document.getElementById('reportWeek').value;
-
-    if (!week) {
-        showMessage(i18n.t('client.select_client_week'), 'error');
-        return;
-    }
-
-
-// ADD THIS VALIDATION
-    if (!InputValidation.validateWeek(week)) {
-        showMessage('Invalid week format', 'error');
-        return;
-    }
-
-
-
+     async function prepareEmailReport() {
     try {
-        // Parse week
-        const [year, weekNum] = week.split('-W');
-
-        // Calculate week dates
-        const weekStart = getWeekStart(parseInt(year), parseInt(weekNum));
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 6);
-
-        // Fetch week's check-in data
-        const checkinsResponse = await fetch(`/api/client/week-checkins/${week}`, {
+        // Call the backend endpoint with 'past7days'
+        const response = await fetch('/api/client/email-report', {
+            method: 'POST',
             headers: {
-
-    'Accept-Language': i18n.currentLang
-},
-credentials: 'include'
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': getCsrfToken(),
+                'Accept-Language': i18n.currentLang
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                week: 'past7days'
+            })
         });
 
-        if (!checkinsResponse.ok) {
-            throw new Error('Failed to load week data');
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to prepare email report');
         }
 
-        const checkinsData = await checkinsResponse.json();
+        const data = await response.json();
 
-        // Fetch goals for the week
-        const goalsResponse = await fetch(`/api/client/goals/${week}`, {
-           headers: {
-
-    'Accept-Language': i18n.currentLang
-},
-credentials: 'include'
-        });
-
-        const goalsData = goalsResponse.ok ? await goalsResponse.json() : { goals: [] };
-
-        // Build translated email content
-        let emailContent = '';
-
-        // Add greeting
-        emailContent += i18n.t('email.dear_therapist', 'Dear Therapist') + ',\n\n';
-        emailContent += i18n.t('email.weekly_report_intro', 'Here is my weekly progress report for') + ' ';
-        emailContent += `${weekStart.toLocaleDateString(i18n.currentLang, { month: 'long', day: 'numeric' })} - `;
-        emailContent += `${weekEnd.toLocaleDateString(i18n.currentLang, { month: 'long', day: 'numeric', year: 'numeric' })}.\n\n`;
-
-        // Add client info
-        emailContent += `${i18n.t('client.serial')}: ${clientData.serial}\n`;
-        emailContent += `${i18n.t('reports.week')}: ${weekNum}, ${year}\n`;
-
-        // Count completed check-ins
-        const completedCheckins = Object.keys(checkinsData.checkins || {}).length;
-        emailContent += `${i18n.t('reports.checkin_completion')}: ${completedCheckins}/7\n\n`;
-
-        // Daily summary
-        emailContent += i18n.t('reports.daily_checkins').toUpperCase() + ':\n\n';
-
-        for (let i = 0; i < 7; i++) {
-            const currentDate = new Date(weekStart);
-            currentDate.setDate(currentDate.getDate() + i);
-            const dateStr = currentDate.toISOString().split('T')[0];
-            const dayName = i18n.getDayName(currentDate.getDay());
-
-            emailContent += `${dayName} (${currentDate.toLocaleDateString(i18n.currentLang, { month: '2-digit', day: '2-digit' })}):\n`;
-
-            const checkin = checkinsData.checkins[dateStr];
-            if (checkin) {
-                emailContent += `  ✓ ${i18n.t('reports.checkin_time')}: ${checkin.time}\n`;
-
-                // Add category responses
-                for (const category of trackingCategories) {
-                    const catName = translateCategoryName(category.original_name || category.name);
-                    // Try to find the value in the checkin data
-                    let value = null;
-                    if (category.original_name && category.original_name.toLowerCase().includes('emotion')) {
-                        value = checkin.emotional;
-                    } else if (category.original_name && category.original_name.toLowerCase().includes('medication')) {
-                        value = checkin.medication;
-                    } else if (category.original_name && category.original_name.toLowerCase().includes('activity')) {
-                        value = checkin.activity;
-                    }
-
-                    if (value !== null && value !== undefined) {
-                        emailContent += `  - ${catName}: ${value}/5\n`;
-                    }
-                }
-            } else {
-                emailContent += `  ✗ ${i18n.t('reports.no_checkin')}\n`;
-            }
-            emailContent += '\n';
-        }
-
-        // Weekly summary
-        if (completedCheckins > 0) {
-            emailContent += i18n.t('reports.weekly_summary').toUpperCase() + ':\n';
-
-            // Calculate averages for each category
-            const categoryAverages = {};
-            let checkinCount = 0;
-
-            for (const dateStr in checkinsData.checkins) {
-                const checkin = checkinsData.checkins[dateStr];
-                checkinCount++;
-
-                // Add to averages
-                if (checkin.emotional) {
-                    categoryAverages['emotion_level'] = (categoryAverages['emotion_level'] || 0) + checkin.emotional;
-                }
-                if (checkin.medication) {
-                    categoryAverages['medication'] = (categoryAverages['medication'] || 0) + checkin.medication;
-                }
-                if (checkin.activity) {
-                    categoryAverages['physical_activity'] = (categoryAverages['physical_activity'] || 0) + checkin.activity;
-                }
-            }
-
-            // Display averages
-            for (const category of trackingCategories) {
-                const key = category.original_name ? category.original_name.toLowerCase().replace(/\s+/g, '_') : '';
-                if (categoryAverages[key]) {
-                    const avg = (categoryAverages[key] / checkinCount).toFixed(1);
-                    const catName = translateCategoryName(category.original_name || category.name);
-                    emailContent += `- ${catName}: ${avg}/5\n`;
-                }
-            }
-
-            emailContent += `- ${i18n.t('reports.completion_rate')}: ${completedCheckins}/7 ${i18n.t('days')} (${Math.round((completedCheckins/7)*100)}%)\n`;
-        }
-
-        // Add goals if any
-        if (goalsData.goals && goalsData.goals.length > 0) {
-            emailContent += `\n${i18n.t('reports.weekly_goals').toUpperCase()}:\n`;
-            for (const goal of goalsData.goals) {
-                const completedDays = Object.values(goal.completions).filter(c => c === true).length;
-                emailContent += `- ${goal.text}: ${i18n.t('reports.completed')} ${completedDays}/7 ${i18n.t('days')}\n`;
-            }
-        }
-
-        // Add footer
-        emailContent += `\n${i18n.t('email.report_generated_on', 'Report generated on')}: ${new Date().toLocaleString(i18n.currentLang)}\n\n`;
-        emailContent += i18n.t('email.best_regards', 'Best regards') + ',\n';
-        emailContent += `${i18n.t('client.serial')} ${clientData.serial}`;
-
-        // Get therapist email (fallback to example)
-        const therapistEmail = 'therapist@example.com'; // You might want to get this from somewhere
-
-        // Show the translated email
+        // Show the email content returned by the backend
         showReportStatus('info', `
             <h4>${i18n.t('client.email_preview')}</h4>
-            <p><strong>${i18n.t('therapist.to')}</strong> ${therapistEmail}</p>
-            <p><strong>${i18n.t('therapist.subject')}</strong> ${i18n.t('reports.weekly_report_title')} - ${clientData.serial} - ${i18n.t('reports.week')} ${weekNum}, ${year}</p>
+            <p><strong>${i18n.t('therapist.to')}:</strong> ${data.recipient}</p>
+            <p><strong>${i18n.t('therapist.subject')}:</strong> ${data.subject}</p>
             <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-                <pre style="white-space: pre-wrap; font-family: inherit;">${emailContent}</pre>
+                <pre style="white-space: pre-wrap; font-family: inherit;">${data.email_content}</pre>
             </div>
             <p style="margin-top: 1rem; color: #666;">
-                <em>${i18n.t('client.copy_email')}</em>
+                <em>${data.note || i18n.t('client.copy_email')}</em>
             </p>
         `);
 
