@@ -905,7 +905,15 @@ window.addEventListener('load', function() {
             display: block !important;
         }
 
+/* Hide deletion card in all tabs except settings */
+.tab-content:not(#settings) [data-deletion-card="true"] {
+    display: none !important;
+}
 
+/* Ensure it's visible only in settings tab */
+#settings [data-deletion-card="true"] {
+    display: block !important;
+}
 
     </style>
 </head>
@@ -1467,7 +1475,27 @@ window.addEventListener('load', function() {
     <button class="btn btn-secondary" onclick="requestAccountDeletion()" style="background: #dc3545; color: white;">
         <span data-i18n="client.request_deletion">Request Account Deletion</span>
     </button>
+
+
+
+<!-- Find this section around line 1879 and add the data-deletion-card attribute -->
+<div class="card border-danger" data-deletion-card="true">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-exclamation-triangle"></i> ${i18n.t('client.danger_zone')}
+        </h5>
+    </div>
+    <div class="card-body">
+        <h6>${i18n.t('client.delete_account')}</h6>
+        <p class="text-muted">${i18n.t('client.delete_account_warning')}</p>
+        <button class="btn btn-danger" onclick="showDeleteAccountModal()">
+            <i class="fas fa-trash"></i> ${i18n.t('client.delete_account')}
+        </button>
+    </div>
 </div>
+
+
+         </div>
 
 
 
@@ -4716,21 +4744,54 @@ function displayInsights(insights) {
         }
 
         // Report Functions
-       async function generateReport() {
+    async function generateReport() {
     const week = document.getElementById('reportWeek').value;
 
+    // Changed: Allow empty week to default to past7days
     if (!week) {
-        showMessage(i18n.t('client.select_client_week'), 'error');
+        // Generate for past 7 days by default
+        try {
+            const response = await fetch(`/api/client/generate-report/past7days`, {
+                method: 'GET',
+                headers: {
+                    'Accept-Language': i18n.currentLang
+                },
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const contentDisposition = response.headers.get('content-disposition');
+                const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
+                const filename = filenameMatch ? filenameMatch[1] : 'my_therapy_report_past_7_days.xlsx';
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+
+                showMessage(i18n.t('client.report_generated'), 'success');
+            } else {
+                const error = await response.json();
+                showMessage(error.error || i18n.t('msg.error'), 'error');
+            }
+        } catch (error) {
+            showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
+        }
         return;
     }
 
+    // Keep all original validation for when week IS selected
     if (!InputValidation.validateWeek(week)) {
         showMessage('Invalid week format', 'error');
         return;
     }
 
     try {
-        // Use path parameter
         const response = await fetch(`/api/client/generate-report/${week}`, {
             method: 'GET',
             headers: {
@@ -4764,21 +4825,57 @@ function displayInsights(insights) {
     }
 }
 
-   async function generatePDFReport() {
+
+
+
+async function generatePDFReport() {
     const week = document.getElementById('reportWeek').value;
 
+    // Changed: Allow empty week to default to past7days
     if (!week) {
-        showMessage(i18n.t('client.select_client_week'), 'error');
+        // Generate for past 7 days by default
+        try {
+            const response = await fetch(`/api/client/generate-pdf/past7days`, {
+                method: 'GET',
+                headers: {
+                    'Accept-Language': i18n.currentLang
+                },
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const contentDisposition = response.headers.get('content-disposition');
+                const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
+                const filename = filenameMatch ? filenameMatch[1] : 'my_therapy_report_past_7_days.pdf';
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+
+                showMessage(i18n.t('client.report_generated'), 'success');
+            } else {
+                const error = await response.json();
+                showMessage(error.error || i18n.t('msg.error'), 'error');
+            }
+        } catch (error) {
+            showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
+        }
         return;
     }
 
+    // Keep all original validation for when week IS selected
     if (!InputValidation.validateWeek(week)) {
         showMessage('Invalid week format', 'error');
         return;
     }
 
     try {
-        // Change to path parameter instead of query parameter
         const response = await fetch(`/api/client/generate-pdf/${week}`, {
             method: 'GET',
             headers: {
@@ -4788,12 +4885,16 @@ function displayInsights(insights) {
         });
 
         if (response.ok) {
+            const contentDisposition = response.headers.get('content-disposition');
+            const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
+            const filename = filenameMatch ? filenameMatch[1] : `my_therapy_report_${week}.pdf`;
+
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.style.display = 'none';
             a.href = url;
-            a.download = `my_therapy_report_${week}.pdf`;
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
@@ -4807,8 +4908,6 @@ function displayInsights(insights) {
         showMessage(i18n.t('msg.error') + ': ' + error.message, 'error');
     }
 }
-
-
 
         async function prepareEmailReport() {
     const week = document.getElementById('reportWeek').value;
