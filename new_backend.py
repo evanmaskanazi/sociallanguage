@@ -10134,40 +10134,176 @@ def request_data_deletion():
 
         if client.therapist and client.therapist.user:
             therapist_email = client.therapist.user.email
-            subject = f"Data Deletion Request - Client {client.client_name}"
 
-            body = f"""Dear {client.therapist.name},
+            # Get therapist's language preference
+            therapist_lang = 'en'  # Default
+
+            # Check if therapist has reminder settings with language preference
+            reminder_settings = Reminder.query.filter_by(
+                client_id=client.therapist.id,
+                reminder_type='weekly_report'
+            ).first()
+
+            if reminder_settings and reminder_settings.reminder_language:
+                therapist_lang = reminder_settings.reminder_language
+
+            # Language-specific email content
+            if therapist_lang == 'he':
+                subject = f"בקשת מחיקת נתונים - לקוח {client.client_name or client.client_serial}"
+
+                body = f"""{client.therapist.name} יקר/ה,
+
+        הלקוח שלך {client.client_name or client.client_serial} ביקש למחוק את הנתונים שלו.
+
+        מזהה לקוח: {client.client_name or client.client_serial}
+        תאריך הבקשה: {datetime.utcnow().strftime('%d/%m/%Y %H:%M')}
+
+        זוהי בקשת מחיקת נתונים לפי GDPR.
+
+        אנא בדוק/י ועבד/י בהתאם למדיניות שמירת הנתונים שלך.
+
+        כדי לאשר או לדון בבקשה זו, אנא צור/י קשר עם הלקוח ישירות.
+
+        בברכה,
+        מערכת הליווי הטיפולי"""
+
+            elif therapist_lang == 'ru':
+                subject = f"Запрос на удаление данных - Клиент {client.client_name or client.client_serial}"
+
+                body = f"""Уважаемый(ая) {client.therapist.name},
+
+        Ваш клиент {client.client_name or client.client_serial} запросил удаление своих данных.
+
+        ID клиента: {client.client_name or client.client_serial}
+        Дата запроса: {datetime.utcnow().strftime('%d.%m.%Y %H:%M')}
+
+        Это запрос на удаление данных согласно GDPR.
+
+        Пожалуйста, рассмотрите и обработайте в соответствии с вашей политикой хранения данных.
+
+        Чтобы одобрить или обсудить этот запрос, пожалуйста, свяжитесь с клиентом напрямую.
+
+        С уважением,
+        Система терапевтического сопровождения"""
+
+            elif therapist_lang == 'ar':
+                subject = f"طلب حذف البيانات - العميل {client.client_name or client.client_serial}"
+
+                body = f"""عزيزي/عزيزتي {client.therapist.name}،
+
+        طلب عميلك {client.client_name or client.client_serial} حذف بياناته.
+
+        معرف العميل: {client.client_name or client.client_serial}
+        تاريخ الطلب: {datetime.utcnow().strftime('%d/%m/%Y %H:%M')}
+
+        هذا طلب حذف بيانات وفقاً لـ GDPR.
+
+        يرجى المراجعة والمعالجة وفقاً لسياسات الاحتفاظ بالبيانات الخاصة بك.
+
+        للموافقة على هذا الطلب أو مناقشته، يرجى الاتصال بالعميل مباشرة.
+
+        مع أطيب التحيات،
+        نظام المرافق العلاجي"""
+
+            else:  # English (default)
+                subject = f"Data Deletion Request - Client {client.client_name or client.client_serial}"
+
+                body = f"""Dear {client.therapist.name},
 
         Your client {client.client_name or client.client_serial} has requested deletion of their data.
 
-        Client ID: {client.client_name}
+        Client ID: {client.client_name or client.client_serial}
         Request Date: {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}
 
-        This is a GDPR data deletion request. Please review and process according to your data retention policies.
+        This is a GDPR data deletion request.
+
+        Please review and process according to your data retention policies.
 
         To approve or discuss this request, please contact the client directly.
 
         Best regards,
         Therapeutic Companion System"""
 
-            html_body = f"""
-                    <html>
-                    <body style="font-family: Arial, sans-serif;">
-                        <h2>Data Deletion Request</h2>
-                        <p>Dear {client.therapist.name},</p>
-                        <p>Your client <strong>{client.client_name or client.client_serial}</strong> has requested deletion of their data.</p>
-                        <div style="background-color: #f5f5f5; padding: 15px; margin: 20px 0;">
-                            <p><strong>Client ID:</strong> {client.client_name}</p>
-                            <p><strong>Request Date:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}</p>
-                        </div>
-                        <p style="color: #d9534f; font-weight: bold;">This is a GDPR data deletion request.</p>
-                        <p>Please review and process according to your data retention policies.</p>
-                        <p>To approve or discuss this request, please contact the client directly.</p>
-                        <hr>
-                        <p>Best regards,<br>Therapeutic Companion System</p>
-                    </body>
-                    </html>
-                    """
+            # HTML body based on language
+            if therapist_lang == 'he':
+                html_body = f"""
+                <html>
+                <body style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
+                    <h2>בקשת מחיקת נתונים</h2>
+                    <p>{client.therapist.name} יקר/ה,</p>
+                    <p>הלקוח שלך <strong>{client.client_name or client.client_serial}</strong> ביקש למחוק את הנתונים שלו.</p>
+                    <div style="background-color: #f5f5f5; padding: 15px; margin: 20px 0;">
+                        <p><strong>מזהה לקוח:</strong> {client.client_name or client.client_serial}</p>
+                        <p><strong>תאריך הבקשה:</strong> {datetime.utcnow().strftime('%d/%m/%Y %H:%M')}</p>
+                    </div>
+                    <p style="color: #d9534f; font-weight: bold;">זוהי בקשת מחיקת נתונים לפי GDPR.</p>
+                    <p>אנא בדוק/י ועבד/י בהתאם למדיניות שמירת הנתונים שלך.</p>
+                    <p>כדי לאשר או לדון בבקשה זו, אנא צור/י קשר עם הלקוח ישירות.</p>
+                    <hr>
+                    <p>בברכה,<br>מערכת הליווי הטיפולי</p>
+                </body>
+                </html>
+                """
+
+            elif therapist_lang == 'ru':
+                html_body = f"""
+                <html>
+                <body style="font-family: Arial, sans-serif;">
+                    <h2>Запрос на удаление данных</h2>
+                    <p>Уважаемый(ая) {client.therapist.name},</p>
+                    <p>Ваш клиент <strong>{client.client_name or client.client_serial}</strong> запросил удаление своих данных.</p>
+                    <div style="background-color: #f5f5f5; padding: 15px; margin: 20px 0;">
+                        <p><strong>ID клиента:</strong> {client.client_name or client.client_serial}</p>
+                        <p><strong>Дата запроса:</strong> {datetime.utcnow().strftime('%d.%m.%Y %H:%M')}</p>
+                    </div>
+                    <p style="color: #d9534f; font-weight: bold;">Это запрос на удаление данных согласно GDPR.</p>
+                    <p>Пожалуйста, рассмотрите и обработайте в соответствии с вашей политикой хранения данных.</p>
+                    <p>Чтобы одобрить или обсудить этот запрос, пожалуйста, свяжитесь с клиентом напрямую.</p>
+                    <hr>
+                    <p>С уважением,<br>Система терапевтического сопровождения</p>
+                </body>
+                </html>
+                """
+
+            elif therapist_lang == 'ar':
+                html_body = f"""
+                <html>
+                <body style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
+                    <h2>طلب حذف البيانات</h2>
+                    <p>عزيزي/عزيزتي {client.therapist.name}،</p>
+                    <p>طلب عميلك <strong>{client.client_name or client.client_serial}</strong> حذف بياناته.</p>
+                    <div style="background-color: #f5f5f5; padding: 15px; margin: 20px 0;">
+                        <p><strong>معرف العميل:</strong> {client.client_name or client.client_serial}</p>
+                        <p><strong>تاريخ الطلب:</strong> {datetime.utcnow().strftime('%d/%m/%Y %H:%M')}</p>
+                    </div>
+                    <p style="color: #d9534f; font-weight: bold;">هذا طلب حذف بيانات وفقاً لـ GDPR.</p>
+                    <p>يرجى المراجعة والمعالجة وفقاً لسياسات الاحتفاظ بالبيانات الخاصة بك.</p>
+                    <p>للموافقة على هذا الطلب أو مناقشته، يرجى الاتصال بالعميل مباشرة.</p>
+                    <hr>
+                    <p>مع أطيب التحيات،<br>نظام المرافق العلاجي</p>
+                </body>
+                </html>
+                """
+
+            else:  # English (default)
+                html_body = f"""
+                <html>
+                <body style="font-family: Arial, sans-serif;">
+                    <h2>Data Deletion Request</h2>
+                    <p>Dear {client.therapist.name},</p>
+                    <p>Your client <strong>{client.client_name or client.client_serial}</strong> has requested deletion of their data.</p>
+                    <div style="background-color: #f5f5f5; padding: 15px; margin: 20px 0;">
+                        <p><strong>Client ID:</strong> {client.client_name or client.client_serial}</p>
+                        <p><strong>Request Date:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}</p>
+                    </div>
+                    <p style="color: #d9534f; font-weight: bold;">This is a GDPR data deletion request.</p>
+                    <p>Please review and process according to your data retention policies.</p>
+                    <p>To approve or discuss this request, please contact the client directly.</p>
+                    <hr>
+                    <p>Best regards,<br>Therapeutic Companion System</p>
+                </body>
+                </html>
+                """
 
             # Send the email
             send_email(therapist_email, subject, body, html_body)

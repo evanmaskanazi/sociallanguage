@@ -1887,6 +1887,13 @@ window.addEventListener('load', function() {
 'client.no_checkin_found': 'No check-in found for this date',
 'client.notes': 'Notes:',
 'btn.close': 'Close',
+'insights.consistency_excellent': 'Excellent consistency! You checked in almost every day this week.',
+'insights.medication_outstanding': 'Outstanding medication adherence! Keep up the great work.',
+'insights.morning_preference': 'You prefer morning check-ins. This consistency helps track your progress!',
+'insights.emotional_improvement': 'Your emotional well-being has improved by {percent}% compared to earlier!',
+'insights.emotional_dip': 'Your emotional ratings have dipped recently. Consider discussing coping strategies with your therapist.',
+'insights.medication_improve': 'Your medication adherence could improve. Set reminders if needed.',
+'insights.need_more_checkins': 'Complete more check-ins to see personalized insights!',
   'task.exposure_situation': 'Exposure Situation:',
     'task.anxiety_before': 'Anxiety Before (0-10):',
     'task.duration': 'Duration (minutes):',
@@ -1923,6 +1930,14 @@ window.addEventListener('load', function() {
                 'consent.never': 'Never',
                 'consent.update_success': 'Consent updated successfully',
                 'consent.update_error': 'Error updating consent',
+                'consent.data_sharing': 'Data Sharing with Healthcare Providers',
+'consent.data_sharing_desc': 'Allow your therapist to share your progress data with other healthcare providers involved in your care',
+'consent.treatment': 'Treatment Data Collection',
+'consent.treatment_desc': 'Allow collection and analysis of your check-in data for treatment purposes',
+'consent.communication': 'Email Communications',
+'consent.communication_desc': 'Receive email reminders and updates about your therapy progress',
+'consent.last_updated': 'Last updated',
+'consent.never': 'Never',
 
                 'nav.settings': 'Settings',
                 'client.account_settings': 'Account Settings',
@@ -1990,6 +2005,7 @@ window.addEventListener('load', function() {
                 'client.avg_activity': 'Average activity level:',
                 'client.email_preview': 'Email Report Preview',
                 'client.copy_email': 'Copy this email content to send to your therapist',
+                'client.no_checkin_completed': 'Check-in Not Completed',
                 'client.checkin_success': 'Check-in submitted successfully! 🎉',
                  'client.lower_better': 'Lower scores are better',
                 'client.higher_better': 'Higher scores are better',
@@ -2023,6 +2039,14 @@ window.addEventListener('load', function() {
             Object.assign(window.i18n.translations.he, {
                 // Category translations
 
+
+'insights.consistency_excellent': 'עקביות מצוינת! עשית צ\'ק-אין כמעט כל יום השבוע.',
+'insights.medication_outstanding': 'היענות מצוינת לתרופות! המשך בעבודה הטובה.',
+'insights.morning_preference': 'אתה מעדיף צ\'ק-אין בבוקר. העקביות הזו עוזרת לעקוב אחר ההתקדמות שלך!',
+'insights.emotional_improvement': 'הרווחה הרגשית שלך השתפרה ב-{percent}% לעומת קודם!',
+'insights.emotional_dip': 'הדירוגים הרגשיים שלך ירדו לאחרונה. שקול לדון באסטרטגיות התמודדות עם המטפל שלך.',
+'insights.medication_improve': 'ההיענות לתרופות שלך יכולה להשתפר. הגדר תזכורות אם צריך.',
+'insights.need_more_checkins': 'השלם עוד צ\'ק-אינים כדי לראות תובנות מותאמות אישית!',
              'nav.task': 'שיעורי בית',
              'task.exposure_situation': 'מצב החשיפה:',
                  'crisis.call_someone_trust': 'התקשר למישהו שאתה סומך עליו',
@@ -2056,6 +2080,7 @@ window.addEventListener('load', function() {
     'task.anxiety_before': 'חרדה לפני (0-10):',
     'task.duration': 'משך זמן (דקות):',
     'task.anxiety_peak': 'שיא החרדה (0-10):',
+    'client.no_checkin_completed': 'לא בוצע צ\'ק-אין',
     'task.anxiety_after': 'חרדה אחרי (0-10):',
     'task.observations': 'תצפיות:',
     'task.refresh': 'רענן',
@@ -2147,6 +2172,14 @@ window.addEventListener('load', function() {
                 'consent.never': 'אף פעם',
                 'consent.update_success': 'ההסכמה עודכנה בהצלחה',
                 'consent.update_error': 'שגיאה בעדכון ההסכמה',
+                'consent.data_sharing': 'שיתוף נתונים עם ספקי שירותי בריאות',
+'consent.data_sharing_desc': 'אפשר למטפל שלך לשתף את נתוני ההתקדמות שלך עם ספקי שירותי בריאות אחרים המעורבים בטיפול שלך',
+'consent.treatment': 'איסוף נתוני טיפול',
+'consent.treatment_desc': 'אפשר איסוף וניתוח של נתוני הצ׳ק-אין שלך למטרות טיפוליות',
+'consent.communication': 'תקשורת בדוא"ל',
+'consent.communication_desc': 'קבל תזכורות ועדכונים בדוא"ל על התקדמות הטיפול שלך',
+'consent.last_updated': 'עודכן לאחרונה',
+'consent.never': 'אף פעם',
 
                 'nav.settings': 'הגדרות',
                 'client.account_settings': 'הגדרות חשבון',
@@ -2247,9 +2280,16 @@ window.addEventListener('load', function() {
             Object.assign(window.i18n.translations.ru, {
                 // Category translations
 
-
+'insights.consistency_excellent': 'Отличная последовательность! Вы отмечались почти каждый день на этой неделе.',
+'insights.medication_outstanding': 'Выдающаяся приверженность лечению! Продолжайте в том же духе.',
+'insights.morning_preference': 'Вы предпочитаете утренние отметки. Эта последовательность помогает отслеживать ваш прогресс!',
+'insights.emotional_improvement': 'Ваше эмоциональное благополучие улучшилось на {percent}% по сравнению с прошлым!',
+'insights.emotional_dip': 'Ваши эмоциональные оценки недавно снизились. Подумайте об обсуждении стратегий преодоления с вашим терапевтом.',
+'insights.medication_improve': 'Ваша приверженность лечению может улучшиться. При необходимости установите напоминания.',
+'insights.need_more_checkins': 'Выполните больше отметок, чтобы увидеть персонализированные инсайты!',
               'nav.task': 'Домашние задания',
                'task.evidence_against_help': 'Какие факты противоречат вашей негативной мысли? Ищите исключения или альтернативные объяснения.',
+               'client.no_checkin_completed': 'Отметка не выполнена',
                'crisis.call_someone_trust': 'Позвоните тому, кому доверяете',
     'crisis.reach_out_message': 'Обратитесь к тому, кто о вас заботится. Это может быть:',
     'crisis.family_member': 'Член семьи',
@@ -2372,6 +2412,14 @@ window.addEventListener('load', function() {
                 'consent.never': 'Никогда',
                 'consent.update_success': 'Согласие успешно обновлено',
                 'consent.update_error': 'Ошибка обновления согласия',
+                'consent.data_sharing': 'Обмен данными с поставщиками медицинских услуг',
+'consent.data_sharing_desc': 'Разрешить вашему терапевту делиться данными о вашем прогрессе с другими поставщиками медицинских услуг, участвующими в вашем лечении',
+'consent.treatment': 'Сбор данных о лечении',
+'consent.treatment_desc': 'Разрешить сбор и анализ данных ваших отметок для целей лечения',
+'consent.communication': 'Электронная почта',
+'consent.communication_desc': 'Получать напоминания и обновления о вашем терапевтическом прогрессе по электронной почте',
+'consent.last_updated': 'Последнее обновление',
+'consent.never': 'Никогда',
 
                 'nav.settings': 'Настройки',
                 'client.account_settings': 'Настройки аккаунта',
@@ -2470,7 +2518,13 @@ window.addEventListener('load', function() {
             Object.assign(window.i18n.translations.ar, {
                 // Category translations
 
-
+'insights.consistency_excellent': 'اتساق ممتاز! لقد سجلت الحضور تقريباً كل يوم هذا الأسبوع.',
+'insights.medication_outstanding': 'التزام رائع بالأدوية! استمر في العمل الجيد.',
+'insights.morning_preference': 'أنت تفضل تسجيل الحضور الصباحي. هذا الاتساق يساعد في تتبع تقدمك!',
+'insights.emotional_improvement': 'تحسنت صحتك العاطفية بنسبة {percent}% مقارنة بالسابق!',
+'insights.emotional_dip': 'انخفضت تقييماتك العاطفية مؤخراً. فكر في مناقشة استراتيجيات التأقلم مع معالجك.',
+'insights.medication_improve': 'يمكن تحسين التزامك بالأدوية. اضبط التذكيرات إذا لزم الأمر.',
+'insights.need_more_checkins': 'أكمل المزيد من تسجيلات الحضور لرؤية رؤى مخصصة!',
                 'nav.task': 'الواجبات المنزلية',
                  'task.evidence_against_help': 'ما هي الحقائق التي تتعارض مع فكرتك السلبية؟ ابحث عن الاستثناءات أو التفسيرات البديلة.',
                   'crisis.call_someone_trust': 'اتصل بشخص تثق به',
@@ -2487,6 +2541,7 @@ window.addEventListener('load', function() {
                 'client.future_date': '(تاريخ المستقبل)',
 'btn.close': 'إغلاق',
     'crisis.support_group': 'عضو في مجموعة الدعم',
+    'client.no_checkin_completed': 'لم يتم إكمال تسجيل الحضور',
     'crisis.use_phone_now': 'استخدم هاتفك للاتصال أو إرسال رسالة نصية الآن.',
     'crisis.ok_call_someone': 'حسناً، سأتصل بشخص ما',
                      'task.evidence_for_help': 'ما هي الحقائق التي تدعم فكرتك التلقائية؟ كن محدداً.',
@@ -2594,6 +2649,14 @@ window.addEventListener('load', function() {
                  'consent.never': 'أبداً',
                  'consent.update_success': 'تم تحديث الموافقة بنجاح',
                 'consent.update_error': 'خطأ في تحديث الموافقة',
+                'consent.data_sharing': 'مشاركة البيانات مع مقدمي الرعاية الصحية',
+'consent.data_sharing_desc': 'السماح لمعالجك بمشاركة بيانات تقدمك مع مقدمي الرعاية الصحية الآخرين المشاركين في رعايتك',
+'consent.treatment': 'جمع بيانات العلاج',
+'consent.treatment_desc': 'السماح بجمع وتحليل بيانات تسجيل الحضور الخاصة بك لأغراض العلاج',
+'consent.communication': 'الاتصالات عبر البريد الإلكتروني',
+'consent.communication_desc': 'تلقي التذكيرات والتحديثات حول تقدم علاجك عبر البريد الإلكتروني',
+'consent.last_updated': 'آخر تحديث',
+'consent.never': 'أبداً',
 
                 'nav.settings': 'الإعدادات',
                 'client.account_settings': 'إعدادات الحساب',
@@ -4887,7 +4950,7 @@ function generateProgressInsights(checkins) {
     if (checkins.length < 3) {
         return [{
             type: 'info',
-            text: 'Complete more check-ins to see personalized insights!'
+            text: i18n.t('insights.need_more_checkins')
         }];
     }
 
@@ -4901,14 +4964,15 @@ function generateProgressInsights(checkins) {
         const olderAvg = calculateAverage(older, 'emotional');
 
         if (recentAvg > olderAvg + 0.5) {
+            const improvement = ((recentAvg - olderAvg) * 20).toFixed(0);
             insights.push({
                 type: 'positive',
-                text: `Your emotional well-being has improved by ${((recentAvg - olderAvg) * 20).toFixed(0)}% compared to earlier!`
+                text: i18n.t('insights.emotional_improvement', { percent: improvement })
             });
         } else if (recentAvg < olderAvg - 0.5) {
             insights.push({
                 type: 'suggestion',
-                text: `Your emotional ratings have dipped recently. Consider discussing coping strategies with your therapist.`
+                text: i18n.t('insights.emotional_dip')
             });
         }
     }
@@ -4924,7 +4988,7 @@ function generateProgressInsights(checkins) {
     if (lastWeekCount >= 6) {
         insights.push({
             type: 'positive',
-            text: 'Excellent consistency! You checked in almost every day this week.'
+            text: i18n.t('insights.consistency_excellent')
         });
     }
 
@@ -4933,12 +4997,12 @@ function generateProgressInsights(checkins) {
     if (medicationAdherence >= 90) {
         insights.push({
             type: 'positive',
-            text: 'Outstanding medication adherence! Keep up the great work.'
+            text: i18n.t('insights.medication_outstanding')
         });
     } else if (medicationAdherence < 50) {
         insights.push({
             type: 'suggestion',
-            text: 'Your medication adherence could improve. Set reminders if needed.'
+            text: i18n.t('insights.medication_improve')
         });
     }
 
@@ -4951,7 +5015,7 @@ function generateProgressInsights(checkins) {
     if (morningCheckins.length > checkins.length * 0.7) {
         insights.push({
             type: 'info',
-            text: 'You prefer morning check-ins. This consistency helps track your progress!'
+            text: i18n.t('insights.morning_preference')
         });
     }
 
@@ -6474,12 +6538,18 @@ async function loadPreviousCheckin() {
             if (data.checkin) {
                 displayPreviousCheckin(data.checkin, selectedDate);
             } else {
-                contentDiv.innerHTML = '<p>Check-in Not Completed</p>';
+                const p = document.createElement('p');
+p.textContent = i18n.t('client.no_checkin_completed');
+contentDiv.innerHTML = '';
+contentDiv.appendChild(p);
                 displayDiv.style.display = 'block';
             }
         } else if (response.status === 404) {
             // Check-in not found for this date
-            contentDiv.innerHTML = '<p>Check-in Not Completed</p>';
+            const p = document.createElement('p');
+p.textContent = i18n.t('client.no_checkin_completed');
+contentDiv.innerHTML = '';
+contentDiv.appendChild(p);
             displayDiv.style.display = 'block';
         } else {
             throw new Error('Failed to load check-in');
