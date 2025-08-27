@@ -3392,6 +3392,49 @@ window.addEventListener('load', function() {
 
 
 
+async function submitBehavioralActivation(event) {
+    event.preventDefault();
+    const form = event.target;
+    const assignmentId = form.dataset.assignmentId;
+
+    const data = {
+        assignment_id: assignmentId,
+        responses: {
+            activity_name: SecurityHelpers.sanitizeInput(form.activity_name.value),
+            scheduled_time: form.scheduled_time.value,
+            duration: form.duration.value,
+            completed: form.completed.checked,
+            enjoyment: form.enjoyment.value,
+            notes: SecurityHelpers.sanitizeInput(form.notes.value)
+        }
+    };
+
+    try {
+        const response = await fetch('/api/client/submit-task', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept-Language': i18n.currentLang
+            },
+            credentials: 'include',
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            showMessage(i18n.t('task.submitted_success', 'Task submitted successfully!'), 'success');
+            loadTasks(); // Refresh the task list
+        }
+    } catch (error) {
+        showMessage(i18n.t('msg.error'), 'error');
+    }
+}
+
+
+
+
+
+
+
        // Initialize
 document.addEventListener('DOMContentLoaded', async function() {
     try {
