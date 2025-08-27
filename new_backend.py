@@ -10134,13 +10134,13 @@ def request_data_deletion():
 
         if client.therapist and client.therapist.user:
             therapist_email = client.therapist.user.email
-            subject = f"Data Deletion Request - Client {client.client_serial}"
+            subject = f"Data Deletion Request - Client {client.client_name}"
 
             body = f"""Dear {client.therapist.name},
 
         Your client {client.client_name or client.client_serial} has requested deletion of their data.
 
-        Client ID: {client.client_serial}
+        Client ID: {client.client_name}
         Request Date: {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}
 
         This is a GDPR data deletion request. Please review and process according to your data retention policies.
@@ -10157,7 +10157,7 @@ def request_data_deletion():
                         <p>Dear {client.therapist.name},</p>
                         <p>Your client <strong>{client.client_name or client.client_serial}</strong> has requested deletion of their data.</p>
                         <div style="background-color: #f5f5f5; padding: 15px; margin: 20px 0;">
-                            <p><strong>Client ID:</strong> {client.client_serial}</p>
+                            <p><strong>Client ID:</strong> {client.client_name}</p>
                             <p><strong>Request Date:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}</p>
                         </div>
                         <p style="color: #d9534f; font-weight: bold;">This is a GDPR data deletion request.</p>
