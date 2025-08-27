@@ -96,7 +96,7 @@ window.addEventListener('load', function() {
             background: rgba(255,255,255,0.3);
         }
 
-        /* Navigation Tabs */
+         /* Navigation Tabs */
         .nav-tabs {
             background: white;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
@@ -105,6 +105,9 @@ window.addEventListener('load', function() {
             gap: 2rem;
             max-width: 1200px;
             margin: 0 auto;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
         }
 
         .nav-tab {
@@ -687,7 +690,7 @@ window.addEventListener('load', function() {
 
 
 
-        /* Responsive */
+              /* Responsive */
         @media (max-width: 768px) {
             .header {
                 min-height: auto;
@@ -695,11 +698,72 @@ window.addEventListener('load', function() {
             }
 
             .header-content {
-                flex-direction: column;
-                gap: 0.75rem;
-                text-align: center;
-                align-items: stretch;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
             }
+
+            .header h1 {
+                font-size: 1.4rem;
+                margin-bottom: 0;
+                line-height: 1.2;
+            }
+
+            .user-info {
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
+                gap: 0.75rem;
+                flex-wrap: nowrap;
+            }
+
+            .logout-btn {
+                min-width: fit-content;
+                white-space: nowrap;
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            #clientSerial {
+                font-size: 0.9rem;
+                max-width: 200px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .nav-tabs {
+                gap: 1rem;
+                padding: 0 1rem;
+                font-size: 0.9rem;
+            }
+
+            .nav-tab {
+                padding: 1rem;
+                white-space: nowrap;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .rating-scale {
+                justify-content: center;
+            }
+
+            .date-selection {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .week-grid {
+                gap: 0.25rem;
+            }
+
+            .day-cell {
+                font-size: 0.875rem;
+            }
+        }
 
             .header h1 {
                 font-size: 1.4rem;
@@ -943,8 +1007,8 @@ window.addEventListener('load', function() {
     </div>
 
     <nav class="nav-tabs">
-        <div class="nav-tab active" onclick="showTab('overview', event)" data-i18n="nav.overview">Overview</div>
-        <div class="nav-tab" onclick="showTab('checkin', event)" data-i18n="nav.daily_checkin">Daily Check-in</div>
+        <div class="nav-tab active" onclick="showTab('checkin', event)" data-i18n="nav.daily_checkin">Daily Check-in</div>
+        <div class="nav-tab" onclick="showTab('overview', event)" data-i18n="nav.overview">Overview</div>
         <div class="nav-tab" onclick="showTab('progress', event)" data-i18n="nav.progress">Progress</div>
         <div class="nav-tab" onclick="showTab('goals', event)" data-i18n="nav.goals">Goals</div>
         <div class="nav-tab" onclick="showTab('task', event)" data-i18n="nav.task">task</div>
@@ -957,8 +1021,8 @@ window.addEventListener('load', function() {
     <!-- Success/Error Messages -->
     <div id="messageContainer"></div>
 
-    <!-- Overview Tab -->
-    <div id="overview" class="tab-content active">
+      <!-- Overview Tab -->
+    <div id="overview" class="tab-content">
         <div class="welcome-card">
             <h2 id="welcomeMessage" data-i18n="dashboard.welcome">Welcome back!</h2>
             <p id="encouragementMessage" data-i18n="client.encouragement">Your journey to wellness continues. Every step counts!</p>
@@ -1040,8 +1104,8 @@ window.addEventListener('load', function() {
         </div>
     </div>
 
-    <!-- Check-in Tab -->
-    <div id="checkin" class="tab-content">
+        <!-- Check-in Tab -->
+    <div id="checkin" class="tab-content active">
         <h2 data-i18n="checkin.title">Daily Check-in</h2>
 
         <!-- Date Selection -->
@@ -2903,6 +2967,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         setTimeout(() => {
             checkHistoricalCrisisPatterns();
         }, 1000); // Give a small delay to ensure everything is loaded
+
+        // Show check-in tab first
+        showTab('checkin');
 
         // Start session keep-alive
         startSessionKeepAlive();
