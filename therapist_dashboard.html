@@ -1159,14 +1159,14 @@
         <div id="taskAssignmentForm" style="display: none;">
             <div class="form-group">
                 <label for="taskType" data-i18n="therapist.task_type">task Type:</label>
-                <select id="taskType" class="form-input" onchange="updatetaskTemplate()">
-                    <option value="">Select type...</option>
-                    <option value="thoughtRecord">CBT Thought Record</option>
-                    <option value="distressTolerance">DBT Distress Tolerance</option>
-                    <option value="behavioralActivation">Behavioral Activation</option>
-                    <option value="exposureLog">Exposure Log</option>
-                    <option value="customAssignment">Custom Assignment</option>
-                </select>
+            <select id="taskType" class="form-input" onchange="updatetaskTemplate()">
+    <option value="" data-i18n="task.select_type">Select type...</option>
+    <option value="thoughtRecord" data-i18n="task.type.thought_record">CBT Thought Record</option>
+    <option value="distressTolerance" data-i18n="task.type.distress_tolerance">DBT Distress Tolerance</option>
+    <option value="behavioralActivation" data-i18n="task.type.behavioral_activation">Behavioral Activation</option>
+    <option value="exposureLog" data-i18n="task.type.exposure_log">Exposure Log</option>
+    <option value="customAssignment" data-i18n="task.type.custom_assignment">Custom Assignment</option>
+</select>
             </div>
 
             <div class="form-group">
@@ -1495,6 +1495,19 @@
                 'therapist.confirm_unsubscribe_weekly': 'Are you sure you want to unsubscribe from weekly report emails?',
                 'therapist.unsubscribed_weekly': 'Successfully unsubscribed from weekly reports',
                 'therapist.critical_insights_overview': 'Critical Insights Requiring Attention',
+                'task.type.thought_record': 'CBT Thought Record',
+'task.type.distress_tolerance': 'DBT Distress Tolerance',
+'task.type.behavioral_activation': 'Behavioral Activation',
+'task.type.exposure_log': 'Exposure Log',
+'task.type.custom_assignment': 'Custom Assignment',
+'task.due': 'Due',
+'task.completed_on': 'Completed on',
+'task.view_submission': 'View Submission',
+'task.no_tasks': 'No tasks assigned yet',
+'task.completed_status': 'Completed',
+
+// Task type selection
+'task.select_type': 'Select type...',
 'therapist.loading_critical_insights': 'Loading critical insights...',
 'therapist.no_critical_insights': 'No critical insights at this time. All clients are doing well!',
 'therapist.view_client_details': 'View Details',
@@ -1662,6 +1675,22 @@
                 'therapist.temp_password_label': 'סיסמה זמנית',
                 'therapist.custom_categories_management': 'ניהול קטגוריות מותאמות אישית',
                 'therapist.unsubscribe_weekly': 'בטל רישום',
+// Task types
+'task.type.thought_record': 'רישום מחשבות CBT',
+'task.type.distress_tolerance': 'סבילות למצוקה DBT',
+'task.type.behavioral_activation': 'הפעלה התנהגותית',
+'task.type.exposure_log': 'יומן חשיפה',
+'task.type.custom_assignment': 'משימה מותאמת אישית',
+
+// Task status strings
+'task.due': 'תאריך יעד',
+'task.completed_on': 'הושלם בתאריך',
+'task.view_submission': 'צפה בהגשה',
+'task.no_tasks': 'עדיין לא הוקצו משימות',
+'task.completed_status': 'הושלם',
+
+// Task type selection
+'task.select_type': 'בחר סוג...',
 'therapist.confirm_unsubscribe_weekly': 'האם אתה בטוח שברצונך לבטל את הרישום לדוחות שבועיים?',
 'therapist.unsubscribed_weekly': 'הרישום לדוחות שבועיים בוטל בהצלחה',
 'therapist.critical_insights_overview': 'תובנות קריטיות הדורשות התייחסות',
@@ -1918,6 +1947,22 @@
                 'therapist.persistent_sleep': 'Постоянные проблемы со сном',
                 'therapist.add_goal': 'Добавить цель',
                 'therapist.delete_client': 'Удалить',
+                // Task types
+'task.type.thought_record': 'КПТ Дневник мыслей',
+'task.type.distress_tolerance': 'ДПТ Переносимость дистресса',
+'task.type.behavioral_activation': 'Поведенческая активация',
+'task.type.exposure_log': 'Журнал экспозиции',
+'task.type.custom_assignment': 'Индивидуальное задание',
+
+// Task status strings
+'task.due': 'Срок',
+'task.completed_on': 'Выполнено',
+'task.view_submission': 'Просмотреть ответ',
+'task.no_tasks': 'Задания пока не назначены',
+'task.completed_status': 'Выполнено',
+
+// Task type selection
+'task.select_type': 'Выберите тип...',
 'therapist.confirm_delete_client': 'Вы уверены, что хотите удалить клиента {name}? Это действие нельзя отменить.',
 'therapist.confirm_delete_permanent': 'Это навсегда удалит все данные клиента, включая отметки, цели и заметки. Вы абсолютно уверены?',
 'therapist.deleting_client': 'Удаление клиента...',
@@ -2097,6 +2142,21 @@
                 'therapist.non_adherent_percent': '{percent}% أيام عدم الالتزام',
                 'therapist.custom_categories_management': 'إدارة الفئات المخصصة',
     'therapist.current_custom_categories': 'الفئات المخصصة الحالية',
+    'task.type.thought_record': 'سجل الأفكار CBT',
+'task.type.distress_tolerance': 'تحمل الضيق DBT',
+'task.type.behavioral_activation': 'التنشيط السلوكي',
+'task.type.exposure_log': 'سجل التعرض',
+'task.type.custom_assignment': 'مهمة مخصصة',
+
+// Task status strings
+'task.due': 'موعد التسليم',
+'task.completed_on': 'اكتملت في',
+'task.view_submission': 'عرض الإجابة',
+'task.no_tasks': 'لم يتم تعيين مهام بعد',
+'task.completed_status': 'مكتملة',
+
+// Task type selection
+'task.select_type': 'اختر النوع...',
     'therapist.no_custom_categories': 'لم يتم إضافة فئات مخصصة',
     'therapist.add_custom_category_existing': 'إضافة فئات مخصصة',
     'therapist.max_custom_categories_reached': 'تم الوصول إلى الحد الأقصى للفئات المخصصة',
@@ -4989,7 +5049,7 @@ async function loadClienttaskStatus() {
     const statusDiv = document.getElementById('clienttaskStatus');
 
     if (!clientId) {
-        statusDiv.innerHTML = '<p style="color: #666;">Select a client to view their task status</p>';
+        statusDiv.innerHTML = `<p style="color: #666;">${i18n.t('therapist.select_client_status')}</p>`;
         document.getElementById('taskAssignmentForm').style.display = 'none';
         return;
     }
@@ -5005,32 +5065,37 @@ async function loadClienttaskStatus() {
             const data = await response.json();
 
             if (data.assignments.length === 0) {
-                statusDiv.innerHTML = '<p style="color: #666;">No task assigned yet</p>';
+                statusDiv.innerHTML = `<p style="color: #666;">${i18n.t('task.no_tasks')}</p>`;
             } else {
-                statusDiv.innerHTML = data.assignments.map(hw => `
+                statusDiv.innerHTML = data.assignments.map(hw => {
+                    const dueDateText = hw.due_date ? new Date(hw.due_date).toLocaleDateString() : i18n.t('msg.no_due_date', 'No due date');
+                    const completedDateText = new Date(hw.completed_at).toLocaleString();
+
+                    return `
                     <div style="padding: 1rem; background: ${hw.completed ? '#e8f5e9' : '#f5f5f5'}; border-radius: 8px; margin-bottom: 0.5rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
                                 <strong>${hw.title}</strong>
-                                ${hw.completed ? '<span style="color: #4caf50; margin-left: 1rem;">✓ Completed</span>' : ''}
+                                ${hw.completed ? `<span style="color: #4caf50; margin-left: 1rem;">✔ ${i18n.t('task.completed_status')}</span>` : ''}
                             </div>
-                            <small style="color: #666;">Due: ${hw.due_date ? new Date(hw.due_date).toLocaleDateString() : 'No due date'}</small>
+                            <small style="color: #666;">${i18n.t('task.due')}: ${dueDateText}</small>
                         </div>
                         ${hw.completed ? `
                             <div style="margin-top: 0.5rem;">
-                                <small style="color: #666;">Completed on: ${new Date(hw.completed_at).toLocaleString()}</small>
+                                <small style="color: #666;">${i18n.t('task.completed_on')}: ${completedDateText}</small>
                                 <button class="btn btn-primary btn-small" style="margin-left: 1rem;" onclick="viewtaskSubmission(${hw.id})">
-                                    View Submission
+                                    ${i18n.t('task.view_submission')}
                                 </button>
                             </div>
                         ` : ''}
                     </div>
-                `).join('');
+                    `;
+                }).join('');
             }
         }
     } catch (error) {
         console.error('Error loading task status:', error);
-        statusDiv.innerHTML = '<p style="color: #f44336;">Error loading task status</p>';
+        statusDiv.innerHTML = `<p style="color: #f44336;">${i18n.t('msg.error_loading', 'Error loading task status')}</p>`;
     }
 }
 
@@ -5180,5 +5245,5 @@ window.showTab = function(tabName) {
         }, 250);
     });
 </script>
-</body>
+</body> <!-- End container -->
 </html>
