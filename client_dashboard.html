@@ -1203,6 +1203,21 @@ window.addEventListener('load', function() {
     visibility: hidden !important;
 }
 
+ /* Add this to hide browser's week text */
+    input[type="week"]::-webkit-inner-spin-button,
+    input[type="week"]::-webkit-calendar-picker-indicator {
+        display: none;
+    }
+    input[type="week"] {
+        color: transparent;
+        text-shadow: 0 0 0 #000;
+    }
+    input[type="week"]:focus {
+        color: initial;
+        text-shadow: initial;
+    }
+
+
     </style>
 </head>
 <body>
@@ -3280,9 +3295,17 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Update the date status with new translation
     const checkinDateElement = document.getElementById('checkinDate');
-    if (checkinDateElement && checkinDateElement.value) {
-        checkDateStatus(new Date(checkinDateElement.value));
-    }
+if (checkinDateElement && checkinDateElement.value) {
+    // Parse the date value properly (YYYY-MM-DD format)
+    const dateParts = checkinDateElement.value.split('-');
+    const selectedDate = new Date(
+        parseInt(dateParts[0]),
+        parseInt(dateParts[1]) - 1,
+        parseInt(dateParts[2])
+    );
+    selectedDate.setHours(0, 0, 0, 0); // Reset time to midnight
+    checkDateStatus(selectedDate);
+}
 
     // Update progress chart if on progress tab
     const progressTab = document.getElementById('progress');
@@ -3827,22 +3850,25 @@ dayCell.appendChild(statusIconDiv);
         }
 function checkDateStatus(date) {
     const statusSpan = document.getElementById('checkinDateStatus');
-    const dateStr = date.toDateString();
-    const todayStr = new Date().toDateString();
 
-    // Create dates without time for comparison
-    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const todayOnly = new Date();
-    todayOnly.setHours(0, 0, 0, 0);
+    // Normalize dates to midnight for comparison
+    const selectedDate = new Date(date);
+    selectedDate.setHours(0, 0, 0, 0);
 
-    if (dateStr === todayStr) {
-        statusSpan.textContent = i18n.t('client.today_marker');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const selectedTime = selectedDate.getTime();
+    const todayTime = today.getTime();
+
+    if (selectedTime === todayTime) {
+        statusSpan.textContent = i18n.t('client.today_marker', '(Today)');
         statusSpan.style.color = '#667eea';
-    } else if (dateOnly < todayOnly) {  // Use dateOnly instead of date
-        statusSpan.textContent = i18n.t('client.past_date');
+    } else if (selectedTime < todayTime) {
+        statusSpan.textContent = i18n.t('client.past_date', '(Past date)');
         statusSpan.style.color = '#999';
     } else {
-        statusSpan.textContent = i18n.t('client.future_date');
+        statusSpan.textContent = i18n.t('client.future_date', '(Future date)');
         statusSpan.style.color = '#f44336';
     }
 }
