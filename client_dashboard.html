@@ -2032,6 +2032,7 @@ window.addEventListener('load', function() {
                 'checkin.med_na': 'N/A',
                 'checkin.med_no': 'No',
                 'checkin.med_partial': 'Partial',
+                'goals.week':'Week',
                 'checkin.med_yes': 'Yes'
             });
 
@@ -2183,6 +2184,7 @@ window.addEventListener('load', function() {
 
                 'nav.settings': 'הגדרות',
                 'client.account_settings': 'הגדרות חשבון',
+                'client.no_goals_week': 'לא נקבעו מטרות לשבוע זה',
                 'client.change_password': 'שינוי סיסמה',
                 'client.password_requirements': 'הסיסמה חייבת להיות באורך של לפחות 12 תווים.',
                 'client.current_password': 'סיסמה נוכחית',
@@ -2273,6 +2275,7 @@ window.addEventListener('load', function() {
                 'checkin.med_na': 'לא רלוונטי',
                 'checkin.med_no': 'לא',
                 'checkin.med_partial': 'חלקי',
+                'goals.week': 'שבוע',
                 'checkin.med_yes': 'כן'
             });
 
@@ -2302,6 +2305,7 @@ window.addEventListener('load', function() {
 'client.today_marker': '(Сегодня)',
                 'client.past_date': '(Прошедшая дата)',
                 'client.future_date': '(Будущая дата)',
+                'client.no_goals_week': 'На эту неделю цели не установлены.',
 'client.notes': 'Заметки:',
 'btn.close': 'Закрыть',
     'crisis.use_phone_now': 'Используйте свой телефон, чтобы позвонить или написать им сейчас.',
@@ -2511,6 +2515,7 @@ window.addEventListener('load', function() {
                 'checkin.med_na': 'Н/Д',
                 'checkin.med_no': 'Нет',
                 'checkin.med_partial': 'Частично',
+                'goals.week': 'неделя',
                 'checkin.med_yes': 'Да'
             });
 
@@ -2536,6 +2541,7 @@ window.addEventListener('load', function() {
 'client.previous_checkin': 'بيانات تسجيل الحضور السابق',
 'client.no_checkin_found': 'لم يتم العثور على تسجيل حضور لهذا التاريخ',
 'client.notes': 'ملاحظات:',
+'client.no_goals_week': 'لم يتم تحديد أي أهداف لهذا الأسبوع',
 'client.today_marker': '(اليوم)',
                 'client.past_date': '(التاريخ الماضي)',
                 'client.future_date': '(تاريخ المستقبل)',
@@ -2749,6 +2755,7 @@ window.addEventListener('load', function() {
                 'checkin.med_na': 'غير متاح',
                 'checkin.med_no': 'لا',
                 'checkin.med_partial': 'جزئي',
+                 'goals.week': 'أسبوع',
                 'checkin.med_yes': 'نعم'
             });
 
@@ -3038,7 +3045,8 @@ window.addEventListener('load', function() {
                 card.className = 'card';
                 const p = document.createElement('p');
                 p.style.cssText = 'color: #666; text-align: center;';
-                p.textContent = i18n.translations[i18n.currentLang]['task.no_assignments'] || 'No task assignments yet';
+                p.setAttribute('data-i18n', 'task.no_assignments');
+                p.textContent = i18n.t('task.no_assignments', 'No task assignments yet');
                 card.appendChild(p);
                 content.appendChild(card);
                 return;
@@ -3817,23 +3825,27 @@ dayCell.appendChild(statusIconDiv);
             document.getElementById('checkinDate').value = today.toISOString().split('T')[0];
             checkDateStatus(today);
         }
+function checkDateStatus(date) {
+    const statusSpan = document.getElementById('checkinDateStatus');
+    const dateStr = date.toDateString();
+    const todayStr = new Date().toDateString();
 
-        function checkDateStatus(date) {
-            const statusSpan = document.getElementById('checkinDateStatus');
-            const dateStr = date.toDateString();
-            const todayStr = new Date().toDateString();
+    // Create dates without time for comparison
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const todayOnly = new Date();
+    todayOnly.setHours(0, 0, 0, 0);
 
-            if (dateStr === todayStr) {
-                statusSpan.textContent = i18n.t('client.today_marker');
-                statusSpan.style.color = '#667eea';
-            } else if (date < new Date()) {
-                statusSpan.textContent = i18n.t('client.past_date');
-                statusSpan.style.color = '#999';
-            } else {
-                statusSpan.textContent = i18n.t('client.future_date');
-                statusSpan.style.color = '#f44336';
-            }
-        }
+    if (dateStr === todayStr) {
+        statusSpan.textContent = i18n.t('client.today_marker');
+        statusSpan.style.color = '#667eea';
+    } else if (dateOnly < todayOnly) {  // Use dateOnly instead of date
+        statusSpan.textContent = i18n.t('client.past_date');
+        statusSpan.style.color = '#999';
+    } else {
+        statusSpan.textContent = i18n.t('client.future_date');
+        statusSpan.style.color = '#f44336';
+    }
+}
 
                 function selectRating(button) {
             const category = button.dataset.category;
@@ -4599,8 +4611,8 @@ loadDashboard();
             // Update label
             const weekEnd = new Date(weekStart);
             weekEnd.setDate(weekEnd.getDate() + 6);
-            document.getElementById('goalsWeekLabel').textContent =
-                `${i18n.t('goals.text')} ${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`;
+           document.getElementById('goalsWeekLabel').textContent =
+    `${i18n.t('goals.week', 'Week')} ${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`;
 
             // For now, show the goals from dashboard data if they match the week
             const goalsList = document.getElementById('goalsList');
