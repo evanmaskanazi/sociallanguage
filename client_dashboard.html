@@ -1737,7 +1737,7 @@ window.addEventListener('load', function() {
                 'client.week_goals': 'This Week\'s Goals',
                 'client.select_date': 'Select Date:',
                 'client.checkin_intro': 'Take a moment to reflect on your day. Your responses help track your progress.',
-                'client.notes_placeholder': 'Any thoughts about {category}? (optional)',
+                'client.notes_placeholder': '`Any thoughts about ${translateCategoryName(cat.original_name || cat.name)}?` (optional)',
                 'client.submit_checkin': 'Submit Check-in',
                 'client.clear_form': 'Clear',
                 'client.select_week': 'Select Week:',
@@ -1956,7 +1956,7 @@ window.addEventListener('load', function() {
                 'client.week_goals': 'היעדים השבועיים',
                 'client.select_date': 'בחר תאריך:',
                 'client.checkin_intro': 'קח רגע לחשוב על היום שלך. התשובות שלך עוזרות לעקוב אחר ההתקדמות.',
-                'client.notes_placeholder': 'מחשבות על {category}? (אופציונלי)',
+                'client.notes_placeholder': 'מחשבות על ${translateCategoryName(cat.original_name || cat.name)}? (אופציונלי)',
                 'client.submit_checkin': 'שלח צ׳ק-אין',
                 'client.clear_form': 'נקה',
                 'client.select_week': 'בחר שבוע:',
@@ -2179,7 +2179,7 @@ window.addEventListener('load', function() {
                 'client.week_goals': 'Цели на эту неделю',
                 'client.select_date': 'Выберите дату:',
                 'client.checkin_intro': 'Уделите время размышлениям о вашем дне. Ваши ответы помогают отслеживать прогресс.',
-                'client.notes_placeholder': 'Мысли о {category}? (необязательно)',
+                'client.notes_placeholder': 'Мысли о ${translateCategoryName(cat.original_name || cat.name)}? (необязательно)',
                 'client.submit_checkin': 'Отправить отметку',
                 'client.clear_form': 'Очистить',
                 'client.select_week': 'Выберите неделю:',
@@ -2399,7 +2399,7 @@ window.addEventListener('load', function() {
                 'client.week_goals': 'أهداف هذا الأسبوع',
                 'client.select_date': 'اختر التاريخ:',
                 'client.checkin_intro': 'خذ لحظة للتفكير في يومك. إجاباتك تساعد في تتبع تقدمك.',
-                'client.notes_placeholder': 'أي أفكار حول {category}؟ (اختياري)',
+                'client.notes_placeholder': 'أي أفكار حول ${translateCategoryName(cat.original_name || cat.name)} ؟ (اختياري)   ',
                 'client.submit_checkin': 'إرسال تسجيل الحضور',
                 'client.clear_form': 'مسح',
                 'client.select_week': 'اختر الأسبوع:',
@@ -6046,12 +6046,12 @@ function calculateAchievements() {
     const currentStreak = clientData.current_streak || 0;
 
     const streakAchievements = [
-        { days: 3, name: 'Getting Started', icon: '🌱', description: '3-day streak' },
-        { days: 7, name: 'Week Warrior', icon: '⭐', description: '7-day streak' },
-        { days: 14, name: 'Fortnight Focus', icon: '🔥', description: '14-day streak' },
-        { days: 30, name: 'Monthly Master', icon: '🏆', description: '30-day streak' },
-        { days: 90, name: 'Quarter Champion', icon: '👑', description: '90-day streak' }
-    ];
+    { days: 3, name: i18n.t('achievements.getting_started', 'Getting Started'), icon: '🌱', description: i18n.t('achievements.3_day_streak', '3-day streak') },
+    { days: 7, name: i18n.t('achievements.week_warrior', 'Week Warrior'), icon: '⭐', description: i18n.t('achievements.7_day_streak', '7-day streak') },
+    { days: 14, name: i18n.t('achievements.fortnight_focus', 'Fortnight Focus'), icon: '🔥', description: i18n.t('achievements.14_day_streak', '14-day streak') },
+    { days: 30, name: i18n.t('achievements.monthly_master', 'Monthly Master'), icon: '🏆', description: i18n.t('achievements.30_day_streak', '30-day streak') },
+    { days: 90, name: i18n.t('achievements.quarter_champion', 'Quarter Champion'), icon: '👑', description: i18n.t('achievements.90_day_streak', '90-day streak') }
+];
 
     for (const achievement of streakAchievements) {
         if (currentStreak >= achievement.days) {
@@ -6071,29 +6071,29 @@ function calculateAchievements() {
     const weekCompletions = clientData.week_checkins_count || 0;
 
     if (weekCompletions === 7) {
-        earned.push({
-            name: 'Perfect Week',
-            icon: '💯',
-            description: 'Completed all 7 days this week',
-            isNew: true
-        });
-    } else if (weekCompletions >= 5) {
-        earned.push({
-            name: 'Consistent Week',
-            icon: '📅',
-            description: 'Completed 5+ days this week'
-        });
+         earned.push({
+        name: i18n.t('achievements.perfect_week', 'Perfect Week'),
+        icon: '💯',
+        description: i18n.t('achievements.completed_7_days', 'Completed all 7 days this week'),
+        isNew: true
+    });
+} else if (weekCompletions >= 5) {
+    earned.push({
+        name: i18n.t('achievements.consistent_week', 'Consistent Week'),
+        icon: '📅',
+        description: i18n.t('achievements.completed_5_days', 'Completed 5+ days this week')
+    });
     }
 
     // Check total checkins (would need API support)
     const totalCheckins = parseInt(document.querySelector('#quickStats p')?.textContent?.match(/\d+/)?.[0] || '0');
 
-    const totalAchievements = [
-        { total: 10, name: 'First Steps', icon: '👣' },
-        { total: 50, name: 'Dedicated', icon: '💪' },
-        { total: 100, name: 'Century', icon: '💯' },
-        { total: 365, name: 'Year-Round', icon: '🌟' }
-    ];
+   const totalAchievements = [
+    { total: 10, name: i18n.t('achievements.first_steps', 'First Steps'), icon: '👣' },
+    { total: 50, name: i18n.t('achievements.dedicated', 'Dedicated'), icon: '💪' },
+    { total: 100, name: i18n.t('achievements.century', 'Century'), icon: '💯' },
+    { total: 365, name: i18n.t('achievements.year_round', 'Year-Round'), icon: '🌟' }
+];
 
     for (const achievement of totalAchievements) {
         if (totalCheckins >= achievement.total) {
