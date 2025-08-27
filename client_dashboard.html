@@ -3275,6 +3275,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (checkinDateElement && checkinDateElement.value) {
         checkDateStatus(new Date(checkinDateElement.value));
     }
+
+    // Update progress chart if on progress tab
+    const progressTab = document.getElementById('progress');
+    if (progressTab && progressTab.classList.contains('active')) {
+        loadProgressWithRetry();
+    }
+
+    // Update consent display if on consent tab
+    const consentTab = document.getElementById('consent');
+    if (consentTab && consentTab.classList.contains('active')) {
+        loadConsentStatus();
+    }
 });
 } catch (error) {
     console.error('Initialization error:', error);
@@ -5024,13 +5036,17 @@ function generateProgressInsights(checkins) {
 
 function displayInsights(insights) {
     const container = document.getElementById('progressInsights');
+    container.innerHTML = ''; // Clear existing
 
     if (insights.length === 0) {
-        container.innerHTML = '<p style="color: #666;">No insights available yet.</p>';
+        const p = document.createElement('p');
+        p.style.color = '#666';
+        p.textContent = 'No insights available yet.';
+        container.appendChild(p);
         return;
     }
 
-    container.innerHTML = insights.map(insight => {
+    insights.forEach(insight => {
         let icon, color;
         switch(insight.type) {
             case 'positive':
@@ -5047,13 +5063,21 @@ function displayInsights(insights) {
                 color = '#2196f3';
         }
 
-        return `
-            <div style="margin-bottom: 1rem; padding: 0.75rem; background: ${color}15; border-left: 3px solid ${color}; border-radius: 4px;">
-                <span style="font-size: 1.2rem; margin-right: 0.5rem;">${icon}</span>
-                <span style="color: #333;">${insight.text}</span>
-            </div>
-        `;
-    }).join('');
+        const div = document.createElement('div');
+        div.style.cssText = `margin-bottom: 1rem; padding: 0.75rem; background: ${color}15; border-left: 3px solid ${color}; border-radius: 4px;`;
+
+        const iconSpan = document.createElement('span');
+        iconSpan.style.cssText = 'font-size: 1.2rem; margin-right: 0.5rem;';
+        iconSpan.textContent = icon;
+
+        const textSpan = document.createElement('span');
+        textSpan.style.color = '#333';
+        textSpan.textContent = insight.text;
+
+        div.appendChild(iconSpan);
+        div.appendChild(textSpan);
+        container.appendChild(div);
+    });
 }
 
 
@@ -5900,51 +5924,73 @@ credentials: 'include',  // Add this
 
 
 
-       function displayConsents(consents) {
+      function displayConsents(consents) {
     const container = document.getElementById('consentsList');
+    container.innerHTML = ''; // Clear existing
 
     const consentTypes = {
         'data_sharing': {
-            title: i18n.t('consent.data_sharing', 'Data Sharing with Healthcare Providers'),
-            desc: i18n.t('consent.data_sharing_desc', 'Allow your therapist to share your progress data with other healthcare providers involved in your care')
+            titleKey: 'consent.data_sharing',
+            titleDefault: 'Data Sharing with Healthcare Providers',
+            descKey: 'consent.data_sharing_desc',
+            descDefault: 'Allow your therapist to share your progress data with other healthcare providers involved in your care'
         },
         'treatment': {
-            title: i18n.t('consent.treatment', 'Treatment Data Collection'),
-            desc: i18n.t('consent.treatment_desc', 'Allow collection and analysis of your check-in data for treatment purposes')
+            titleKey: 'consent.treatment',
+            titleDefault: 'Treatment Data Collection',
+            descKey: 'consent.treatment_desc',
+            descDefault: 'Allow collection and analysis of your check-in data for treatment purposes'
         },
         'communication': {
-            title: i18n.t('consent.communication', 'Email Communications'),
-            desc: i18n.t('consent.communication_desc', 'Receive email reminders and updates about your therapy progress')
+            titleKey: 'consent.communication',
+            titleDefault: 'Email Communications',
+            descKey: 'consent.communication_desc',
+            descDefault: 'Receive email reminders and updates about your therapy progress'
         }
     };
 
-    let html = '';
     for (const [type, status] of Object.entries(consents)) {
-        const checked = status.consented ? 'checked' : '';
+        const checked = status.consented ? true : false;
         const date = status.date ? new Date(status.date).toLocaleDateString(i18n.currentLang) : i18n.t('consent.never', 'Never');
         const consentInfo = consentTypes[type];
 
-        html += `
-            <div class="form-group" style="padding: 1.5rem; background: #f8f9fa; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #e0e0e0;">
-                <label style="display: flex; align-items: flex-start; gap: 1rem; cursor: pointer;">
-                    <input type="checkbox" ${checked} onchange="updateConsent('${type}', this.checked)" style="width: 20px; height: 20px; margin-top: 4px; flex-shrink: 0;">
-                    <div style="flex: 1;">
-                        <strong style="display: block; margin-bottom: 0.5rem; color: #2c3e50; font-size: 1.1rem;">
-                            ${consentInfo.title}
-                        </strong>
-                        <p style="margin: 0 0 0.5rem 0; color: #666; line-height: 1.5;">
-                            ${consentInfo.desc}
-                        </p>
-                        <small style="display: block; color: #999;">
-                            ${i18n.t('consent.last_updated', 'Last updated')}: ${date}
-                        </small>
-                    </div>
-                </label>
-            </div>
-        `;
-    }
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'form-group';
+        groupDiv.style.cssText = 'padding: 1.5rem; background: #f8f9fa; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #e0e0e0;';
 
-    container.innerHTML = html;
+        const label = document.createElement('label');
+        label.style.cssText = 'display: flex; align-items: flex-start; gap: 1rem; cursor: pointer;';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = checked;
+        checkbox.onchange = function() { updateConsent(type, this.checked); };
+        checkbox.style.cssText = 'width: 20px; height: 20px; margin-top: 4px; flex-shrink: 0;';
+
+        const contentDiv = document.createElement('div');
+        contentDiv.style.flex = '1';
+
+        const strong = document.createElement('strong');
+        strong.style.cssText = 'display: block; margin-bottom: 0.5rem; color: #2c3e50; font-size: 1.1rem;';
+        strong.textContent = i18n.t(consentInfo.titleKey, consentInfo.titleDefault);
+
+        const descP = document.createElement('p');
+        descP.style.cssText = 'margin: 0 0 0.5rem 0; color: #666; line-height: 1.5;';
+        descP.textContent = i18n.t(consentInfo.descKey, consentInfo.descDefault);
+
+        const small = document.createElement('small');
+        small.style.cssText = 'display: block; color: #999;';
+        small.textContent = `${i18n.t('consent.last_updated', 'Last updated')}: ${date}`;
+
+        contentDiv.appendChild(strong);
+        contentDiv.appendChild(descP);
+        contentDiv.appendChild(small);
+
+        label.appendChild(checkbox);
+        label.appendChild(contentDiv);
+        groupDiv.appendChild(label);
+        container.appendChild(groupDiv);
+    }
 }
 
      async function updateConsent(consentType, consented) {
