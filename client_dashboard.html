@@ -3038,7 +3038,7 @@ window.addEventListener('load', function() {
                 card.className = 'card';
                 const p = document.createElement('p');
                 p.style.cssText = 'color: #666; text-align: center;';
-                p.textContent = i18n.t('task.no_assignments', 'No task assignments yet');
+                p.textContent = i18n.translations[i18n.currentLang]['task.no_assignments'] || 'No task assignments yet';
                 card.appendChild(p);
                 content.appendChild(card);
                 return;
@@ -5894,33 +5894,34 @@ credentials: 'include',  // Add this
             const testReminderBtn = document.getElementById('testReminderBtn');
             if (testReminderBtn) {
                 testReminderBtn.addEventListener('click', testReminder);
+
             }
         });
 
 
 
-        function displayConsents(consents) {
+       function displayConsents(consents) {
     const container = document.getElementById('consentsList');
 
     const consentTypes = {
         'data_sharing': {
-            title: i18n.t('consent.data_sharing'),
-            desc: i18n.t('consent.data_sharing_desc')
+            title: i18n.t('consent.data_sharing', 'Data Sharing with Healthcare Providers'),
+            desc: i18n.t('consent.data_sharing_desc', 'Allow your therapist to share your progress data with other healthcare providers involved in your care')
         },
         'treatment': {
-            title: i18n.t('consent.treatment'),
-            desc: i18n.t('consent.treatment_desc')
+            title: i18n.t('consent.treatment', 'Treatment Data Collection'),
+            desc: i18n.t('consent.treatment_desc', 'Allow collection and analysis of your check-in data for treatment purposes')
         },
         'communication': {
-            title: i18n.t('consent.communication'),
-            desc: i18n.t('consent.communication_desc')
+            title: i18n.t('consent.communication', 'Email Communications'),
+            desc: i18n.t('consent.communication_desc', 'Receive email reminders and updates about your therapy progress')
         }
     };
 
     let html = '';
     for (const [type, status] of Object.entries(consents)) {
         const checked = status.consented ? 'checked' : '';
-        const date = status.date ? new Date(status.date).toLocaleDateString(i18n.currentLang) : i18n.t('consent.never');
+        const date = status.date ? new Date(status.date).toLocaleDateString(i18n.currentLang) : i18n.t('consent.never', 'Never');
         const consentInfo = consentTypes[type];
 
         html += `
@@ -5935,7 +5936,7 @@ credentials: 'include',  // Add this
                             ${consentInfo.desc}
                         </p>
                         <small style="display: block; color: #999;">
-                            ${i18n.t('consent.last_updated')}: ${date}
+                            ${i18n.t('consent.last_updated', 'Last updated')}: ${date}
                         </small>
                     </div>
                 </label>
