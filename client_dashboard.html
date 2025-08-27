@@ -3170,7 +3170,9 @@ document.addEventListener('DOMContentLoaded', async function() {
          console.log('About to load dashboard...');
         await loadDashboard();
 //        setCurrentWeek();
-        setToday();
+        setTimeout(() => {
+    setToday();
+}, 100);
 
         // Make sure categories are loaded first
        console.log('About to setup categories...');
@@ -3196,19 +3198,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Fix account deletion visibility
 
 
-        window.addEventListener('languageChanged', function() {
-            console.log('Language changed in client dashboard');
-            // Reload the week view to update day names
-            loadWeekView();
-            // Re-setup categories with new translations
-            setupAllCategories();
-            // Update any other dynamic content
-            updateUI();
-        });
-    } catch (error) {
-        console.error('Initialization error:', error);
-        showMessage('Error loading dashboard', 'error');
+     window.addEventListener('languageChanged', function() {
+    console.log('Language changed in client dashboard');
+    // Reload the week view to update day names
+    loadWeekView();
+    // Re-setup categories with new translations
+    setupAllCategories();
+    // Update any other dynamic content
+    updateUI();
+
+    // Update the date status with new translation
+    const checkinDateElement = document.getElementById('checkinDate');
+    if (checkinDateElement && checkinDateElement.value) {
+        checkDateStatus(new Date(checkinDateElement.value));
     }
+});
+} catch (error) {
+    console.error('Initialization error:', error);
+    showMessage('Error loading dashboard', 'error');
+}
 });
 
 
