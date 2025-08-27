@@ -262,80 +262,304 @@ window.addEventListener('load', function() {
             font-size: 1rem;
         }
 
-          /* Calendar View */
-        .calendar-view {
-            background: white;
-            border-radius: 12px;
-            padding: 2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            margin-bottom: 2rem;
-            width: 100%;
-            box-sizing: border-box;
-        }
+         /* Calendar View */
+.calendar-view {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 2rem;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+}
 
-        .week-navigation {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-        }
+.week-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    width: 100%;
+}
 
-        .week-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 0.5rem;
-        }
+.week-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+    width: 100%;
+    box-sizing: border-box;
+}
 
-        .day-cell {
-            aspect-ratio: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            padding: 0.5rem;
-            text-align: center;
-        }
+.day-cell {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 0.5rem;
+    text-align: center;
+    box-sizing: border-box;
+}
 
-        .day-cell:hover {
-            border-color: #667eea;
-            transform: scale(1.05);
-        }
+.day-cell:hover {
+    border-color: #667eea;
+    transform: scale(1.05);
+}
 
-        .day-cell.selected {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-color: #667eea;
-        }
+.day-cell.selected {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: #667eea;
+}
 
-        .day-cell.completed {
-            background: #e8f5e9;
-            border-color: #4caf50;
-        }
+.day-cell.completed {
+    background: #e8f5e9;
+    border-color: #4caf50;
+}
 
-        .day-cell.missed {
-            background: #ffebee;
-            border-color: #f44336;
-        }
+.day-cell.missed {
+    background: #ffebee;
+    border-color: #f44336;
+}
 
-        .day-cell .day-name {
-            font-size: 0.875rem;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
+.day-cell .day-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
 
-        .day-cell .day-date {
-            font-size: 1.25rem;
-            font-weight: bold;
-        }
+.day-cell .day-date {
+    font-size: 1.25rem;
+    font-weight: bold;
+}
 
-        .day-cell .status-icon {
-            font-size: 1rem;
-            margin-top: 0.25rem;
-        }
+.day-cell .status-icon {
+    font-size: 1rem;
+    margin-top: 0.25rem;
+}
+
+/* Mobile-specific fixes for calendar */
+@media (max-width: 768px) {
+    .calendar-view {
+        padding: 1rem;
+        margin: 0 0.5rem 1rem 0.5rem;
+    }
+
+    .week-navigation {
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .week-grid {
+        gap: 0.25rem;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        min-width: 100%;
+    }
+
+    .day-cell {
+        min-width: 40px;
+        padding: 0.25rem;
+    }
+
+    .day-cell .day-name {
+        font-size: 0.7rem;
+    }
+
+    .day-cell .day-date {
+        font-size: 1rem;
+    }
+
+    .day-cell:hover {
+        transform: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .calendar-view {
+        padding: 0.75rem;
+    }
+
+    .week-navigation h3 {
+        font-size: 1.1rem;
+    }
+
+    .week-navigation button {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.875rem;
+    }
+
+    .day-cell {
+        min-width: 35px;
+        aspect-ratio: auto;
+        height: 60px;
+    }
+
+    .day-cell .day-name {
+        font-size: 0.65rem;
+        margin-bottom: 0.1rem;
+    }
+
+    .day-cell .day-date {
+        font-size: 0.9rem;
+    }
+
+    .day-cell .status-icon {
+        font-size: 0.8rem;
+        margin-top: 0.1rem;
+    }
+}
+
+
+
+/* Ensure proper containment for week header labels */
+.week-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.week-header-label {
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #666;
+}
+
+@media (max-width: 768px) {
+    .week-header {
+        gap: 0.25rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .week-header-label {
+        font-size: 0.75rem;
+        min-width: 40px;
+    }
+}
+
+@media (max-width: 480px) {
+    .week-header-label {
+        font-size: 0.65rem;
+        min-width: 35px;
+    }
+}
+
+
+/* Week section styles for overview tab */
+.week-section {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 2rem;
+}
+
+.week-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+}
+
+.day-box {
+    text-align: center;
+    padding: 1rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.day-box:hover {
+    border-color: #667eea;
+    transform: scale(1.05);
+}
+
+.day-box.today {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: #667eea;
+}
+
+.day-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.day-date {
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+/* Mobile fixes for week section */
+@media (max-width: 768px) {
+    .week-section {
+        padding: 1rem;
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+
+    .week-days {
+        gap: 0.25rem;
+    }
+
+    .day-box {
+        padding: 0.5rem 0.25rem;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    .day-name {
+        font-size: 0.7rem;
+    }
+
+    .day-date {
+        font-size: 1rem;
+    }
+
+    .day-box:hover {
+        transform: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .week-section {
+        padding: 0.75rem;
+    }
+
+    .week-section h3 {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
+
+    .week-days {
+        gap: 2px;
+    }
+
+    .day-box {
+        padding: 0.4rem 2px;
+    }
+
+    .day-name {
+        font-size: 0.6rem;
+    }
+
+    .day-date {
+        font-size: 0.85rem;
+    }
+}
+
+
 
         /* Daily Check-in Form */
         .checkin-form {
