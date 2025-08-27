@@ -1171,13 +1171,13 @@
 
             <div class="form-group">
                 <label for="taskTitle" data-i18n="therapist.task_title_label">Title:</label>
-                <input type="text" id="taskTitle" class="form-input" placeholder="e.g., Week 3 Thought Records">
+                <input type="text" id="taskTitle" class="form-input" data-i18n-placeholder="therapist.task_title_placeholder">
             </div>
 
             <div class="form-group">
                 <label for="taskDescription" data-i18n="therapist.task_description">Description/Instructions:</label>
-                <textarea id="taskDescription" class="notes-textarea" rows="4"
-                    placeholder="Provide specific instructions for the client..."></textarea>
+               <textarea id="taskDescription" class="notes-textarea" rows="4"
+    data-i18n-placeholder="therapist.task_description_placeholder"></textarea>
             </div>
 
             <div class="form-group">
@@ -1566,6 +1566,9 @@
 'therapist.dismiss': 'Dismiss',
 'therapist.declining_emotional': 'Declining Emotional State',
 'therapist.low_engagement': 'Low Engagement',
+'therapist.choose_client': 'Choose a client...',
+'therapist.task_title_placeholder': 'e.g., Week 3 Thought Records',
+'therapist.task_description_placeholder': 'Provide specific instructions for the client...',
 'therapist.medication_concerns': 'Medication Adherence Concerns',
 'therapist.positive_progress': 'Positive Progress',
 'therapist.trend_improving': 'Improving trend',
@@ -1767,6 +1770,9 @@
                 'therapist.all_categories_note': 'הערה: כל הקטגוריות נבחרות כברירת מחדל. בטל סימון של כל קטגוריה שאינך רוצה שהמטופל יעקוב אחריה.',
                 'therapist.view_client': 'צפה',
                 'therapist.ai_insights': 'תובנות לקוח מבוססות AI',
+                'therapist.choose_client': 'בחר מטופל...',
+'therapist.task_title_placeholder': 'לדוגמה: רישומי מחשבות שבוע 3',
+'therapist.task_description_placeholder': 'ספק הוראות ספציפיות למטופל...'
 'therapist.analyzing_patterns': 'מנתח דפוסי לקוח...',
 'therapist.no_insights': 'לא זוהו דפוסים משמעותיים כרגע.',
 'therapist.insights_update': 'התובנות מתעדכנות ככל שלקוחות מתעדים יותר צ\'ק-אינים.',
@@ -1841,6 +1847,9 @@
 'therapist.task_description': 'Описание/Инструкции:',
 'therapist.due_date': 'Срок выполнения:',
 'therapist.assign_btn': 'Назначить задание',
+'therapist.choose_client': 'Выберите клиента...',
+'therapist.task_title_placeholder': 'например, Записи мыслей неделя 3',
+'therapist.task_description_placeholder': 'Предоставьте конкретные инструкции для клиента...',
 'therapist.task_status': 'Статус заданий клиента',
 'reports.past_seven_days': 'В отчете будут показаны последние 7 дней',
 'therapist.please_select_client': 'Пожалуйста, выберите клиента',
@@ -2080,6 +2089,9 @@
                 'category.emotion_level': 'المستوى العاطفي',
                 'reports.week_note': 'سيعرض التقرير الأيام السبعة السابقة لنهاية هذا الأسبوع',
                'nav.task': 'المهام',
+               'therapist.choose_client': 'اختر عميلاً...',
+'therapist.task_title_placeholder': 'مثال: سجلات الأفكار الأسبوع 3',
+'therapist.task_description_placeholder': 'قدم تعليمات محددة للعميل...',
 'therapist.task_title': 'إدارة المهام',
 'therapist.assign_task': 'تعيين مهمة',
 'therapist.select_client': 'اختر العميل:',
@@ -2496,6 +2508,17 @@ window.fetch = async function(...args) {
             document.querySelector('.search-input').placeholder = i18n.t('therapist.search_placeholder');
             document.getElementById('tempPassword').placeholder = i18n.t('therapist.auto_generate_note');
             document.querySelector('#initialGoalsContainer input').placeholder = i18n.t('therapist.goal_placeholder');
+
+              // Add task placeholders
+    const taskTitle = document.getElementById('taskTitle');
+    if (taskTitle) {
+        taskTitle.placeholder = i18n.t('therapist.task_title_placeholder');
+    }
+
+    const taskDesc = document.getElementById('taskDescription');
+    if (taskDesc) {
+        taskDesc.placeholder = i18n.t('therapist.task_description_placeholder');
+    }
         }
 
                window.addEventListener('languageChanged', function() {
@@ -4964,7 +4987,7 @@ async function loadtaskClients() {
         const allClients = await fetchAllClients();
 
         const select = document.getElementById('taskClientSelect');
-        select.innerHTML = '<option value="">Choose a client...</option>';
+        select.innerHTML = `<option value="">${i18n.t('therapist.choose_client')}</option>`;
 
         allClients.forEach(client => {
             const option = document.createElement('option');

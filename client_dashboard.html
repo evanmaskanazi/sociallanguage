@@ -1431,166 +1431,220 @@ window.addEventListener('load', function() {
 
 
 
-         <!-- Therapy task Tab -->
-    <div id="task" class="tab-content">
-        <h2 data-i18n="task.title">Therapy task</h2>
+      <!-- Therapy task Tab -->
+<div id="task" class="tab-content">
+    <h2 data-i18n="task.title">Therapy task</h2>
 
-        <div class="date-selection">
-            <label><strong data-i18n="task.current">Current Assignments:</strong></label>
-            <button class="btn btn-secondary btn-small" onclick="loadtask()" data-i18n="task.refresh">Refresh</button>
-        </div>
+    <div class="date-selection">
+        <label><strong data-i18n="task.current">Current Assignments:</strong></label>
+        <button class="btn btn-secondary btn-small" onclick="loadtask()" data-i18n="task.refresh">Refresh</button>
+    </div>
 
-        <div id="taskContent">
-            <div class="loading">
-                <div class="spinner"></div>
-                <p data-i18n="msg.loading">Loading assignments...</p>
-            </div>
-        </div>
-
-        <!-- task Templates -->
-        <div id="taskTemplates" style="display: none;">
-            <!-- Thought Record Template -->
-            <div id="thoughtRecordTemplate" class="task-template">
-                <h3>CBT Thought Record</h3>
-                <form class="task-form" onsubmit="submitThoughtRecord(event)">
-                    <div class="form-group">
-                        <label data-i18n="task.situation">Situation:</label>
-                        <textarea class="notes-textarea" name="situation" required
-                            placeholder="What happened? When? Where? Who was involved?"></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label data-i18n="task.thoughts">Automatic Thoughts:</label>
-                        <textarea class="notes-textarea" name="thoughts" required
-                            placeholder="What went through your mind?"></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label data-i18n="task.emotions">Emotions (rate 0-100%):</label>
-                        <input type="text" class="form-input" name="emotions" required
-                            placeholder="e.g., Anxious 80%, Sad 60%">
-                    </div>
-
-                    <div class="form-group">
-    <label data-i18n="task.evidence_for">Evidence For:</label>
-    <small style="color: #666; display: block; margin-bottom: 0.5rem;">
-        What facts support your automatic thought? Be specific.
-    </small>
-    <textarea class="notes-textarea" name="evidence_for" required
-        placeholder="Example: 'My boss frowned when I presented' or 'I made 3 mistakes'"></textarea>
-</div>
-
-                    <div class="form-group">
-    <label data-i18n="task.evidence_against">Evidence Against:</label>
-    <small style="color: #666; display: block; margin-bottom: 0.5rem;"
-           data-i18n="task.evidence_against_help">
-        What facts contradict your negative thought? Look for exceptions or alternative explanations.
-    </small>
-    <textarea class="notes-textarea" name="evidence_against" required
-        data-i18n-placeholder="task.evidence_against_placeholder"
-        placeholder="Example: 'I got positive feedback last week' or 'My boss was stressed about other issues'"></textarea>
-</div>
-
-                    <div class="form-group">
-    <label data-i18n="task.balanced_thought">Balanced Thought:</label>
-    <small style="color: #666; display: block; margin-bottom: 0.5rem;">
-        A more realistic way to think about the situation.
-    </small>
-    <textarea class="notes-textarea" name="balanced_thought" required
-        placeholder="Example: 'I made some mistakes but also did many things well'"></textarea>
-</div>
-
-                    <div class="form-group">
-    <label data-i18n="task.emotions_after">Emotions Now (rate 0-100%):</label>
-    <small style="color: #666; display: block; margin-bottom: 0.5rem;"
-           data-i18n="task.emotions_after_help">
-        After considering all evidence and your balanced thought, how do you feel now?
-    </small>
-    <input type="text" class="form-input" name="emotions_after" required
-        data-i18n-placeholder="task.emotions_after_placeholder"
-        placeholder="Example: 'Anxious 40%, Confident 60%' (notice the reduction)">
-</div>
-
-                    <button type="submit" class="btn btn-primary" data-i18n="task.submit">Submit task</button>
-                </form>
-            </div>
-
-            <!-- DBT Distress Tolerance Template -->
-            <div id="distressToleranceTemplate" class="task-template">
-                <h3>DBT Distress Tolerance Skills Practice</h3>
-                <form class="task-form" onsubmit="submitDistressTolerance(event)">
-                    <div class="form-group">
-                        <label data-i18n="task.distress_level">Distress Level (0-10):</label>
-                        <input type="number" class="form-input" name="distress_level" min="0" max="10" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label data-i18n="task.skill_used">Which TIPP skill did you use?</label>
-                        <select class="form-input" name="skill_used" required>
-                            <option value="">Select a skill</option>
-                            <option value="temperature">Temperature Change</option>
-                            <option value="intense_exercise">Intense Exercise</option>
-                            <option value="paced_breathing">Paced Breathing</option>
-                            <option value="paired_muscle">Paired Muscle Relaxation</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label data-i18n="task.skill_details">How did you apply it?</label>
-                        <textarea class="notes-textarea" name="skill_details" required></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label data-i18n="task.distress_after">Distress Level After (0-10):</label>
-                        <input type="number" class="form-input" name="distress_after" min="0" max="10" required>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary" data-i18n="task.submit">Submit task</button>
-                </form>
-            </div>
-
-<!-- Exposure Log Template -->
-<div id="exposureLogTemplate" class="task-template">
-    <h3>Exposure Therapy Log</h3>
-    <form class="task-form" onsubmit="submitExposureLog(event)">
-        <div class="form-group">
-            <label data-i18n="task.exposure_situation">Exposure Situation:</label>
-            <textarea class="notes-textarea" name="situation" required
-                placeholder="What situation did you expose yourself to?"></textarea>
-        </div>
-
-        <div class="form-group">
-            <label data-i18n="task.anxiety_before">Anxiety Before (0-10):</label>
-            <input type="number" class="form-input" name="anxiety_before" min="0" max="10" required>
-        </div>
-
-        <div class="form-group">
-            <label data-i18n="task.duration">Duration (minutes):</label>
-            <input type="number" class="form-input" name="duration" min="1" required>
-        </div>
-
-        <div class="form-group">
-            <label data-i18n="task.anxiety_peak">Peak Anxiety (0-10):</label>
-            <input type="number" class="form-input" name="anxiety_peak" min="0" max="10" required>
-        </div>
-
-        <div class="form-group">
-            <label data-i18n="task.anxiety_after">Anxiety After (0-10):</label>
-            <input type="number" class="form-input" name="anxiety_after" min="0" max="10" required>
-        </div>
-
-        <div class="form-group">
-            <label data-i18n="task.observations">Observations:</label>
-            <textarea class="notes-textarea" name="observations" required
-                placeholder="What did you notice? What did you learn?"></textarea>
-        </div>
-
-        <button type="submit" class="btn btn-primary" data-i18n="task.submit">Submit task</button>
-    </form>
-</div>
-
+    <div id="taskContent">
+        <div class="loading">
+            <div class="spinner"></div>
+            <p data-i18n="msg.loading">Loading assignments...</p>
         </div>
     </div>
+
+    <!-- task Templates -->
+    <div id="taskTemplates" style="display: none;">
+        <!-- Thought Record Template -->
+        <div id="thoughtRecordTemplate" class="task-template">
+            <h3 data-i18n="task.cbt_title">CBT Thought Record</h3>
+            <form class="task-form" onsubmit="submitThoughtRecord(event)">
+                <div class="form-group">
+                    <label data-i18n="task.situation">Situation:</label>
+                    <textarea class="notes-textarea" name="situation" required
+                        data-i18n-placeholder="task.situation_placeholder"
+                        placeholder="What happened? When? Where? Who was involved?"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="task.thoughts">Automatic Thoughts:</label>
+                    <textarea class="notes-textarea" name="thoughts" required
+                        data-i18n-placeholder="task.thoughts_placeholder"
+                        placeholder="What went through your mind?"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="task.emotions">Emotions (rate 0-100%):</label>
+                    <input type="text" class="form-input" name="emotions" required
+                        data-i18n-placeholder="task.emotions_placeholder"
+                        placeholder="e.g., Anxious 80%, Sad 60%">
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="task.evidence_for">Evidence For:</label>
+                    <small style="color: #666; display: block; margin-bottom: 0.5rem;"
+                           data-i18n="task.evidence_for_help">
+                        What facts support your automatic thought? Be specific.
+                    </small>
+                    <textarea class="notes-textarea" name="evidence_for" required
+                        data-i18n-placeholder="task.evidence_for_placeholder"
+                        placeholder="Example: 'My boss frowned when I presented' or 'I made 3 mistakes'"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="task.evidence_against">Evidence Against:</label>
+                    <small style="color: #666; display: block; margin-bottom: 0.5rem;"
+                           data-i18n="task.evidence_against_help">
+                        What facts contradict your negative thought? Look for exceptions or alternative explanations.
+                    </small>
+                    <textarea class="notes-textarea" name="evidence_against" required
+                        data-i18n-placeholder="task.evidence_against_placeholder"
+                        placeholder="Example: 'I got positive feedback last week' or 'My boss was stressed about other issues'"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="task.balanced_thought">Balanced Thought:</label>
+                    <small style="color: #666; display: block; margin-bottom: 0.5rem;"
+                           data-i18n="task.balanced_thought_help">
+                        A more realistic way to think about the situation.
+                    </small>
+                    <textarea class="notes-textarea" name="balanced_thought" required
+                        data-i18n-placeholder="task.balanced_thought_placeholder"
+                        placeholder="Example: 'I made some mistakes but also did many things well'"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="task.emotions_after">Emotions Now (rate 0-100%):</label>
+                    <small style="color: #666; display: block; margin-bottom: 0.5rem;"
+                           data-i18n="task.emotions_after_help">
+                        After considering all evidence and your balanced thought, how do you feel now?
+                    </small>
+                    <input type="text" class="form-input" name="emotions_after" required
+                        data-i18n-placeholder="task.emotions_after_placeholder"
+                        placeholder="Example: 'Anxious 40%, Confident 60%' (notice the reduction)">
+                </div>
+
+                <button type="submit" class="btn btn-primary" data-i18n="task.submit">Submit task</button>
+            </form>
+        </div>
+
+        <!-- DBT Distress Tolerance Template -->
+        <div id="distressToleranceTemplate" class="task-template">
+            <h3 data-i18n="task.dbt_title">DBT Distress Tolerance Skills Practice</h3>
+            <form class="task-form" onsubmit="submitDistressTolerance(event)">
+                <div class="form-group">
+                    <label data-i18n="task.distress_level">Distress Level (0-10):</label>
+                    <input type="number" class="form-input" name="distress_level" min="0" max="10" required>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="task.skill_used">Which TIPP skill did you use?</label>
+                    <select class="form-input" name="skill_used" required>
+                        <option value="" data-i18n="task.select_skill">Select a skill</option>
+                        <option value="temperature" data-i18n="task.skill_temperature">Temperature Change</option>
+                        <option value="intense_exercise" data-i18n="task.skill_exercise">Intense Exercise</option>
+                        <option value="paced_breathing" data-i18n="task.skill_breathing">Paced Breathing</option>
+                        <option value="paired_muscle" data-i18n="task.skill_muscle">Paired Muscle Relaxation</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="task.skill_details">How did you apply it?</label>
+                    <textarea class="notes-textarea" name="skill_details" required
+                        data-i18n-placeholder="task.skill_details_placeholder"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="task.distress_after">Distress Level After (0-10):</label>
+                    <input type="number" class="form-input" name="distress_after" min="0" max="10" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary" data-i18n="task.submit">Submit task</button>
+            </form>
+        </div>
+
+        <!-- Exposure Log Template -->
+        <div id="exposureLogTemplate" class="task-template">
+            <h3 data-i18n="task.exposure_title">Exposure Therapy Log</h3>
+            <form class="task-form" onsubmit="submitExposureLog(event)">
+                <div class="form-group">
+                    <label data-i18n="task.exposure_situation">Exposure Situation:</label>
+                    <textarea class="notes-textarea" name="situation" required
+                        data-i18n-placeholder="task.exposure_situation_placeholder"
+                        placeholder="What situation did you expose yourself to?"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="task.anxiety_before">Anxiety Before (0-10):</label>
+                    <input type="number" class="form-input" name="anxiety_before" min="0" max="10" required>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="task.duration">Duration (minutes):</label>
+                    <input type="number" class="form-input" name="duration" min="1" required>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="task.anxiety_peak">Peak Anxiety (0-10):</label>
+                    <input type="number" class="form-input" name="anxiety_peak" min="0" max="10" required>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="task.anxiety_after">Anxiety After (0-10):</label>
+                    <input type="number" class="form-input" name="anxiety_after" min="0" max="10" required>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="task.observations">Observations:</label>
+                    <textarea class="notes-textarea" name="observations" required
+                        data-i18n-placeholder="task.observations_placeholder"
+                        placeholder="What did you notice? What did you learn?"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" data-i18n="task.submit">Submit task</button>
+            </form>
+        </div>
+
+        <!-- Behavioral Activation Template -->
+        <div id="behavioralActivationTemplate" class="task-template">
+            <h3 data-i18n="task.behavioral_title">Pleasant Activity Scheduling</h3>
+            <form class="task-form" onsubmit="submitBehavioralActivation(event)">
+                <div class="form-group">
+                    <label data-i18n="task.activity_name">Activity Name:</label>
+                    <input type="text" class="form-input" name="activity_name" required
+                           data-i18n-placeholder="task.activity_placeholder"
+                           placeholder="e.g., Walk in the park, Call a friend">
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="task.scheduled_time">Scheduled Time:</label>
+                    <input type="datetime-local" class="form-input" name="scheduled_time" required>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="task.activity_duration">Duration (minutes):</label>
+                    <input type="number" class="form-input" name="duration" min="5" max="480" required>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="task.activity_completed">Completed?</label>
+                    <input type="checkbox" name="completed">
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="task.enjoyment_level">Enjoyment Level (1-10):</label>
+                    <input type="range" name="enjoyment" min="1" max="10" value="5"
+                           class="form-input" oninput="this.nextElementSibling.value = this.value">
+                    <output>5</output>
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="task.activity_notes">Notes:</label>
+                    <textarea class="notes-textarea" name="notes" rows="3"
+                              data-i18n-placeholder="task.activity_notes_placeholder"
+                              placeholder="How did you feel? What did you enjoy?"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" data-i18n="task.submit">Submit task</button>
+            </form>
+        </div>
+
+    </div>
+</div>
 
 
 
@@ -1850,6 +1904,35 @@ window.addEventListener('load', function() {
                 'task.skill_used': 'Which TIPP skill did you use?',
                 'task.skill_details': 'How did you apply it?',
                 'task.distress_after': 'Distress Level After (0-10):',
+                'task.cbt_title': 'CBT Thought Record',
+'task.situation_placeholder': 'What happened? When? Where? Who was involved?',
+'task.thoughts_placeholder': 'What went through your mind?',
+'task.emotions_placeholder': 'e.g., Anxious 80%, Sad 60%',
+'task.evidence_for_help': 'What facts support your automatic thought? Be specific.',
+'task.evidence_for_placeholder': 'Example: \'My boss frowned when I presented\' or \'I made 3 mistakes\'',
+'task.evidence_against_placeholder': 'Example: \'I got positive feedback last week\' or \'My boss was stressed about other issues\'',
+'task.balanced_thought_help': 'A more realistic way to think about the situation.',
+'task.balanced_thought_placeholder': 'Example: \'I made some mistakes but also did many things well\'',
+'task.emotions_after_placeholder': 'Example: \'Anxious 40%, Confident 60%\' (notice the reduction)',
+'task.dbt_title': 'DBT Distress Tolerance Skills Practice',
+'task.select_skill': 'Select a skill',
+'task.skill_temperature': 'Temperature Change',
+'task.skill_exercise': 'Intense Exercise',
+'task.skill_breathing': 'Paced Breathing',
+'task.skill_muscle': 'Paired Muscle Relaxation',
+'task.skill_details_placeholder': 'Describe how you used this skill',
+'task.exposure_title': 'Exposure Therapy Log',
+'task.exposure_situation_placeholder': 'What situation did you expose yourself to?',
+'task.observations_placeholder': 'What did you notice? What did you learn?',
+'task.behavioral_title': 'Pleasant Activity Scheduling',
+'task.activity_name': 'Activity Name',
+'task.activity_placeholder': 'e.g., Walk in the park, Call a friend',
+'task.scheduled_time': 'Scheduled Time',
+'task.activity_duration': 'Duration (minutes)',
+'task.activity_completed': 'Completed?',
+'task.enjoyment_level': 'Enjoyment Level (1-10)',
+'task.activity_notes': 'Notes',
+'task.activity_notes_placeholder': 'How did you feel? What did you enjoy?',
 
                 // Crisis translations
                 'crisis.support_title': 'We\'re Here to Help',
@@ -2045,6 +2128,35 @@ window.addEventListener('load', function() {
 
 
 'insights.consistency_excellent': 'עקביות מצוינת! עשית צ\'ק-אין כמעט כל יום השבוע.',
+'task.cbt_title': 'רישום מחשבות CBT',
+'task.situation_placeholder': 'מה קרה? מתי? איפה? מי היה מעורב?',
+'task.thoughts_placeholder': 'אילו מחשבות עברו לך בראש?',
+'task.emotions_placeholder': 'לדוגמה: חרדה 80%, עצב 60%',
+'task.evidence_for_help': 'אילו עובדות תומכות במחשבה האוטומטית שלך? היה ספציפי.',
+'task.evidence_for_placeholder': 'דוגמה: \'הבוס שלי הזעיף פנים כשהצגתי\' או \'עשיתי 3 טעויות\'',
+'task.evidence_against_placeholder': 'דוגמה: \'קיבלתי משוב חיובי בשבוע שעבר\' או \'הבוס שלי היה לחוץ מנושאים אחרים\'',
+'task.balanced_thought_help': 'דרך ריאליסטית יותר לחשוב על הסיטואציה.',
+'task.balanced_thought_placeholder': 'דוגמה: \'עשיתי כמה טעויות אבל גם עשיתי הרבה דברים טוב\'',
+'task.emotions_after_placeholder': 'דוגמה: \'חרדה 40%, ביטחון עצמי 60%\' (שים לב לירידה)',
+'task.dbt_title': 'תרגול מיומנויות סבילות למצוקה DBT',
+'task.select_skill': 'בחר מיומנות',
+'task.skill_temperature': 'שינוי טמפרטורה',
+'task.skill_exercise': 'פעילות גופנית אינטנסיבית',
+'task.skill_breathing': 'נשימה מווסתת',
+'task.skill_muscle': 'הרפיית שרירים מזווגת',
+'task.skill_details_placeholder': 'תאר כיצד השתמשת במיומנות זו',
+'task.exposure_title': 'יומן חשיפה טיפולית',
+'task.exposure_situation_placeholder': 'לאיזו סיטואציה חשפת את עצמך?',
+'task.observations_placeholder': 'מה שמת לב? מה למדת?',
+'task.behavioral_title': 'תזמון פעילויות נעימות',
+'task.activity_name': 'שם הפעילות',
+'task.activity_placeholder': 'לדוגמה: הליכה בפארק, שיחה עם חבר',
+'task.scheduled_time': 'זמן מתוכנן',
+'task.activity_duration': 'משך זמן (דקות)',
+'task.activity_completed': 'הושלם?',
+'task.enjoyment_level': 'רמת הנאה (1-10)',
+'task.activity_notes': 'הערות',
+'task.activity_notes_placeholder': 'איך הרגשת? ממה נהנית?',
 'insights.medication_outstanding': 'היענות מצוינת לתרופות! המשך בעבודה הטובה.',
 'insights.morning_preference': 'אתה מעדיף צ\'ק-אין בבוקר. העקביות הזו עוזרת לעקוב אחר ההתקדמות שלך!',
 'insights.emotional_improvement': 'הרווחה הרגשית שלך השתפרה ב-{percent}% לעומת קודם!',
@@ -2287,6 +2399,35 @@ window.addEventListener('load', function() {
                 // Category translations
 
 'insights.consistency_excellent': 'Отличная последовательность! Вы отмечались почти каждый день на этой неделе.',
+'task.cbt_title': 'Дневник мыслей КПТ',
+'task.situation_placeholder': 'Что произошло? Когда? Где? Кто был вовлечен?',
+'task.thoughts_placeholder': 'Какие мысли прошли через вашу голову?',
+'task.emotions_placeholder': 'например: Тревога 80%, Грусть 60%',
+'task.evidence_for_help': 'Какие факты поддерживают вашу автоматическую мысль? Будьте конкретны.',
+'task.evidence_for_placeholder': 'Пример: \'Мой босс нахмурился, когда я презентовал\' или \'Я сделал 3 ошибки\'',
+'task.evidence_against_placeholder': 'Пример: \'Я получил положительный отзыв на прошлой неделе\' или \'Мой босс был в стрессе из-за других вопросов\'',
+'task.balanced_thought_help': 'Более реалистичный способ думать о ситуации.',
+'task.balanced_thought_placeholder': 'Пример: \'Я сделал несколько ошибок, но также сделал много вещей хорошо\'',
+'task.emotions_after_placeholder': 'Пример: \'Тревога 40%, Уверенность 60%\' (обратите внимание на снижение)',
+'task.dbt_title': 'Практика навыков переносимости дистресса ДБТ',
+'task.select_skill': 'Выберите навык',
+'task.skill_temperature': 'Изменение температуры',
+'task.skill_exercise': 'Интенсивные упражнения',
+'task.skill_breathing': 'Размеренное дыхание',
+'task.skill_muscle': 'Парная мышечная релаксация',
+'task.skill_details_placeholder': 'Опишите, как вы использовали этот навык',
+'task.exposure_title': 'Журнал экспозиционной терапии',
+'task.exposure_situation_placeholder': 'Какой ситуации вы себя подвергли?',
+'task.observations_placeholder': 'Что вы заметили? Что вы узнали?',
+'task.behavioral_title': 'Планирование приятных занятий',
+'task.activity_name': 'Название занятия',
+'task.activity_placeholder': 'например: Прогулка в парке, Звонок другу',
+'task.scheduled_time': 'Запланированное время',
+'task.activity_duration': 'Продолжительность (минуты)',
+'task.activity_completed': 'Выполнено?',
+'task.enjoyment_level': 'Уровень удовольствия (1-10)',
+'task.activity_notes': 'Заметки',
+'task.activity_notes_placeholder': 'Как вы себя чувствовали? Что вам понравилось?',
 'insights.medication_outstanding': 'Выдающаяся приверженность лечению! Продолжайте в том же духе.',
 'insights.morning_preference': 'Вы предпочитаете утренние отметки. Эта последовательность помогает отслеживать ваш прогресс!',
 'insights.emotional_improvement': 'Ваше эмоциональное благополучие улучшилось на {percent}% по сравнению с прошлым!',
@@ -2527,6 +2668,35 @@ window.addEventListener('load', function() {
                 // Category translations
 
 'insights.consistency_excellent': 'اتساق ممتاز! لقد سجلت الحضور تقريباً كل يوم هذا الأسبوع.',
+'task.cbt_title': 'سجل الأفكار CBT',
+'task.situation_placeholder': 'ماذا حدث؟ متى؟ أين؟ من كان متورطًا؟',
+'task.thoughts_placeholder': 'ما الذي دار في ذهنك؟',
+'task.emotions_placeholder': 'مثلاً: قلق 80%، حزن 60%',
+'task.evidence_for_help': 'ما هي الحقائق التي تدعم فكرتك التلقائية؟ كن محددًا.',
+'task.evidence_for_placeholder': 'مثال: \'عبس مديري عندما قدمت\' أو \'ارتكبت 3 أخطاء\'',
+'task.evidence_against_placeholder': 'مثال: \'تلقيت ملاحظات إيجابية الأسبوع الماضي\' أو \'كان مديري متوترًا بشأن قضايا أخرى\'',
+'task.balanced_thought_help': 'طريقة أكثر واقعية للتفكير في الموقف.',
+'task.balanced_thought_placeholder': 'مثال: \'ارتكبت بعض الأخطاء لكنني أيضًا فعلت أشياء كثيرة بشكل جيد\'',
+'task.emotions_after_placeholder': 'مثال: \'قلق 40%، ثقة 60%\' (لاحظ الانخفاض)',
+'task.dbt_title': 'ممارسة مهارات تحمل الضيق DBT',
+'task.select_skill': 'اختر مهارة',
+'task.skill_temperature': 'تغيير درجة الحرارة',
+'task.skill_exercise': 'تمرين مكثف',
+'task.skill_breathing': 'التنفس المنتظم',
+'task.skill_muscle': 'استرخاء العضلات المزدوج',
+'task.skill_details_placeholder': 'صف كيف استخدمت هذه المهارة',
+'task.exposure_title': 'سجل العلاج بالتعرض',
+'task.exposure_situation_placeholder': 'ما الموقف الذي عرّضت نفسك له؟',
+'task.observations_placeholder': 'ماذا لاحظت؟ ماذا تعلمت؟',
+'task.behavioral_title': 'جدولة الأنشطة الممتعة',
+'task.activity_name': 'اسم النشاط',
+'task.activity_placeholder': 'مثلاً: المشي في الحديقة، الاتصال بصديق',
+'task.scheduled_time': 'الوقت المحدد',
+'task.activity_duration': 'المدة (بالدقائق)',
+'task.activity_completed': 'مكتمل؟',
+'task.enjoyment_level': 'مستوى الاستمتاع (1-10)',
+'task.activity_notes': 'ملاحظات',
+'task.activity_notes_placeholder': 'كيف شعرت؟ بماذا استمتعت؟',
 'insights.medication_outstanding': 'التزام رائع بالأدوية! استمر في العمل الجيد.',
 'insights.morning_preference': 'أنت تفضل تسجيل الحضور الصباحي. هذا الاتساق يساعد في تتبع تقدمك!',
 'insights.emotional_improvement': 'تحسنت صحتك العاطفية بنسبة {percent}% مقارنة بالسابق!',
