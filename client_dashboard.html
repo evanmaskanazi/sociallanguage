@@ -1643,6 +1643,23 @@ window.addEventListener('load', function() {
             </form>
         </div>
 
+<!-- Custom Assignment Template -->
+<div id="customAssignmentTemplate" class="task-template">
+    <h3 data-i18n="task.custom_title">Custom Assignment</h3>
+    <form class="task-form" onsubmit="submitCustomAssignment(event)">
+        <div class="form-group">
+            <label data-i18n="task.custom_response">Your Response:</label>
+            <textarea class="notes-textarea" name="response" rows="10" required
+                data-i18n-placeholder="task.custom_placeholder"
+                placeholder="Complete the assignment as instructed by your therapist"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary" data-i18n="task.submit">Submit task</button>
+    </form>
+</div>
+
+
+
     </div>
 </div>
 
@@ -3430,7 +3447,37 @@ async function submitBehavioralActivation(event) {
 }
 
 
+async function submitCustomAssignment(event) {
+    event.preventDefault();
+    const form = event.target;
+    const assignmentId = form.dataset.assignmentId;
 
+    const data = {
+        assignment_id: assignmentId,
+        responses: {
+            content: SecurityHelpers.sanitizeInput(form.response.value)
+        }
+    };
+
+    try {
+        const response = await fetch('/api/client/submit-task', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept-Language': i18n.currentLang
+            },
+            credentials: 'include',
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            showMessage(i18n.t('task.submitted_success', 'Task submitted successfully!'), 'success');
+            loadtask();
+        }
+    } catch (error) {
+        showMessage(i18n.t('msg.error'), 'error');
+    }
+}
 
 
 

@@ -1398,6 +1398,14 @@
                 'therapist.prepare_email': 'Prepare Email Report',
                 'therapist.report_status': 'Report Status',
                 'therapist.client_details': 'Client Details',
+                'task.activity_label': 'Activity',
+'task.scheduled_time_label': 'Scheduled Time',
+'task.duration_label': 'Duration',
+'task.completed_label': 'Completed',
+'task.enjoyment_label': 'Enjoyment Level',
+'task.yes': 'Yes',
+'task.no': 'No',
+'task.minutes': 'minutes',
                 'therapist.declining_emotional_state': 'Declining Emotional State',
                 'therapist.emotional_decline_desc': 'Emotional ratings have decreased by {percent}% over the past month.',
                 'therapist.schedule_session_rec': 'Schedule immediate session to discuss recent stressors and coping strategies.',
@@ -1418,6 +1426,8 @@
                 'therapist.crisis_desc': 'Consistently low mood (≤2) for past 3 check-ins.',
                 'therapist.immediate_outreach_rec': 'Immediate outreach recommended. Consider safety assessment.',
                 'therapist.urgent_attention': 'Urgent attention needed',
+                'task.response_label': 'Response',
+'task.custom_title': 'Custom Assignment',
                 'therapist.sleep_concerns': 'Sleep Quality Concerns',
                 'therapist.sleep_desc': 'Poor sleep reported {days} of last 7 days.',
                 'therapist.sleep_hygiene_rec': 'Discuss sleep hygiene and consider sleep study referral.',
@@ -1607,6 +1617,14 @@
 'therapist.task_assign_error': 'שגיאה בהקצאת משימה',
 'therapist.assign_btn': 'הקצה משימה',
 'therapist.task_status': 'סטטוס משימות המטופל',
+'task.activity_label': 'פעילות',
+'task.scheduled_time_label': 'זמן מתוכנן',
+'task.duration_label': 'משך זמן',
+'task.completed_label': 'הושלם',
+'task.enjoyment_label': 'רמת הנאה',
+'task.yes': 'כן',
+'task.no': 'לא',
+'task.minutes': 'דקות',
 'therapist.select_client_status': 'בחר מטופל כדי לראות את סטטוס המשימות שלו',
                 'category.emotion_level_desc': 'מצב רגשי כללי',
                 'category.energy': 'אנרגיה',
@@ -1623,7 +1641,8 @@
                 'category.medication_desc': 'היענות לנטילת תרופות',
                 'category.physical_activity': 'פעילות גופנית',
                 'category.physical_activity_desc': 'רמת הפעילות הגופנית',
-
+                'task.response_label': 'תגובה',
+'task.custom_title': 'משימה מותאמת אישית',
                 'therapist.dashboard_title': 'לוח בקרה למטפל',
                 'therapist.dashboard_overview': 'סקירת לוח בקרה',
                 'therapist.checkins_week': 'צ׳ק-אינים השבוע',
@@ -1847,6 +1866,8 @@
                 'category.emotion_level': 'Эмоциональный уровень',
 'nav.task': 'Задания',
 'therapist.task_title': 'Управление заданиями',
+'task.response_label': 'Ответ',
+'task.custom_title': 'Индивидуальное задание',
 'therapist.assign_task': 'Назначить задание',
 'therapist.select_client': 'Выберите клиента:',
 'therapist.task_fill_required': 'Пожалуйста, заполните все обязательные поля',
@@ -1859,6 +1880,14 @@
 'therapist.due_date': 'Срок выполнения:',
 'therapist.assign_btn': 'Назначить задание',
 'therapist.choose_client': 'Выберите клиента...',
+'task.activity_label': 'Активность',
+'task.scheduled_time_label': 'Запланированное время',
+'task.duration_label': 'Продолжительность',
+'task.completed_label': 'Выполнено',
+'task.enjoyment_label': 'Уровень удовольствия',
+'task.yes': 'Да',
+'task.no': 'Нет',
+'task.minutes': 'минут',
 'therapist.task_assigned_success': 'Задание успешно назначено!',
 'therapist.task_title_placeholder': 'например, Записи мыслей неделя 3',
 'therapist.task_description_placeholder': 'Предоставьте конкретные инструкции для клиента...',
@@ -2101,6 +2130,8 @@
                 'category.emotion_level': 'المستوى العاطفي',
                 'reports.week_note': 'سيعرض التقرير الأيام السبعة السابقة لنهاية هذا الأسبوع',
                'nav.task': 'المهام',
+               'task.response_label': 'الإجابة',
+'task.custom_title': 'مهمة مخصصة',
                'therapist.choose_client': 'اختر عميلاً...',
 'therapist.task_title_placeholder': 'مثال: سجلات الأفكار الأسبوع 3',
 'therapist.task_description_placeholder': 'قدم تعليمات محددة للعميل...',
@@ -2109,6 +2140,14 @@
 'therapist.task_assign_error': 'خطأ في تعيين المهمة',
 'therapist.task_title': 'إدارة المهام',
 'therapist.task_assigned_success': 'تم تعيين المهمة بنجاح!',
+'task.activity_label': 'النشاط',
+'task.scheduled_time_label': 'الوقت المجدول',
+'task.duration_label': 'المدة',
+'task.completed_label': 'مكتمل',
+'task.enjoyment_label': 'مستوى الاستمتاع',
+'task.yes': 'نعم',
+'task.no': 'لا',
+'task.minutes': 'دقائق',
 'therapist.assign_task': 'تعيين مهمة',
 'therapist.select_client': 'اختر العميل:',
 'therapist.task_type': 'نوع المهمة:',
@@ -5274,18 +5313,24 @@ window.showTab = function(tabName) {
                 <p><strong>Anxiety After:</strong> ${responses.anxiety_after || 'N/A'}/10</p>
                 <p><strong>Observations:</strong><br>${responses.observations || 'N/A'}</p>
             `;
-        } else if (data.assignment.type === 'behavioralActivation') {
+      } else if (data.assignment.type === 'behavioralActivation') {
+    const completedText = responses.completed ? '✓ Yes' : '✗ No';
+    const scheduledDate = responses.scheduled_time ? new Date(responses.scheduled_time).toLocaleString() : 'N/A';
+
     responseHTML += `
-        <h3>Behavioral Activation</h3>
-        <p><strong>Activities:</strong><br>${responses.activities || 'N/A'}</p>
-        <p><strong>Mood Before:</strong> ${responses.mood_before || 'N/A'}/10</p>
-        <p><strong>Mood After:</strong> ${responses.mood_after || 'N/A'}/10</p>
+        <h3>Pleasant Activity Scheduling</h3>
+        <p><strong>Activity:</strong><br>${responses.activity_name || 'N/A'}</p>
+        <p><strong>Scheduled Time:</strong><br>${scheduledDate}</p>
+        <p><strong>Duration:</strong> ${responses.duration || 'N/A'} minutes</p>
+        <p><strong>Completed:</strong> ${completedText}</p>
+        <p><strong>Enjoyment Level:</strong> ${responses.enjoyment || 'N/A'}/10</p>
         <p><strong>Notes:</strong><br>${responses.notes || 'N/A'}</p>
     `;
+// With this:
 } else if (data.assignment.type === 'customAssignment') {
     responseHTML += `
-        <h3>Custom Assignment</h3>
-        <p><strong>Response:</strong><br>${responses.response || responses.notes || 'N/A'}</p>
+        <h3>${i18n.t('task.custom_title', 'Custom Assignment')}</h3>
+        <p><strong>${i18n.t('task.response_label', 'Response')}:</strong><br>${responses.content || responses.response || responses.notes || 'N/A'}</p>
     `;
 } else {
     // Fallback - show raw data for debugging
