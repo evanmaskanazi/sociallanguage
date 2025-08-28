@@ -1489,6 +1489,7 @@
                 'therapist.save_report_settings': 'Save Report Settings',
                 'therapist.test_report_email': 'Test Report Email',
                 'therapist.report_settings_saved': 'Report settings saved successfully',
+                'therapist.task_assigned_success': 'Task assigned successfully!',
                 'therapist.sending_test_report': 'Sending test report...',
                 'therapist.test_report_sent': 'Test report sent successfully',
                 'therapist.unsubscribe_weekly': 'Unsubscribe',
@@ -1571,6 +1572,9 @@
 'therapist.task_description_placeholder': 'Provide specific instructions for the client...',
 'therapist.medication_concerns': 'Medication Adherence Concerns',
 'therapist.positive_progress': 'Positive Progress',
+'therapist.task_fill_required': 'Please fill in all required fields',
+'therapist.task_assign_failed': 'Failed to assign task',
+'therapist.task_assign_error': 'Error assigning task',
 'therapist.trend_improving': 'Improving trend',
 'therapist.trend_declining': 'Declining trend',
 'therapist.trend_stable': 'Stable trend',
@@ -1595,8 +1599,12 @@
 'therapist.task_title_label': 'כותרת:',
 'therapist.task_description': 'תיאור/הוראות:',
 'reports.past_seven_days': 'הדוח יציג את 7 הימים האחרונים',
+'therapist.task_assigned_success': 'המשימה הוקצתה בהצלחה!',
 'therapist.please_select_client': 'אנא בחר מטופל',
 'therapist.due_date': 'תאריך יעד:',
+'therapist.task_fill_required': 'אנא מלא את כל השדות הנדרשים',
+'therapist.task_assign_failed': 'הקצאת המשימה נכשלה',
+'therapist.task_assign_error': 'שגיאה בהקצאת משימה',
 'therapist.assign_btn': 'הקצה משימה',
 'therapist.task_status': 'סטטוס משימות המטופל',
 'therapist.select_client_status': 'בחר מטופל כדי לראות את סטטוס המשימות שלו',
@@ -1841,6 +1849,9 @@
 'therapist.task_title': 'Управление заданиями',
 'therapist.assign_task': 'Назначить задание',
 'therapist.select_client': 'Выберите клиента:',
+'therapist.task_fill_required': 'Пожалуйста, заполните все обязательные поля',
+'therapist.task_assign_failed': 'Не удалось назначить задание',
+'therapist.task_assign_error': 'Ошибка при назначении задания',
 'therapist.task_type': 'Тип задания:',
 'therapist.task_title_label': 'Название:',
 'reports.week_note': 'В отчете будут показаны 7 дней до конца выбранной недели',
@@ -1848,6 +1859,7 @@
 'therapist.due_date': 'Срок выполнения:',
 'therapist.assign_btn': 'Назначить задание',
 'therapist.choose_client': 'Выберите клиента...',
+'therapist.task_assigned_success': 'Задание успешно назначено!',
 'therapist.task_title_placeholder': 'например, Записи мыслей неделя 3',
 'therapist.task_description_placeholder': 'Предоставьте конкретные инструкции для клиента...',
 'therapist.task_status': 'Статус заданий клиента',
@@ -2092,7 +2104,11 @@
                'therapist.choose_client': 'اختر عميلاً...',
 'therapist.task_title_placeholder': 'مثال: سجلات الأفكار الأسبوع 3',
 'therapist.task_description_placeholder': 'قدم تعليمات محددة للعميل...',
+'therapist.task_fill_required': 'يرجى ملء جميع الحقول المطلوبة',
+'therapist.task_assign_failed': 'فشل تعيين المهمة',
+'therapist.task_assign_error': 'خطأ في تعيين المهمة',
 'therapist.task_title': 'إدارة المهام',
+'therapist.task_assigned_success': 'تم تعيين المهمة بنجاح!',
 'therapist.assign_task': 'تعيين مهمة',
 'therapist.select_client': 'اختر العميل:',
 'therapist.task_type': 'نوع المهمة:',
@@ -5070,7 +5086,7 @@ async function assigntask() {
     const dueDate = document.getElementById('taskDueDate').value;
 
     if (!clientId || !type || !title) {
-        showMessage('Please fill in all required fields', 'error');
+        showMessage(i18n.t('therapist.task_fill_required'), 'error');
         return;
     }
 
@@ -5091,7 +5107,7 @@ async function assigntask() {
         });
 
         if (response.ok) {
-            showMessage('task assigned successfully!', 'success');
+            showMessage(i18n.t('therapist.task_assigned_success'), 'success');
             // Clear form
             document.getElementById('taskType').value = '';
             document.getElementById('taskTitle').value = '';
@@ -5100,11 +5116,11 @@ async function assigntask() {
             // Reload status
             loadClienttaskStatus();
         } else {
-            showMessage('Failed to assign task', 'error');
+            showMessage(i18n.t('therapist.task_assign_failed'), 'error');
         }
     } catch (error) {
         console.error('Error assigning task:', error);
-        showMessage('Error assigning task', 'error');
+        showMessage(i18n.t('therapist.task_assign_error'), 'error');
     }
 }
 
