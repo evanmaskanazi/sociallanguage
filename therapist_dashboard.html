@@ -1497,6 +1497,10 @@
                 'therapist.leave_blank_for_default': 'Leave blank to use your account email',
                 'therapist.default_email_note': 'Leave blank to use your account email',
                 'therapist.save_report_settings': 'Save Report Settings',
+                'therapist.client_label': 'Client',
+'therapist.submitted_label': 'Submitted',
+'task.submission_details': 'Submission Details',
+'task.type': 'Type',
                 'therapist.test_report_email': 'Test Report Email',
                 'therapist.report_settings_saved': 'Report settings saved successfully',
                 'therapist.task_assigned_success': 'Task assigned successfully!',
@@ -1700,6 +1704,10 @@
                 'therapist.client_details': 'פרטי מטופל',
                 'therapist.no_clients': 'לא נמצאו מטופלים. הוסף את המטופל הראשון שלך כדי להתחיל.',
                 'therapist.license': 'רישיון',
+                'therapist.client_label': 'מטופל',
+'therapist.submitted_label': 'הוגש',
+'task.submission_details': 'פרטי הגשה',
+'task.type': 'סוג',
                 'therapist.activity_coming_soon': 'תכונת פעילות אחרונה תגיע בקרוב',
                 'therapist.check_clients_tab': 'בדוק את לשונית המטופלים כדי לראות התקדמות אישית',
                 'therapist.max_goals': 'ניתן להוסיף מקסימום 5 יעדים בהתחלה',
@@ -1874,6 +1882,10 @@
 'therapist.task_assign_failed': 'Не удалось назначить задание',
 'therapist.task_assign_error': 'Ошибка при назначении задания',
 'therapist.task_type': 'Тип задания:',
+'therapist.client_label': 'Клиент',
+'therapist.submitted_label': 'Отправлено',
+'task.submission_details': 'Детали отправки',
+'task.type': 'Тип',
 'therapist.task_title_label': 'Название:',
 'reports.week_note': 'В отчете будут показаны 7 дней до конца выбранной недели',
 'therapist.task_description': 'Описание/Инструкции:',
@@ -2133,6 +2145,10 @@
                'task.response_label': 'الإجابة',
 'task.custom_title': 'مهمة مخصصة',
                'therapist.choose_client': 'اختر عميلاً...',
+               'therapist.client_label': 'العميل',
+'therapist.submitted_label': 'تم الإرسال',
+'task.submission_details': 'تفاصيل الإرسال',
+'task.type': 'النوع',
 'therapist.task_title_placeholder': 'مثال: سجلات الأفكار الأسبوع 3',
 'therapist.task_description_placeholder': 'قدم تعليمات محددة للعميل...',
 'therapist.task_fill_required': 'يرجى ملء جميع الحقول المطلوبة',
@@ -5242,8 +5258,7 @@ window.showTab = function(tabName) {
     }
 };
 
-
-        async function viewtaskSubmission(assignmentId) {
+async function viewtaskSubmission(assignmentId) {
     try {
         const response = await fetch(`/api/therapist/task-submissions/${assignmentId}`, {
             headers: { 'Accept-Language': i18n.currentLang },
@@ -5276,8 +5291,8 @@ window.showTab = function(tabName) {
         // Build content based on task type
         let responseHTML = `
             <h2>${data.assignment.title}</h2>
-            <p><strong>Client:</strong> ${data.client.name}</p>
-            <p><strong>Submitted:</strong> ${new Date(data.submission.submitted_at).toLocaleString()}</p>
+            <p><strong>${i18n.t('therapist.client_label', 'Client')}:</strong> ${data.client.name}</p>
+            <p><strong>${i18n.t('therapist.submitted_label', 'Submitted')}:</strong> ${new Date(data.submission.submitted_at).toLocaleString()}</p>
             <hr style="margin: 1rem 0;">
         `;
 
@@ -5286,65 +5301,62 @@ window.showTab = function(tabName) {
 
         if (data.assignment.type === 'thoughtRecord') {
             responseHTML += `
-                <h3>CBT Thought Record</h3>
-                <p><strong>Situation:</strong><br>${responses.situation || 'N/A'}</p>
-                <p><strong>Automatic Thoughts:</strong><br>${responses.thoughts || 'N/A'}</p>
-                <p><strong>Emotions:</strong><br>${responses.emotions || 'N/A'}</p>
-                <p><strong>Evidence For:</strong><br>${responses.evidence_for || 'N/A'}</p>
-                <p><strong>Evidence Against:</strong><br>${responses.evidence_against || 'N/A'}</p>
-                <p><strong>Balanced Thought:</strong><br>${responses.balanced_thought || 'N/A'}</p>
-                <p><strong>Emotions After:</strong><br>${responses.emotions_after || 'N/A'}</p>
+                <h3>${i18n.t('task.cbt_title', 'CBT Thought Record')}</h3>
+                <p><strong>${i18n.t('task.situation', 'Situation')}:</strong><br>${responses.situation || 'N/A'}</p>
+                <p><strong>${i18n.t('task.thoughts', 'Automatic Thoughts')}:</strong><br>${responses.thoughts || 'N/A'}</p>
+                <p><strong>${i18n.t('task.emotions', 'Emotions')}:</strong><br>${responses.emotions || 'N/A'}</p>
+                <p><strong>${i18n.t('task.evidence_for', 'Evidence For')}:</strong><br>${responses.evidence_for || 'N/A'}</p>
+                <p><strong>${i18n.t('task.evidence_against', 'Evidence Against')}:</strong><br>${responses.evidence_against || 'N/A'}</p>
+                <p><strong>${i18n.t('task.balanced_thought', 'Balanced Thought')}:</strong><br>${responses.balanced_thought || 'N/A'}</p>
+                <p><strong>${i18n.t('task.emotions_after', 'Emotions After')}:</strong><br>${responses.emotions_after || 'N/A'}</p>
             `;
         } else if (data.assignment.type === 'distressTolerance') {
             responseHTML += `
-                <h3>DBT Distress Tolerance</h3>
-                <p><strong>Distress Level Before:</strong> ${responses.distress_level || 'N/A'}/10</p>
-                <p><strong>Skill Used:</strong> ${responses.skill_used || 'N/A'}</p>
-                <p><strong>How Applied:</strong><br>${responses.skill_details || 'N/A'}</p>
-                <p><strong>Distress Level After:</strong> ${responses.distress_after || 'N/A'}/10</p>
+                <h3>${i18n.t('task.dbt_title', 'DBT Distress Tolerance')}</h3>
+                <p><strong>${i18n.t('task.distress_level', 'Distress Level Before')}:</strong> ${responses.distress_level || 'N/A'}/10</p>
+                <p><strong>${i18n.t('task.skill_used', 'Skill Used')}:</strong> ${responses.skill_used || 'N/A'}</p>
+                <p><strong>${i18n.t('task.skill_details', 'How Applied')}:</strong><br>${responses.skill_details || 'N/A'}</p>
+                <p><strong>${i18n.t('task.distress_after', 'Distress Level After')}:</strong> ${responses.distress_after || 'N/A'}/10</p>
             `;
         } else if (data.assignment.type === 'exposureLog') {
             responseHTML += `
-                <h3>Exposure Log</h3>
-                <p><strong>Situation:</strong><br>${responses.situation || 'N/A'}</p>
-                <p><strong>Anxiety Before:</strong> ${responses.anxiety_before || 'N/A'}/10</p>
-                <p><strong>Duration:</strong> ${responses.duration || 'N/A'} minutes</p>
-                <p><strong>Peak Anxiety:</strong> ${responses.anxiety_peak || 'N/A'}/10</p>
-                <p><strong>Anxiety After:</strong> ${responses.anxiety_after || 'N/A'}/10</p>
-                <p><strong>Observations:</strong><br>${responses.observations || 'N/A'}</p>
+                <h3>${i18n.t('task.exposure_title', 'Exposure Log')}</h3>
+                <p><strong>${i18n.t('task.situation', 'Situation')}:</strong><br>${responses.situation || 'N/A'}</p>
+                <p><strong>${i18n.t('task.anxiety_before', 'Anxiety Before')}:</strong> ${responses.anxiety_before || 'N/A'}/10</p>
+                <p><strong>${i18n.t('task.duration_label', 'Duration')}:</strong> ${responses.duration || 'N/A'} ${i18n.t('task.minutes', 'minutes')}</p>
+                <p><strong>${i18n.t('task.anxiety_peak', 'Peak Anxiety')}:</strong> ${responses.anxiety_peak || 'N/A'}/10</p>
+                <p><strong>${i18n.t('task.anxiety_after', 'Anxiety After')}:</strong> ${responses.anxiety_after || 'N/A'}/10</p>
+                <p><strong>${i18n.t('task.observations', 'Observations')}:</strong><br>${responses.observations || 'N/A'}</p>
             `;
-      } else if (data.assignment.type === 'behavioralActivation') {
-    const completedText = responses.completed ? '✓ Yes' : '✗ No';
-    const scheduledDate = responses.scheduled_time ? new Date(responses.scheduled_time).toLocaleString() : 'N/A';
+        } else if (data.assignment.type === 'behavioralActivation') {
+            const completedText = responses.completed ? `✓ ${i18n.t('task.yes', 'Yes')}` : `✗ ${i18n.t('task.no', 'No')}`;
+            const scheduledDate = responses.scheduled_time ? new Date(responses.scheduled_time).toLocaleString() : 'N/A';
 
-    responseHTML += `
-        <h3>Pleasant Activity Scheduling</h3>
-        <p><strong>Activity:</strong><br>${responses.activity_name || 'N/A'}</p>
-        <p><strong>Scheduled Time:</strong><br>${scheduledDate}</p>
-        <p><strong>Duration:</strong> ${responses.duration || 'N/A'} minutes</p>
-        <p><strong>Completed:</strong> ${completedText}</p>
-        <p><strong>Enjoyment Level:</strong> ${responses.enjoyment || 'N/A'}/10</p>
-        <p><strong>Notes:</strong><br>${responses.notes || 'N/A'}</p>
-    `;
-// With this:
-} else if (data.assignment.type === 'customAssignment') {
-    responseHTML += `
-        <h3>${i18n.t('task.custom_title', 'Custom Assignment')}</h3>
-        <p><strong>${i18n.t('task.response_label', 'Response')}:</strong><br>${responses.content || responses.response || responses.notes || 'N/A'}</p>
-    `;
-} else {
-    // Fallback - show raw data for debugging
-    responseHTML += `
-        <h3>Submission Details (Type: ${data.assignment.type})</h3>
-        <pre>${JSON.stringify(responses, null, 2)}</pre>
-    `;
-}
-
-
+            responseHTML += `
+                <h3>${i18n.t('task.template.behavioral_activation.title', 'Pleasant Activity Scheduling')}</h3>
+                <p><strong>${i18n.t('task.activity_label', 'Activity')}:</strong><br>${responses.activity_name || 'N/A'}</p>
+                <p><strong>${i18n.t('task.scheduled_time_label', 'Scheduled Time')}:</strong><br>${scheduledDate}</p>
+                <p><strong>${i18n.t('task.duration_label', 'Duration')}:</strong> ${responses.duration || 'N/A'} ${i18n.t('task.minutes', 'minutes')}</p>
+                <p><strong>${i18n.t('task.completed_label', 'Completed')}:</strong> ${completedText}</p>
+                <p><strong>${i18n.t('task.enjoyment_label', 'Enjoyment Level')}:</strong> ${responses.enjoyment || 'N/A'}/10</p>
+                <p><strong>${i18n.t('task.activity_notes', 'Notes')}:</strong><br>${responses.notes || 'N/A'}</p>
+            `;
+        } else if (data.assignment.type === 'customAssignment') {
+            responseHTML += `
+                <h3>${i18n.t('task.custom_title', 'Custom Assignment')}</h3>
+                <p><strong>${i18n.t('task.response_label', 'Response')}:</strong><br>${responses.content || responses.response || responses.notes || 'N/A'}</p>
+            `;
+        } else {
+            // Fallback - show raw data for debugging
+            responseHTML += `
+                <h3>${i18n.t('task.submission_details', 'Submission Details')} (${i18n.t('task.type', 'Type')}: ${data.assignment.type})</h3>
+                <pre>${JSON.stringify(responses, null, 2)}</pre>
+            `;
+        }
 
         responseHTML += `
             <button class="btn btn-primary" style="margin-top: 1rem;" onclick="this.closest('.modal').remove()">
-                Close
+                ${i18n.t('btn.close', 'Close')}
             </button>
         `;
 
