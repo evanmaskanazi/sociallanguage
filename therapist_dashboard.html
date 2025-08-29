@@ -5063,11 +5063,16 @@ async function deleteTherapistAccount() {
         });
 
         if (response.ok) {
-            showMessage(i18n.t('therapist.account_deleted', 'Account deleted successfully'), 'success');
-            // Logout and redirect after short delay
-            setTimeout(() => {
-                window.location.href = '/login.html';
-            }, 2000);
+            // Clear all local storage
+            localStorage.clear();
+            sessionStorage.clear();
+
+            // Clear any auth tokens stored in memory
+            authToken = null;
+            csrfToken = null;
+
+            // Directly set window location to avoid any auth checks
+            window.location.replace('/login.html');
         } else {
             const error = await response.json();
             showMessage(error.error || i18n.t('msg.error'), 'error');
