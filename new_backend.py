@@ -2280,6 +2280,9 @@ def delete_therapist_account():
 
             # Delete the client's user account if it exists
             if client_user:
+                # Delete audit logs for client user
+                AuditLog.query.filter_by(user_id=client_user.id).delete()
+
                 # Delete password resets
                 PasswordReset.query.filter_by(user_id=client_user.id).delete()
 
@@ -2291,6 +2294,9 @@ def delete_therapist_account():
 
         # Delete the therapist
         db.session.delete(therapist)
+
+        # Delete audit logs for therapist user
+        AuditLog.query.filter_by(user_id=user.id).delete()
 
         # Delete password resets for therapist
         PasswordReset.query.filter_by(user_id=user.id).delete()
