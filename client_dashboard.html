@@ -1355,47 +1355,7 @@ window.addEventListener('load', function() {
                 <button class="btn btn-secondary" onclick="clearCheckinForm()" data-i18n="client.clear_form">Clear</button>
             </div>
 
-            <!-- Crisis Support Section -->
-            <div id="crisisSupport" style="display: none; margin-top: 2rem; padding: 1.5rem; background: #fff3cd; border: 2px solid #ffeaa7; border-radius: 8px;">
-                <h3 style="color: #856404; margin-bottom: 1rem;">
-                    <span style="font-size: 1.5rem;">⚠️</span>
-                    <span data-i18n="crisis.support_title">We're Here to Help</span>
-                </h3>
-                <p data-i18n="crisis.support_message" style="color: #856404; margin-bottom: 1rem;">
-                    It looks like you might be going through a difficult time. Your wellbeing is important.
-                </p>
 
-                <div style="display: grid; gap: 1rem;">
-                    <button class="btn btn-primary" onclick="requestUrgentSession()" style="background: #e74c3c;">
-                        <span data-i18n="crisis.urgent_session">Request Urgent Session with Therapist</span>
-                    </button>
-
-                    <div style="background: white; padding: 1rem; border-radius: 8px;">
-                        <h4 data-i18n="crisis.immediate_help">Immediate Help Available:</h4>
-                        <div id="crisisResources">
-                            <!-- Populated based on location -->
-                        </div>
-                    </div>
-
-                    <div style="background: white; padding: 1rem; border-radius: 8px;">
-                        <h4 data-i18n="crisis.coping_tools">Quick Coping Tools:</h4>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.5rem;">
-                            <button class="btn btn-secondary btn-small" onclick="startBreathingExercise()">
-                                🫁 <span data-i18n="crisis.breathing">Breathing Exercise</span>
-                            </button>
-                            <button class="btn btn-secondary btn-small" onclick="startGrounding()">
-                                🌍 <span data-i18n="crisis.grounding">5-4-3-2-1 Grounding</span>
-                            </button>
-                            <button class="btn btn-secondary btn-small" onclick="showSafetyPlan()">
-                                📋 <span data-i18n="crisis.safety_plan">My Safety Plan</span>
-                            </button>
-                            <button class="btn btn-secondary btn-small" onclick="callTrustedContact()">
-                                📞 <span data-i18n="crisis.call_contact">Call Trusted Contact</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 

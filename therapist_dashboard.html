@@ -1285,6 +1285,9 @@
     <button class="btn btn-secondary" onclick="unsubscribeWeeklyReports()">
         <span data-i18n="therapist.unsubscribe_weekly">Unsubscribe</span>
     </button>
+    <button class="btn btn-small" style="background: #e74c3c; color: white;" onclick="deleteTherapistAccount()">
+        <span data-i18n="therapist.delete_account">Delete Account</span>
+    </button>
 </div>
 
                 <div id="weeklyReportStatus" style="margin-top: 1rem;"></div>
@@ -1543,6 +1546,14 @@
 'therapist.send_message': 'Send Message',
 'therapist.schedule_session_prompt': 'Enter session details and date/time:',
 'therapist.session_scheduled': 'Session scheduled successfully',
+'therapist.delete_account': 'Delete Account',
+'therapist.confirm_delete_account': 'Are you sure you want to delete your therapist account? This will permanently delete all your data and all your clients\' data.',
+'therapist.confirm_delete_account_permanent': 'This action CANNOT be undone. Your account and ALL client data will be permanently deleted. Are you absolutely sure?',
+'therapist.type_delete_confirm': 'Type "DELETE" to confirm permanent deletion of your account:',
+'therapist.delete_cancelled': 'Account deletion cancelled',
+'therapist.deleting_account': 'Deleting account...',
+'therapist.account_deleted': 'Account deleted successfully',
+'therapist.error_deleting_account': 'Error deleting account:',
 // Thought Record fields
 'task.cbt_title': 'CBT Thought Record',
 'task.situation': 'Situation',
@@ -1640,6 +1651,14 @@
 'therapist.please_select_client': 'אנא בחר מטופל',
 'therapist.due_date': 'תאריך יעד:',
 'therapist.task_fill_required': 'אנא מלא את כל השדות הנדרשים',
+'therapist.delete_account': 'מחק חשבון',
+'therapist.confirm_delete_account': 'האם אתה בטוח שברצונך למחוק את חשבון המטפל שלך? פעולה זו תמחק לצמיתות את כל הנתונים שלך ושל כל המטופלים שלך.',
+'therapist.confirm_delete_account_permanent': 'לא ניתן לבטל פעולה זו. החשבון שלך וכל נתוני המטופלים יימחקו לצמיתות. האם אתה בטוח לחלוטין?',
+'therapist.type_delete_confirm': 'הקלד "DELETE" כדי לאשר מחיקה לצמיתות של החשבון שלך:',
+'therapist.delete_cancelled': 'מחיקת החשבון בוטלה',
+'therapist.deleting_account': 'מוחק חשבון...',
+'therapist.account_deleted': 'החשבון נמחק בהצלחה',
+'therapist.error_deleting_account': 'שגיאה במחיקת החשבון:',
 // Thought Record fields
 'task.cbt_title': 'רישום מחשבות CBT',
 'task.situation': 'סיטואציה',
@@ -1924,6 +1943,14 @@
 'task.custom_title': 'Индивидуальное задание',
 'therapist.assign_task': 'Назначить задание',
 'therapist.select_client': 'Выберите клиента:',
+'therapist.delete_account': 'Удалить аккаунт',
+'therapist.confirm_delete_account': 'Вы уверены, что хотите удалить свой аккаунт терапевта? Это навсегда удалит все ваши данные и данные всех ваших клиентов.',
+'therapist.confirm_delete_account_permanent': 'Это действие НЕЛЬЗЯ отменить. Ваш аккаунт и ВСЕ данные клиентов будут удалены навсегда. Вы абсолютно уверены?',
+'therapist.type_delete_confirm': 'Введите "DELETE" для подтверждения удаления аккаунта:',
+'therapist.delete_cancelled': 'Удаление аккаунта отменено',
+'therapist.deleting_account': 'Удаление аккаунта...',
+'therapist.account_deleted': 'Аккаунт успешно удален',
+'therapist.error_deleting_account': 'Ошибка при удалении аккаунта:',
 // Thought Record fields
 'task.cbt_title': 'Дневник мыслей КПТ',
 'task.situation': 'Ситуация',
@@ -2216,6 +2243,14 @@
                'therapist.choose_client': 'اختر عميلاً...',
                'therapist.client_label': 'العميل',
 'therapist.submitted_label': 'تم الإرسال',
+'therapist.delete_account': 'حذف الحساب',
+'therapist.confirm_delete_account': 'هل أنت متأكد من أنك تريد حذف حساب المعالج الخاص بك؟ سيؤدي هذا إلى حذف جميع بياناتك وبيانات جميع عملائك بشكل دائم.',
+'therapist.confirm_delete_account_permanent': 'لا يمكن التراجع عن هذا الإجراء. سيتم حذف حسابك وجميع بيانات العملاء نهائياً. هل أنت متأكد تماماً؟',
+'therapist.type_delete_confirm': 'اكتب "DELETE" لتأكيد الحذف النهائي لحسابك:',
+'therapist.delete_cancelled': 'تم إلغاء حذف الحساب',
+'therapist.deleting_account': 'جاري حذف الحساب...',
+'therapist.account_deleted': 'تم حذف الحساب بنجاح',
+'therapist.error_deleting_account': 'خطأ في حذف الحساب:',
 'task.submission_details': 'تفاصيل الإرسال',
 // Thought Record fields
 'task.cbt_title': 'سجل الأفكار CBT',
@@ -4990,6 +5025,59 @@ console.log('Jerusalem offset:', timezoneOffset);
                 showWeeklyReportStatus(i18n.t('msg.error') + ': ' + error.message, 'error');
             }
         }
+
+
+// Delete therapist account
+async function deleteTherapistAccount() {
+    const confirmMessage = i18n.t('therapist.confirm_delete_account',
+        'Are you sure you want to delete your therapist account? This will permanently delete all your data and all your clients\' data.');
+
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+
+    // Double confirmation for safety
+    const secondConfirm = confirm(i18n.t('therapist.confirm_delete_account_permanent',
+        'This action CANNOT be undone. Your account and ALL client data will be permanently deleted. Are you absolutely sure?'));
+    if (!secondConfirm) {
+        return;
+    }
+
+    // Final confirmation with typed text
+    const finalConfirm = prompt(i18n.t('therapist.type_delete_confirm',
+        'Type "DELETE" to confirm permanent deletion of your account:'));
+    if (finalConfirm !== 'DELETE') {
+        showMessage(i18n.t('therapist.delete_cancelled', 'Account deletion cancelled'), 'info');
+        return;
+    }
+
+    try {
+        showMessage(i18n.t('therapist.deleting_account', 'Deleting account...'), 'info');
+
+        const response = await fetch('/api/therapist/delete-account', {
+            method: 'DELETE',
+            headers: {
+                'Accept-Language': i18n.currentLang
+            },
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            showMessage(i18n.t('therapist.account_deleted', 'Account deleted successfully'), 'success');
+            // Logout and redirect after short delay
+            setTimeout(() => {
+                window.location.href = '/login.html';
+            }, 2000);
+        } else {
+            const error = await response.json();
+            showMessage(error.error || i18n.t('msg.error'), 'error');
+        }
+    } catch (error) {
+        showMessage(i18n.t('therapist.error_deleting_account', 'Error deleting account:') + ' ' + error.message, 'error');
+    }
+}
+
+
 
 
 

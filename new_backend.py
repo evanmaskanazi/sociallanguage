@@ -2218,6 +2218,114 @@ def trigger_inactivity_check():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/therapist/delete-account', methods=['DELETE'])
+@require_auth(['therapist'])
+def delete_therapist_account():
+    """Delete therapist account and all associated data"""
+    try:
+        therapist = request.current_user.therapist
+        user = request.current_user
+
+        # Log the deletion for audit
+        logger.info('therapist_deletion', extra={
+            'extra_data': {
+                'therapist_id': therapist.id,
+                'therapist_email': user.email,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': user.id
+        })
+
+        # Audit log for compliance
+        log_audit(
+            action='DELETE_THERAPIST_ACCOUNT',
+            resource_type='therapist',
+            resource_id=therapist.id,
+            details={
+                'email': user.email,
+                'license_number': therapist.license_number
+            },
+            phi_accessed=True
+        )
+
+        # First, delete all clients and their data
+        clients = Client.query.filter_by(therapist_id=therapist.id).all()
+
+        for client in clients:
+            # Delete category responses
+            CategoryResponse.query.filter_by(client_id=client.id).delete()
+
+            # Delete goal completions through goals
+            for goal in client.goals:
+                GoalCompletion.query.filter_by(goal_id=goal.id).delete()
+
+            # Delete custom categories
+            CustomCategory.query.filter_by(client_id=client.id).delete()
+
+            # Delete therapist notes
+            TherapistNote.query.filter_by(client_id=client.id).delete()
+
+            # Delete consent records
+            ConsentRecord.query.filter_by(client_id=client.id).delete()
+
+            # Delete reminders
+            Reminder.query.filter_by(client_id=client.id).delete()
+
+            # Get client user to delete later
+            client_user = client.user
+
+            # Delete the client (cascade will handle checkins, goals, tracking plans)
+            db.session.delete(client)
+
+            # Delete the client's user account if it exists
+            if client_user:
+                # Delete password resets
+                PasswordReset.query.filter_by(user_id=client_user.id).delete()
+
+                # Delete session tokens
+                SessionToken.query.filter_by(user_id=client_user.id).delete()
+
+                # Delete the user
+                db.session.delete(client_user)
+
+        # Delete the therapist
+        db.session.delete(therapist)
+
+        # Delete password resets for therapist
+        PasswordReset.query.filter_by(user_id=user.id).delete()
+
+        # Delete session tokens for therapist
+        SessionToken.query.filter_by(user_id=user.id).delete()
+
+        # Delete the therapist's user account
+        db.session.delete(user)
+
+        # Commit all deletions
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Therapist account and all associated data deleted successfully'
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error('delete_therapist_account_error', extra={
+            'extra_data': {
+                'error': str(e),
+                'therapist_id': therapist.id if 'therapist' in locals() else None,
+                'request_id': g.request_id
+            },
+            'request_id': g.request_id,
+            'user_id': request.current_user.id
+        }, exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+
+
+
 
 # Add this endpoint to check session status
 @app.route('/api/session/check')
