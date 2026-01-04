@@ -10293,7 +10293,7 @@ def request_data_export():
 
 @app.route('/api/privacy/delete-request', methods=['POST'])
 @require_auth(['therapist', 'client'])
-def request_data_deletion():
+def gdpr_request_deletion():
     """
     GDPR Article 17: Right to Erasure ('Right to be Forgotten')
     Israeli PPL Amendment 13: Right to deletion
@@ -11230,29 +11230,6 @@ def request_data_deletion():
 
 # The email_therapy_report function is already complete in Part 1
 # It's the UPDATED version starting at line 2773
-
-
-# ============= ERROR HANDLERS =============
-
-@app.errorhandler(404)
-def not_found(error):
-    """Handle 404 errors"""
-    return jsonify({'error': 'Resource not found'}), 404
-
-
-@app.errorhandler(500)
-def internal_error(error):
-    """Handle 500 errors"""
-    db.session.rollback()
-    return jsonify({'error': 'Internal server error'}), 500
-
-
-@app.errorhandler(Exception)
-def handle_exception(error):
-    """Handle unexpected exceptions"""
-    db.session.rollback()
-    app.logger.error(f"Unexpected error: {str(error)}")
-    return jsonify({'error': 'An unexpected error occurred'}), 500
 
 
 @app.route('/api/unsubscribe/<token>', methods=['GET', 'POST'])
