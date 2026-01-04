@@ -7362,18 +7362,18 @@ def initialize_database():
 
             try:
                 # Check if column exists
-                result = db.session.execute("""
+                result = db.session.execute(text("""
                                 SELECT column_name
                                 FROM information_schema.columns
                                 WHERE table_name='reminders' AND column_name='day_of_week'
-                            """).fetchone()
+                            """)).fetchone()
 
                 if not result:
                     # Add the column
-                    db.session.execute("""
+                    db.session.execute(text("""
                                     ALTER TABLE reminders
                                     ADD COLUMN day_of_week INTEGER DEFAULT 1
-                                """)
+                                """))
                     db.session.commit()
                     print("Added day_of_week column to reminders table")
             except Exception as e:
@@ -7410,7 +7410,6 @@ def initialize_database():
 
 
             # Check if already initialized
-            from sqlalchemy import text
             existing_lock = db.session.execute(
                 text("SELECT COUNT(*) FROM tracking_categories")
             ).scalar()
@@ -7422,7 +7421,7 @@ def initialize_database():
                 return
 
             # Use advisory lock for PostgreSQL
-            db.session.execute("SELECT pg_advisory_lock(12345)")
+            db.session.execute(text("SELECT pg_advisory_lock(12345)"))
             lock_acquired = True
 
             # Double-check after acquiring lock
@@ -7456,7 +7455,7 @@ def initialize_database():
     finally:
         if lock_acquired:
             try:
-                db.session.execute("SELECT pg_advisory_unlock(12345)")
+                db.session.execute(text("SELECT pg_advisory_unlock(12345)"))
                 db.session.commit()
             except:
                 pass
