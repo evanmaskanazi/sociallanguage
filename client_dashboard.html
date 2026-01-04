@@ -1357,6 +1357,28 @@ window.addEventListener('load', function() {
 
 
         </div>
+
+        <!-- Crisis Support Section -->
+        <div id="crisisSupport" class="card" style="display: none; margin-top: 2rem; background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%); border: 2px solid #e53e3e;">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                <span style="font-size: 2rem;">🆘</span>
+                <h3 style="color: #c53030; margin: 0;" data-i18n="crisis.title">We're Here to Help</h3>
+            </div>
+            <p style="color: #742a2a; margin-bottom: 1rem;" data-i18n="crisis.message">
+                We noticed you might be going through a difficult time. Your wellbeing matters to us. Please know that support is available.
+            </p>
+            <div id="crisisResources" style="margin-bottom: 1rem;">
+                <!-- Crisis resources will be loaded here dynamically -->
+            </div>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button class="btn btn-primary" style="background: #e53e3e; border-color: #e53e3e;" onclick="requestUrgentSession()" data-i18n="crisis.contact_therapist">
+                    📞 Contact Therapist
+                </button>
+                <button class="btn btn-secondary" onclick="document.getElementById('crisisSupport').style.display='none'" data-i18n="btn.close">
+                    Close
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Goals Tab -->
@@ -2946,8 +2968,46 @@ window.addEventListener('load', function() {
             sanitizeInput: function(input) {
                 if (typeof input !== 'string') return '';
                 return input.replace(/[<>\"\']/g, '');
+            },
+
+            // Get CSRF token from cookie or fetch from server
+            getCsrfToken: async function() {
+                // First try to get from meta tag
+                const metaTag = document.querySelector('meta[name="csrf-token"]');
+                if (metaTag) {
+                    return metaTag.content;
+                }
+                
+                // Then try to get from cookie
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    const [name, value] = cookie.trim().split('=');
+                    if (name === 'csrf_token' || name === 'X-CSRF-Token') {
+                        return decodeURIComponent(value);
+                    }
+                }
+                
+                // Finally fetch from server
+                try {
+                    const response = await fetch('/api/csrf-token', {
+                        credentials: 'same-origin'
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        return data.csrf_token;
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch CSRF token:', error);
+                }
+                
+                return '';
             }
         };
+
+        // Global getCsrfToken function for backward compatibility
+        async function getCsrfToken() {
+            return await SecurityHelpers.getCsrfToken();
+        }
 
 
 // ADD INPUT VALIDATION HERE
@@ -4124,11 +4184,13 @@ function checkDateStatus(date) {
 
             // Show or hide crisis support
             const crisisDiv = document.getElementById('crisisSupport');
-            if (showCrisisSupport) {
-                crisisDiv.style.display = 'block';
-                loadCrisisResources();
-            } else {
-                crisisDiv.style.display = 'none';
+            if (crisisDiv) {
+                if (showCrisisSupport) {
+                    crisisDiv.style.display = 'block';
+                    loadCrisisResources();
+                } else {
+                    crisisDiv.style.display = 'none';
+                }
             }
         }
 
@@ -4184,18 +4246,24 @@ async function checkHistoricalCrisisPatterns() {
         console.log('Crisis check - Low mood count:', lowMoodCount, 'Max consecutive:', maxConsecutive);
 
         // Show crisis support if conditions are met
-        if (maxConsecutive >= 3 || lowMoodCount >= 5) {
-            console.log('SHOWING crisis support based on historical data');
-            document.getElementById('crisisSupport').style.display = 'block';
-            loadCrisisResources();
-        } else {
-            console.log('HIDING crisis support - conditions not met');
-            document.getElementById('crisisSupport').style.display = 'none';
+        const crisisDiv = document.getElementById('crisisSupport');
+        if (crisisDiv) {
+            if (maxConsecutive >= 3 || lowMoodCount >= 5) {
+                console.log('SHOWING crisis support based on historical data');
+                crisisDiv.style.display = 'block';
+                loadCrisisResources();
+            } else {
+                console.log('HIDING crisis support - conditions not met');
+                crisisDiv.style.display = 'none';
+            }
         }
 
     } catch (error) {
         console.error('Error checking historical crisis patterns:', error);
-        document.getElementById('crisisSupport').style.display = 'none';
+        const crisisDiv = document.getElementById('crisisSupport');
+        if (crisisDiv) {
+            crisisDiv.style.display = 'none';
+        }
     }
 }
 
@@ -4203,6 +4271,7 @@ async function checkHistoricalCrisisPatterns() {
         // XSS-Safe Crisis Resources Loading
         async function loadCrisisResources() {
             const resources = document.getElementById('crisisResources');
+            if (!resources) return; // Safety check
             resources.innerHTML = ''; // Clear safely
 
             // Get location-specific resources
@@ -5422,12 +5491,15 @@ async function generatePDFReport() {
 
      async function prepareEmailReport() {
     try {
+        // Get CSRF token first
+        const csrfToken = await getCsrfToken();
+        
         // Call the backend endpoint with 'past7days'
         const response = await fetch('/api/client/email-report', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-Token': getCsrfToken(),
+                'X-CSRF-Token': csrfToken,
                 'Accept-Language': i18n.currentLang
             },
             credentials: 'include',
