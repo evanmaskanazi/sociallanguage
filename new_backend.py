@@ -7355,61 +7355,60 @@ def initialize_database():
     lock_acquired = False
 
     try:
+        # === RUN MIGRATIONS FIRST (outside nested transaction) ===
+        # These need their own commits and shouldn't be in a nested transaction
+        
+        # Add day_of_week column to reminders if missing
+        try:
+            result = db.session.execute(text("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name='reminders' AND column_name='day_of_week'
+            """)).fetchone()
+
+            if not result:
+                db.session.execute(text("""
+                    ALTER TABLE reminders
+                    ADD COLUMN day_of_week INTEGER DEFAULT 1
+                """))
+                db.session.commit()
+                print("Added day_of_week column to reminders table")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Note: Could not check/add day_of_week column: {e}")
+
+        # === GDPR COMPLIANCE COLUMNS MIGRATION ===
+        gdpr_columns = [
+            ("deletion_requested_at", "TIMESTAMP"),
+            ("deletion_reason", "TEXT"),
+            ("privacy_policy_accepted_at", "TIMESTAMP"),
+            ("privacy_policy_version", "VARCHAR(20)"),
+            ("data_processing_consent", "BOOLEAN DEFAULT FALSE"),
+        ]
+        
+        for column_name, column_type in gdpr_columns:
+            try:
+                result = db.session.execute(text("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'users' AND column_name = :col_name
+                """), {"col_name": column_name}).fetchone()
+                
+                if not result:
+                    db.session.execute(text(f"""
+                        ALTER TABLE users ADD COLUMN {column_name} {column_type}
+                    """))
+                    db.session.commit()
+                    print(f"Added GDPR column: {column_name}")
+            except Exception as e:
+                db.session.rollback()
+                print(f"Note: Could not add GDPR column {column_name}: {e}")
+
+        # === NOW DO THE MAIN INITIALIZATION ===
         # Try to create a lock record in the database
         with db.session.begin_nested():
             # Create tables if they don't exist
             db.create_all()
-
-            try:
-                # Check if column exists
-                result = db.session.execute(text("""
-                                SELECT column_name
-                                FROM information_schema.columns
-                                WHERE table_name='reminders' AND column_name='day_of_week'
-                            """)).fetchone()
-
-                if not result:
-                    # Add the column
-                    db.session.execute(text("""
-                                    ALTER TABLE reminders
-                                    ADD COLUMN day_of_week INTEGER DEFAULT 1
-                                """))
-                    db.session.commit()
-                    print("Added day_of_week column to reminders table")
-            except Exception as e:
-                print(f"Note: Could not check/add day_of_week column: {e}")
-                # This is okay - it might already exist
-
-            # === GDPR COMPLIANCE COLUMNS MIGRATION ===
-            # Add missing GDPR columns to users table if they don't exist
-            gdpr_columns = [
-                ("deletion_requested_at", "TIMESTAMP"),
-                ("deletion_reason", "TEXT"),
-                ("privacy_policy_accepted_at", "TIMESTAMP"),
-                ("privacy_policy_version", "VARCHAR(20)"),
-                ("data_processing_consent", "BOOLEAN DEFAULT FALSE"),
-            ]
-            
-            for column_name, column_type in gdpr_columns:
-                try:
-                    result = db.session.execute(text("""
-                        SELECT column_name 
-                        FROM information_schema.columns 
-                        WHERE table_name = 'users' AND column_name = :col_name
-                    """), {"col_name": column_name}).fetchone()
-                    
-                    if not result:
-                        db.session.execute(text(f"""
-                            ALTER TABLE users ADD COLUMN {column_name} {column_type}
-                        """))
-                        db.session.commit()
-                        print(f"Added GDPR column: {column_name}")
-                except Exception as e:
-                    print(f"Note: Could not add GDPR column {column_name}: {e}")
-                    # Column might already exist, that's okay
-
-
-            # Check if already initialized
             existing_lock = db.session.execute(
                 text("SELECT COUNT(*) FROM tracking_categories")
             ).scalar()
@@ -10679,32 +10678,39 @@ def client_email_report():
         if not week:
             return jsonify({'error': 'Week is required'}), 400
 
-        # Parse week
-        # Validate week format
-        import re
-        week_pattern = re.compile(r'^\d{4}-W\d{2}$')
-        if not week_pattern.match(week):
-            return jsonify({'error': 'Invalid week format. Use YYYY-Wnn'}), 400
+        # Handle 'past7days' format (used by client dashboard)
+        if week == 'past7days':
+            today = date.today()
+            week_end = today
+            week_start = today - timedelta(days=6)
+            year = week_start.year
+            week_num = week_start.isocalendar()[1]
+        else:
+            # Parse week in YYYY-Wnn format
+            import re
+            week_pattern = re.compile(r'^\d{4}-W\d{2}$')
+            if not week_pattern.match(week):
+                return jsonify({'error': 'Invalid week format. Use YYYY-Wnn or past7days'}), 400
 
-        # Parse week
-        year, week_num = week.split('-W')
-        year = int(year)
-        week_num = int(week_num)
+            # Parse week
+            year, week_num = week.split('-W')
+            year = int(year)
+            week_num = int(week_num)
 
-        # Validate ranges
-        if year < 2020 or year > 2030:
-            return jsonify({'error': 'Invalid year'}), 400
-        if week_num < 1 or week_num > 53:
-            return jsonify({'error': 'Invalid week number'}), 400
+            # Validate ranges
+            if year < 2020 or year > 2030:
+                return jsonify({'error': 'Invalid year'}), 400
+            if week_num < 1 or week_num > 53:
+                return jsonify({'error': 'Invalid week number'}), 400
 
-        # Calculate week dates
-        jan1 = datetime(year, 1, 1)
-        days_to_monday = (7 - jan1.weekday()) % 7
-        if days_to_monday == 0:
-            days_to_monday = 7
-        first_monday = jan1 + timedelta(days=days_to_monday - 7)
-        week_start = first_monday + timedelta(weeks=week_num - 1)
-        week_end = week_start + timedelta(days=6)
+            # Calculate week dates
+            jan1 = datetime(year, 1, 1)
+            days_to_monday = (7 - jan1.weekday()) % 7
+            if days_to_monday == 0:
+                days_to_monday = 7
+            first_monday = jan1 + timedelta(days=days_to_monday - 7)
+            week_start = first_monday + timedelta(weeks=week_num - 1)
+            week_end = week_start + timedelta(days=6)
 
         # Get therapist info
         therapist = client.therapist
