@@ -7380,6 +7380,34 @@ def initialize_database():
                 print(f"Note: Could not check/add day_of_week column: {e}")
                 # This is okay - it might already exist
 
+            # === GDPR COMPLIANCE COLUMNS MIGRATION ===
+            # Add missing GDPR columns to users table if they don't exist
+            gdpr_columns = [
+                ("deletion_requested_at", "TIMESTAMP"),
+                ("deletion_reason", "TEXT"),
+                ("privacy_policy_accepted_at", "TIMESTAMP"),
+                ("privacy_policy_version", "VARCHAR(20)"),
+                ("data_processing_consent", "BOOLEAN DEFAULT FALSE"),
+            ]
+            
+            for column_name, column_type in gdpr_columns:
+                try:
+                    result = db.session.execute(text("""
+                        SELECT column_name 
+                        FROM information_schema.columns 
+                        WHERE table_name = 'users' AND column_name = :col_name
+                    """), {"col_name": column_name}).fetchone()
+                    
+                    if not result:
+                        db.session.execute(text(f"""
+                            ALTER TABLE users ADD COLUMN {column_name} {column_type}
+                        """))
+                        db.session.commit()
+                        print(f"Added GDPR column: {column_name}")
+                except Exception as e:
+                    print(f"Note: Could not add GDPR column {column_name}: {e}")
+                    # Column might already exist, that's okay
+
 
             # Check if already initialized
             from sqlalchemy import text
@@ -11010,8 +11038,8 @@ def apply_data_retention():
 
 @app.route('/api/client/request-deletion', methods=['POST'])
 @require_auth(['client'])
-def request_data_deletion():
-    """GDPR right to deletion"""
+def client_request_data_deletion():
+    """GDPR right to deletion - Client endpoint"""
     try:
         client = request.current_user.client
 
@@ -11334,34 +11362,6 @@ except ImportError as e:
     celery = None
 except Exception as e:
     logger.error(f"Error initializing Celery: {e}")
-    celery = None
-
-
-    # Add Celery context to Flask
-    class FlaskCelery(Celery):
-        def __init__(self, *args, **kwargs):
-            super(FlaskCelery, self).__init__(*args, **kwargs)
-            self.patch_task()
-
-        def patch_task(self):
-            TaskBase = self.Task
-            _celery = self
-
-            class ContextTask(TaskBase):
-                abstract = True
-
-                def __call__(self, *args, **kwargs):
-                    with app.app_context():
-                        return TaskBase.__call__(self, *args, **kwargs)
-
-            self.Task = ContextTask
-
-
-    # Update celery configuration with Flask app config
-    celery.conf.update(app.config)
-
-except ImportError:
-    logger.warning("Celery not available, background tasks disabled")
     celery = None
 
 
