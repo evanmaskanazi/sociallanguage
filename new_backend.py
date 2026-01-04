@@ -10377,66 +10377,59 @@ def cancel_deletion_request():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/privacy/consent', methods=['GET'])
+@app.route('/api/privacy/consent', methods=['GET', 'POST'])
 @require_auth(['therapist', 'client'])
-def get_consent_status():
-    """Get current consent status for all purposes"""
-    try:
-        user = request.current_user
-        
-        consent_purposes = [
-            'data_processing',
-            'health_data_processing',
-            'email_communications',
-            'analytics',
-            'therapist_sharing'
-        ]
-        
-        consents = {}
-        for purpose in consent_purposes:
-            consents[purpose] = PrivacyCompliance.validate_consent(user.id, purpose)
-        
-        return jsonify({
-            'user_id': user.id,
-            'consents': consents,
-            'last_updated': datetime.utcnow().isoformat()
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/privacy/consent', methods=['POST'])
-@require_auth(['therapist', 'client'])
-def update_consent():
+def manage_consent():
     """
-    Update consent for specific purposes.
-    Required by GDPR Article 7 and Israeli PPL Amendment 13.
+    GET: Get current consent status for all purposes
+    POST: Update consent for specific purposes (GDPR Article 7, Israeli PPL Amendment 13)
     """
     try:
         user = request.current_user
-        data = request.get_json()
         
-        if not data or 'purpose' not in data or 'granted' not in data:
-            return jsonify({'error': 'Purpose and granted status required'}), 400
+        if request.method == 'GET':
+            # Get current consent status
+            consent_purposes = [
+                'data_processing',
+                'health_data_processing',
+                'email_communications',
+                'analytics',
+                'therapist_sharing'
+            ]
+            
+            consents = {}
+            for purpose in consent_purposes:
+                consents[purpose] = PrivacyCompliance.validate_consent(user.id, purpose)
+            
+            return jsonify({
+                'user_id': user.id,
+                'consents': consents,
+                'last_updated': datetime.utcnow().isoformat()
+            })
         
-        purpose = sanitize_input(data['purpose'])
-        granted = bool(data['granted'])
-        
-        # Record consent
-        PrivacyCompliance.record_consent(
-            user_id=user.id,
-            purpose=purpose,
-            granted=granted,
-            details=data.get('details')
-        )
-        
-        return jsonify({
-            'success': True,
-            'purpose': purpose,
-            'granted': granted,
-            'recorded_at': datetime.utcnow().isoformat()
-        })
+        else:  # POST
+            data = request.get_json()
+            
+            if not data or 'purpose' not in data or 'granted' not in data:
+                return jsonify({'error': 'Purpose and granted status required'}), 400
+            
+            purpose = sanitize_input(data['purpose'])
+            granted = bool(data['granted'])
+            
+            # Record consent
+            PrivacyCompliance.record_consent(
+                user_id=user.id,
+                purpose=purpose,
+                granted=granted,
+                details=data.get('details')
+            )
+            
+            return jsonify({
+                'success': True,
+                'purpose': purpose,
+                'granted': granted,
+                'recorded_at': datetime.utcnow().isoformat()
+            })
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
